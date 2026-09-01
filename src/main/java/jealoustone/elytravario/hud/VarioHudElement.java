@@ -120,8 +120,10 @@ public final class VarioHudElement implements HudElement {
 		row += LINE;
 
 		row = peakRow(graphics, font, x, row, "KE", sample.kineticHeight(), recorder.peakKineticHeight());
-		row = peakRow(graphics, font, x, row, "PE", sample.potentialHeight(), recorder.peakPotentialHeight());
-		row = peakRow(graphics, font, x, row, "TE", sample.totalHeight(), recorder.peakTotalHeight());
+		row = sinceApexRow(graphics, font, x, row, "PE", sample.potentialHeight(),
+				recorder.peakPotentialHeight());
+		row = sinceApexRow(graphics, font, x, row, "TE", sample.totalHeight(),
+				recorder.peakTotalHeight());
 		row = row(graphics, font, x, row, "TE RATE", fmt("%+.2f b/s", energyRate), rateColor(energyRate));
 
 		double gain = recorder.lastCycleGain();
@@ -204,6 +206,36 @@ public final class VarioHudElement implements HudElement {
 			int width, int height) {
 		EnergyFieldTexture.blit(graphics, EnergyField.of(width, height, VarioConfig.chartMinVxz,
 				VarioConfig.chartMaxVy, VarioConfig.chartScale, sample.gravity()), x, y);
+	}
+
+	/**
+	 * A height measured from the last apex rather than from the world's origin, with the raw
+	 * figure dimmed to its left.
+	 *
+	 * <p>Potential and total energy are the two readings whose absolute value says nothing:
+	 * both are anchored to sea level, which is an arbitrary datum that changes meaning between
+	 * worlds and tells you nothing about the cycle you are flying. Measured from the apex they
+	 * become the question actually being asked — how far below the top of the last cycle am I,
+	 * and how much of that is recoverable.
+	 *
+	 * <p>Kinetic energy keeps its own row shape because it does not have this problem: speed
+	 * is speed, and its absolute value is already the reading.
+	 *
+	 * <p>The raw figure stays, dimmed, because it is what matches F3 and a map.
+	 */
+	private int sinceApexRow(GuiGraphicsExtractor graphics, Font font, int x, int y, String label,
+			double current, double peak) {
+		graphics.text(font, label, x + PAD, y, LABEL, true);
+
+		String delta = Double.isFinite(peak) ? fmt("%+.1f b", current - peak) : "--";
+		String absolute = fmt("%.1f", current);
+		int right = x + VarioConfig.panelWidth - PAD;
+		int deltaWidth = font.width(delta);
+
+		graphics.text(font, delta, right - deltaWidth, y, VALUE, true);
+		graphics.text(font, absolute, right - deltaWidth - PAD - font.width(absolute), y, MUTED, true);
+
+		return y + LINE;
 	}
 
 	/** A reading with the value held from the last apex dimmed alongside it. */

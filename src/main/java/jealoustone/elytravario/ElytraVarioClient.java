@@ -42,7 +42,20 @@ public class ElytraVarioClient implements ClientModInitializer {
 				// Altitude is measured from an arbitrary origin, so history from a previous
 				// world would read as a huge bogus energy change.
 				RECORDER.clear();
-			} else {
+			} else if (!client.isPaused()) {
+				// Client ticks keep firing while the game is paused — Minecraft.tick() is
+				// called with no pause guard, and only the level's entities stop. The player
+				// then does not move, so every tick spent in the menu would record a sample
+				// with zero velocity, filling the ring buffer with a standstill that never
+				// happened and dragging the rate readouts down with it.
+				//
+				// The buffer is held rather than cleared, so unpausing resumes from the sample
+				// before the pause and the first velocity after it is one honest tick of
+				// movement.
+				//
+				// isPaused only means the local integrated server is stopped, so this leaves
+				// multiplayer and the tick commands alone: under /tick rate or /tick freeze the
+				// world really is still running and the player really can still move.
 				RECORDER.tick(player);
 			}
 		});

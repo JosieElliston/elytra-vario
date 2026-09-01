@@ -48,6 +48,24 @@ still, because collision cancels the motion after the fact rather than by changi
 The two agree in free flight and diverge only on contact. `getKnownMovement` is not an
 alternative — for a directly controlled player it falls through to `getDeltaMovement`.
 
+**Potential and total energy are shown from the apex, not from sea level.** Both are anchored
+to an arbitrary datum — altitude zero is wherever the world says it is — so the absolute figure
+answers no question anyone flying a cycle is asking. Measured down from the last apex they
+answer the one that matters: how far below the top am I, and how much of that is coming back.
+The raw height stays on the row, dimmed, because it is what F3 and a map agree with. Kinetic
+energy is left alone; speed has no arbitrary origin, so its absolute value is already the
+reading.
+
+**Nothing is recorded while the game is paused.** `Minecraft.tick()` is called with no pause
+guard — only the level's entities stop — so client ticks keep arriving in the menu, and the
+player's position stops changing. Every one of those ticks would otherwise record a sample with
+zero velocity, filling the ring buffer with a standstill that never happened and dragging the
+rate readouts to a false reading. The buffer is held rather than cleared, so unpausing resumes
+from the sample before the pause and the first velocity after it is one honest tick of
+movement. The guard is `isPaused`, which means specifically that the local integrated server is
+stopped: multiplayer and the `/tick` commands are left alone, because under those the world
+really is running and the player really can still move.
+
 **One cycle clock, latched at the apex.** Energies are all latched from the same `Sample`, so
 `KE + PE = TE` holds. Independent per-metric peak detectors do not work: kinetic energy crests
 at the bottom of the dive and potential energy at the top, so the held figures would not sum.
