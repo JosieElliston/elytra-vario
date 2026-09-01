@@ -3,10 +3,12 @@
 A client-side glide-computer HUD for elytra flight in Minecraft 26.2 (Fabric).
 
 It reads the player's state and displays speeds, energies, a velocity-space chart and a pitch
-ladder, so that pump cycles can be flown and tuned by instrument rather than by feel.
+ladder, so that pump cycles can be flown and tuned by instrument rather than by feel. The
+ladder also carries an optimal pitch bug, which is the one reading it works out rather than
+measures.
 
-Client-only: it observes the player and draws, and never touches physics or talks to the
-server. It does not need to be installed on the other end.
+Client-only: it watches the player and draws, and never talks to the server or changes how
+anything flies. It does not need to be installed on the other end.
 
 ## Building and running
 
@@ -23,8 +25,9 @@ Needs JDK 25.
 
 Everything else is edited in `VarioConfig`, which is plain static fields with a comment on
 each — panel position and width, chart bounds and scale, ladder spacing, lengths and colours,
-and switches for the chart, the ladder, the flight path marker and the angle of attack row. There is no config screen
-and no config file, so changes mean a recompile and are lost on restart.
+and switches for the chart, the ladder, the optimal pitch bug, the flight path marker and the
+angle of attack row. There is no config screen and no config file, so changes mean a recompile
+and are lost on restart.
 
 ## The readout panel
 
@@ -66,6 +69,31 @@ Marks fade out as they approach the top and bottom of the ladder rather than bli
 Labels are in raw Minecraft pitch, matching the `PITCH` row: **negative is above the horizon**.
 Nothing else marks which side of the horizon a rung is on — the sky and the ground already do.
 
+## The optimal pitch bug
+
+A magenta wedge on each side of the crosshair, marking the pitch that would gain the most
+total energy over the next tick. It is the only advisory mark on the ladder and the only one
+that is not grey. The gap between the crosshair and the bug is the correction; when there is
+none, the two wedges close around the crosshair.
+
+Drawn only while actually gliding. When the answer is further from the ladder's reach than the
+band goes it is held at the edge and turns grey, which means *keep going that way*, not *stop
+here*.
+
+It is worth knowing what the number is before flying it:
+
+| Regime | What it says | Trust it? |
+| --- | --- | --- |
+| Steady glide | Exactly level, and it stays there | Yes — a real cusp, not a rounding |
+| Zoom climb | Tens of degrees nose-up, moving as speed bleeds off | Yes — this is the regime it earns its place in |
+| Slow descent | Near ninety nose-down, usually pegged grey | Yes, but it means *dive*, not *dive to exactly there* |
+| The dive that pays for a climb | Whatever loses least right now | **No** — one tick of lookahead is too short a view |
+
+The search is greedy: it tries every pitch, ticks the physics once, and keeps the best. That
+is the same *immediate optimal pitch* elytrasim plots, and it agrees with the far-sighted
+answer whenever energy is being gained, and wherever it snaps to level. Flying it every tick
+is not a strategy and will not fly a good cycle.
+
 ## Off by default
 
 Angle of attack — how far the nose sits above the flight path — is built and correct, in two
@@ -88,6 +116,11 @@ Sideslip is still readable without the marker, from the gap between the chart's 
   reach into the readout panel. Nothing checks for the collision.
 - The ladder does not turn. Once yaw matters, rungs become conic sections and straight ticks
   stop being correct.
+- **The optimal pitch bug sees one tick ahead and no further.** It is a gradient, not a plan,
+  and it is silent about the part of a cycle where you are meant to be spending energy.
+- The bug reads plain gravity where vanilla reads its *effective* gravity. The two differ only
+  under Slow Falling while descending, where the cue will be slightly wrong; every energy
+  readout on the panel makes the same simplification, so at least they agree with each other.
 - **The horizon leaves the screen when you look down past half your FOV** — 35° at the default
   70, 45° at FOV 90. That is not the ladder clipping it; at that attitude the horizon is not
   in the rendered view at all, so nothing can draw it there. The ladder reaches to 97% of the

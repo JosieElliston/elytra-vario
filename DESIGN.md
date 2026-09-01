@@ -6,12 +6,27 @@ the docs and the internet will tell you. For what the mod is and how to use it, 
 
 ## Scope
 
-The mod only ever *observes*. Every readout is measurable from the player entity, so there is
-no physics here: no port of `update_fall_flying_movement`, no optimal-pitch search, no energy
-flow field. That work belongs to [elytrasim](https://github.com/HactarCE/elytrasim), and the
-two are kept apart deliberately. Predictive features — a flight director, an optimal-pitch
-cue, a flow-field background — are the only ones that would need the simulation, and pulling
-it in would be a deliberate expansion rather than a quiet one.
+Almost everything here *observes*: pitch, speeds, energies and the chart are all measurable
+from the player entity, and none of them need a simulation. The one exception is the optimal
+pitch bug, which has to know what the next tick would do at a pitch that is not being flown,
+and so carries a copy of vanilla's `updateFallFlyingMovement` and a search over it.
+
+That was a deliberate expansion, not a quiet one, and it is kept as small as it can be: forty
+lines of vector arithmetic and a loop, in `ElytraPhysics` and `OptimalPitch`, with nothing
+else in the mod depending on them. The wider simulation work — longer horizons, energy flow
+fields, the velocity-space grids — belongs to
+[elytrasim](https://github.com/HactarCE/elytrasim) and stays there.
+
+**The physics is copied from bytecode, not written from the wiki.** Elytra motion is a chain
+of single-precision operations whose rounding is load-bearing, so `ElytraPhysics` uses
+vanilla's own `Mth` — whose `sin` and `cos` are a 65536-entry lookup table, not libm — and
+keeps vanilla's float constants as floats, because `0.99F` widens to `0.9900000095367432` and
+not to `0.99`. Where vanilla calls `Math.cos` rather than `Mth.cos`, as the lift term does,
+so does this.
+
+That is checkable without the game, and it was checked: for a velocity of
+`(0, 0.065042850, 1.061452210)` the port and elytrasim agree on an energy change of
+`-0.008830925` at a pitch of `2.204123497°` and `-0.008820132` at zero, to nine decimals.
 
 ## Measurement
 
@@ -120,6 +135,71 @@ marker visibly jitters in a way the numeric readouts do not.
 ladder climb the screen in visible steps, worst on the labels, whose glyphs jump as a block.
 Each mark is therefore drawn on a pose translated by its own fractional part, which pushes the
 quantisation down to the physical pixel the GUI scale is drawn at.
+
+## The optimal pitch bug
+
+**It is greedy, and greedy is only sometimes right.** The search tries every pitch, ticks the
+physics once, and keeps whichever gains the most total energy — one tick of lookahead, which
+is elytrasim's *immediate optimal pitch* exactly. Flying it every tick does not fly a good
+cycle, because a one-tick horizon cannot see that giving energy away now buys more of it back
+later. It agrees with the far-sighted answer while energy is being *gained*, and again
+wherever it snaps to level; it is the dive that pays for the climb where the short view is
+not to be trusted.
+
+**Three regimes, and they look nothing alike.** In a steady glide the answer is exactly level
+— not approximately, because the curve has a real cusp at zero where the nose-up term
+switches on and straight off again. In a zoom climb it is a genuine interior optimum, tens of
+degrees nose-up, moving as speed bleeds away, and this is the regime worth watching. In a
+slow descent it runs to the stops near ninety nose-down, which is not a glitch: past about
+eighty degrees the wing makes no lift, the flight is a free fall, and at low speed that gains
+energy faster than gliding does.
+
+**The sweep stops a degree short of vertical.** `Mth.cos` is a lookup table, and the index it
+computes for −90° truncates to zero, so the cosine comes back as exactly `0.0` rather than
+something merely tiny. The horizontal look length is then zero, every conversion and turning
+term is skipped by its own `> 0` guard, and the flight goes ballistic — no wing at all. It is
+real vanilla behaviour and it is reachable, since the mouse pins pitch to exactly −90. But it
+is a knife edge one hundredth of a degree wide that ties with a nose-straight-*down* dive to
+within a millionth of a block, so searching it would let the cue jump between the top and the
+bottom of the ladder on the last bits of a double. Excluding both bounds costs at most 0.0012
+blocks/tick across the whole envelope, against cycle gains of a few tenths. Note the
+asymmetry is the table's and not the model's: +90° returns 1.2e-16 and keeps its wing.
+
+**The winning degree is refined by golden section, not by fitting a parabola.** The maximum
+is often that cusp rather than a smooth peak — steep on the nose-up side, gentle on the
+nose-down side — and a parabola through the three points around it lands a degree or two down
+the shallow slope, which would nudge the cue off the horizon exactly where it belongs on it.
+Sixteen steps narrow a two-degree bracket to a thousandth of a degree, which is what stops
+the bug walking up the screen in whole-degree jumps.
+
+**It searches at the real yaw.** elytrasim pins yaw to zero, because it is drawing a
+two-dimensional velocity grid and has no sideslip to carry. Here the search runs on the real
+three-dimensional velocity at the player's real yaw, which is what the game is about to do
+anyway, so a turn's sideways speed is carried honestly rather than flattened into the forward
+component.
+
+**Once per tick, not once per frame.** The answer is a function of the tick's state, so it is
+computed in the recorder alongside everything else. Recomputing it per frame would burn a few
+hundred thousand physics steps a second arriving at the same number, and would let two HUD
+elements disagree inside one frame.
+
+**Strength does not track the margin.** Fading the bug when the correction is small would
+hide it exactly while it is being followed; fading it when the correction is large would hide
+it exactly when there is a long way to go and no way to snap to it. So it carries the same
+band-edge taper the rungs do and nothing else.
+
+**It pegs rather than leaving.** A whole regime — the slow descent above — has its answer
+eighty-something degrees nose-down, far below anything the band reaches, and that is when the
+cue is at its most emphatic. A bug you cannot see is a bug you cannot fly to, so it is held at
+the limit in the flight path marker's pegged grey, which already means a direction to go
+rather than a place to be.
+
+**It lives in the centre gap**, which is the only radius that never meets a rung or a label:
+rungs start at the gap's edge and labels sit beyond their outer ends. Everywhere further out
+collides — just past the twenty-degree rungs it lands on the horizon in a steady glide and on
+the labels near ±20, and clearing the labels entirely puts it so far outboard it stops reading
+as part of the ladder. The wedges point inwards so the pair closes on the marked pitch like a
+caliper, and frames the crosshair when the pitch being flown is already the best one.
 
 ## Readouts that are off by default
 

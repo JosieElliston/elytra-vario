@@ -25,6 +25,17 @@ public final class VarioConfig {
 	public static boolean showAngleOfAttack = false;
 	public static boolean showFlightPath = false;
 
+	/**
+	 * The optimal pitch bug: a pair of wedges in the ladder's centre gap marking the pitch
+	 * that would gain the most energy over the next tick.
+	 *
+	 * <p>Only ever drawn while actually gliding, since that is the only state the underlying
+	 * physics describes. See {@link jealoustone.elytravario.flight.OptimalPitch}, and note
+	 * that its answer is greedy: trustworthy while energy is being gained, and a shorter view
+	 * than a pump cycle needs during the dive that pays for the climb.
+	 */
+	public static boolean showOptimalPitch = true;
+
 	/** Top-left corner of the HUD, in scaled GUI pixels. */
 	public static int originX = 4;
 	public static int originY = 4;
@@ -170,6 +181,31 @@ public final class VarioConfig {
 	 * rather than a reading.
 	 */
 	public static int flightPathPeggedColor = 0xFF6A7076;
+
+	/**
+	 * The optimal pitch bug's geometry, in scaled GUI pixels, and its colour.
+	 *
+	 * <p>It lives entirely inside {@code ladderCenterGap}, which is the one band of the
+	 * ladder nothing else ever draws in: rungs start at the gap's edge and labels sit beyond
+	 * their outer ends, so a wedge in here can never collide with either, at any pitch and
+	 * any tier. Everywhere further out does collide — just past the twenty-degree rungs the
+	 * bug lands on the horizon in a steady glide and on the labels near ±20, and clearing the
+	 * labels entirely puts it so far outboard that it stops reading as part of the ladder.
+	 *
+	 * <p>{@code ladderBugGap} is the clearance between the wedge's base and the inner end of
+	 * the rungs; {@code ladderBugLength} is how far it tapers inwards from there, and
+	 * {@code ladderBugRise} its half-height at the base. The apex points inwards, so the pair
+	 * closes on the marked pitch like a caliper, and frames the crosshair when the pitch
+	 * being flown is already the best one.
+	 *
+	 * <p>Magenta because the ladder is otherwise entirely grey and the chart has already
+	 * spent yellow and cyan — and because elytrasim draws the same quantity in the same
+	 * colour. Alpha matches the datum rungs: it is one small mark and it has to be findable.
+	 */
+	public static int ladderBugGap = 2;
+	public static int ladderBugLength = 8;
+	public static int ladderBugRise = 4;
+	public static int optimalPitchColor = 0xE0FF5AE0;
 
 	private VarioConfig() {
 	}

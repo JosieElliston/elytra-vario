@@ -30,6 +30,8 @@ public final class FlightRecorder {
 
 	private final CycleTracker cycles = new CycleTracker();
 
+	private OptimalPitch optimalPitch;
+
 	public void tick(LocalPlayer player) {
 		Vec3 position = player.position();
 		Sample previous = latest();
@@ -62,6 +64,20 @@ public final class FlightRecorder {
 
 		push(sample);
 		cycles.update(sample);
+
+		// Once per tick, not once per frame. The search is cheap — a couple of hundred ticks
+		// of vector arithmetic — but it is a function of the tick's state, so recomputing it
+		// for every frame would burn a few hundred thousand of them a second to arrive at
+		// the same answer, and would let two HUD elements disagree within one frame.
+		optimalPitch = OptimalPitch.search(sample);
+	}
+
+	/**
+	 * The pitch that would gain the most energy over the next tick, or null when there is
+	 * none to report — which is most of the time, since it is only defined while gliding.
+	 */
+	public OptimalPitch optimalPitch() {
+		return optimalPitch;
 	}
 
 	/** Energies as they stood at the last apex; see {@link CycleTracker}. */
@@ -102,6 +118,7 @@ public final class FlightRecorder {
 		size = 0;
 		Arrays.fill(buffer, null);
 		cycles.reset();
+		optimalPitch = null;
 	}
 
 	public int size() {

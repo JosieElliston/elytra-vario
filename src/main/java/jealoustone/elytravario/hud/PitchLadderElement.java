@@ -2,6 +2,7 @@ package jealoustone.elytravario.hud;
 
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.flight.FlightRecorder;
+import jealoustone.elytravario.flight.OptimalPitch;
 import jealoustone.elytravario.flight.Sample;
 
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
@@ -18,8 +19,8 @@ import org.joml.Matrix3x2fStack;
 import org.joml.Vector3fc;
 
 /**
- * A pitch ladder drawn over the world view, with a flight path marker showing where the
- * player is actually going.
+ * A pitch ladder drawn over the world view, with an optimal pitch bug showing where the
+ * energy is, and a flight path marker showing where the player is actually going.
  *
  * <p>Unlike the readout panel this is a <em>conformal</em> instrument: every mark is placed
  * by projecting a direction through the same camera the world was drawn with, so a rung
@@ -38,6 +39,17 @@ import org.joml.Vector3fc;
  *
  * <p>Nothing distinguishes above the horizon from below it, because the sky, the ground and
  * the labelled datum line already do.
+ *
+ * <h2>The one mark that is not a scale</h2>
+ *
+ * <p>The rungs say where you are pointing. The optimal pitch bug says where you should be,
+ * and it is the only advisory thing the ladder carries, so it is the only thing on it that
+ * is not grey. It rides in the centre gap, the one radius no rung or label ever reaches,
+ * which is what lets it be added to a ladder that was deliberately decluttered without
+ * taking anything back.
+ *
+ * <p>Reading it is one gesture: the gap between the crosshair and the bug is the correction,
+ * and when there is none the two wedges close around the crosshair.
  *
  * <h2>The projection</h2>
  *
@@ -142,9 +154,98 @@ public final class PitchLadderElement implements HudElement {
 		drawFineTicks(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 		drawRungs(graphics, minecraft.font, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 
+		if (VarioConfig.showOptimalPitch) {
+			// Null whenever the search has nothing to say, which is any time the player is
+			// not gliding — so the bug appears with the wing and leaves with it.
+			OptimalPitch optimal = recorder.optimalPitch();
+
+			if (optimal != null) {
+				drawOptimalPitchBug(graphics, cameraPitch, optimal.pitch(), centerX, centerY,
+						scale, bandUp, bandDown);
+			}
+		}
+
 		if (VarioConfig.showFlightPath) {
 			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown);
 		}
+	}
+
+	/**
+	 * The optimal pitch bug: a mirrored pair of wedges marking the pitch that would gain the
+	 * most energy over the next tick.
+	 *
+	 * <p>It is placed by the same projection as the rungs, so it lies against the world like
+	 * they do, and while it is on the ladder it carries the same edge fade they do and
+	 * nothing else. Strength deliberately does <em>not</em> track how much the correction is
+	 * worth: dimming it when the margin is small would hide it exactly while it is being
+	 * followed, and dimming it when the margin is large would hide it exactly when there is
+	 * a long way to go.
+	 *
+	 * <p>The wedges live inside the centre gap and point inwards, which is the only radius
+	 * that never meets a rung or a label; see {@code VarioConfig.ladderBugGap}. Drawn as a
+	 * stack of rows rather than as a polygon, since the HUD's primitives are rectangles.
+	 *
+	 * <p><b>It pegs at the edge of the band rather than leaving.</b> A whole regime of flight
+	 * has its answer off the bottom of the ladder — in a slow descent the best pitch is
+	 * eighty-something degrees nose-down, far below anything the band reaches — and that is
+	 * the moment the cue is at its most emphatic, so it is the worst moment to lose it. A bug
+	 * you cannot see is a bug you cannot fly to. Held at the limit it takes the flight path
+	 * marker's pegged grey, which already means the same thing there: a direction to go, not
+	 * a place to be.
+	 */
+	private void drawOptimalPitchBug(GuiGraphicsExtractor graphics, float cameraPitch,
+			float optimal, int centerX, int centerY, double scale, int bandUp, int bandDown) {
+		double elevation = cameraPitch - optimal;
+		double offset;
+		boolean pegged;
+
+		// Past a quarter turn the tangent has wrapped and would place the mark on the wrong
+		// side, so the direction is taken from the elevation's sign rather than from it.
+		if (elevation >= MAX_ELEVATION) {
+			offset = bandUp;
+			pegged = true;
+		} else if (elevation <= -MAX_ELEVATION) {
+			offset = -bandDown;
+			pegged = true;
+		} else {
+			offset = Math.tan(Math.toRadians(elevation)) * scale;
+			pegged = offset > bandUp || offset < -bandDown;
+			offset = Mth.clamp(offset, -bandDown, bandUp);
+		}
+
+		// Pegged it is a limit rather than a reading, so it is drawn at full strength: the
+		// band taper exists to let marks leave gracefully, and this one is not leaving.
+		double edge = pegged ? 1.0 : edgeFade(offset, bandUp, bandDown);
+
+		if (edge <= 0.0) {
+			return;
+		}
+
+		int base = Math.max(1, VarioConfig.ladderCenterGap - VarioConfig.ladderBugGap);
+		int apex = Math.max(0, base - VarioConfig.ladderBugLength);
+		int rise = Math.max(0, VarioConfig.ladderBugRise);
+		int color = fade(pegged ? VarioConfig.flightPathPeggedColor
+				: VarioConfig.optimalPitchColor, edge);
+
+		Matrix3x2fStack pose = graphics.pose();
+		pose.pushMatrix();
+		int y = subpixel(pose, centerY - offset);
+
+		for (int row = -rise; row <= rise; row++) {
+			// The taper: the wedge's inner edge retreats towards the base as the row moves
+			// away from the marked pitch, leaving the apex on the row that is the reading.
+			int inner = rise == 0 ? apex
+					: apex + (int) Math.round((base - apex) * (double) Math.abs(row) / rise);
+
+			if (inner >= base) {
+				continue;
+			}
+
+			graphics.fill(centerX - base, y + row, centerX - inner, y + row + 1, color);
+			graphics.fill(centerX + inner, y + row, centerX + base, y + row + 1, color);
+		}
+
+		pose.popMatrix();
 	}
 
 	/**
