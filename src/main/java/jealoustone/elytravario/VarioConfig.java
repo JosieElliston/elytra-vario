@@ -92,7 +92,10 @@ public final class VarioConfig {
 	 * and another over the ground. A map whose colors depend on what is behind it is not a
 	 * map.
 	 *
-	 * <p>Cool and receding for loss, warm and advancing for gain, with a near-black at zero.
+	 * <p>Cool for loss, warm for gain, with a near-black at zero. Both arms carry real colour
+	 * at their ends rather than fading into the panel: the losing side is most of the chart and
+	 * most of a cycle, and a map that renders the common case as almost-background is telling
+	 * you nothing about the part you spend the most time in.
 	 * The pair is chosen against the rest of the chart rather than for its own sake: the trail
 	 * is teal and the cursors are yellow and cyan, so the whole ramp keeps out of that arc and
 	 * every mark stays legible over every part of the field. It is also, deliberately, an
@@ -107,7 +110,7 @@ public final class VarioConfig {
 	 */
 	public static int chartFieldZeroColor = 0xFF0C0D10;
 	public static int chartFieldGainColor = 0xFF9E3692;
-	public static int chartFieldLossColor = 0xFF243858;
+	public static int chartFieldLossColor = 0xFF4A70A8;
 
 	/**
 	 * The energy change, in blocks/tick, at which the heatmap's ramp is half way to saturated.

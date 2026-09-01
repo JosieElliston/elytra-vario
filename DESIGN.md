@@ -111,11 +111,16 @@ map whose colors depend on what is behind it is not a map. The rest of the chart
 trail, both cursors — is drawn over the top, and the grid stays translucent on purpose, since
 it is a reference rather than a border.
 
-**Cool and receding for loss, warm and advancing for gain, near-black at zero.** It is an
-elytrasim scheme with elytrasim's two problems fixed. There, zero was two nearly identical
+**Cool for loss, warm for gain, near-black at zero.** It is an elytrasim scheme with
+elytrasim's two problems fixed. There, zero was two nearly identical
 dark purples, so the one boundary worth seeing was invisible; here the sign flip is a black
 seam that reads at a glance. There, both arms started saturated and dark and got muddier
 before they got brighter; here each arm climbs in lightness and in chroma together.
+
+Both arms also end in a real colour rather than fading into the panel. An early version had
+the losing arm barely leave the background, on the theory that the common case should recede —
+but the losing region is most of the chart and most of a cycle, and rendering the part you
+spend the most time in as almost-nothing says nothing about it.
 
 **The hues are chosen against the rest of the chart, not for their own sake.** The trail is
 teal and the cursors are yellow and cyan, so the ramp keeps out of that arc entirely and every
