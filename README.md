@@ -23,7 +23,7 @@ Needs JDK 25.
 
 Everything else is edited in `VarioConfig`, which is plain static fields with a comment on
 each — panel position and width, chart bounds and scale, ladder spacing, lengths and colours,
-and switches for the chart, the ladder and the flight path marker. There is no config screen
+and switches for the chart, the ladder, the flight path marker and the angle of attack row. There is no config screen
 and no config file, so changes mean a recompile and are lost on restart.
 
 ## The readout panel
@@ -35,10 +35,13 @@ and no config file, so changes mean a recompile and are lost on restart.
 | `SPEED XYZ` | Total speed. |
 | `SPEED Y` | Vertical speed; negative descending. |
 | `GLIDE` | Blocks forward per block down. Negative while climbing, where it reads as blocks forward per block *gained*. `--` only when level with speed, or stationary. |
-| `AOA` | Angle of attack: how far the nose sits above the flight path. Positive means looking above where you are going — the normal state in a glide, since holding the look level still descends. |
 | `KE` `PE` `TE` | Kinetic, potential and total energy, as heights. The dimmed figure beside each is its value at the last apex. |
 | `TE RATE` | How fast total energy is changing, averaged over 10 ticks. Says whether the cycle is net gaining, independent of whether you happen to be climbing right now. |
 | `GAIN` | Total energy gained between the last two apexes: what the cycle was worth. |
+
+An `AOA` row — angle of attack, how far the nose sits above the flight path — is implemented
+but **off by default**, since nothing in the pump-cycle work refers to it yet. Set
+`showAngleOfAttack` to bring it back; the panel resizes itself around it.
 
 ## The chart
 
@@ -57,11 +60,12 @@ from the digits:
 | --- | --- | --- |
 | Datum | horizon and ±40° | Longest and brightest; the horizon is longer still |
 | Major | 20° | Solid, medium length, labelled |
-| Minor | 10° | Short, dashed, dimmer |
+| Minor | 10° | Short, dimmer |
 | Fine | 2° | Faint stubs, only near where you are looking, fading out with distance from it |
 
-Strength runs strictly downhill from datum to fine, so the tiers separate at a glance. Marks
-also fade out as they approach the top and bottom of the ladder rather than blinking off.
+Every tier is solid. Length and strength run downhill together across the four, which is
+enough to separate them at a glance without a dash pattern repeating what they already say.
+Marks fade out as they approach the top and bottom of the ladder rather than blinking off.
 
 Labels are in raw Minecraft pitch, matching the `PITCH` row: **negative is above the horizon**.
 Nothing else marks which side of the horizon a rung is on — the sky and the ground already do.

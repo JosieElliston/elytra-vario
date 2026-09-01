@@ -10,6 +10,13 @@ public final class VarioConfig {
 	public static boolean showLadder = true;
 	public static boolean showFlightPath = true;
 
+	/**
+	 * The angle of attack readout, off by default. It is a real quantity and the code for it
+	 * is kept, but nothing in the pump-cycle research refers to it yet, so on the panel it is
+	 * a row of clutter competing with rows that are being read.
+	 */
+	public static boolean showAngleOfAttack = false;
+
 	/** Top-left corner of the HUD, in scaled GUI pixels. */
 	public static int originX = 4;
 	public static int originY = 4;

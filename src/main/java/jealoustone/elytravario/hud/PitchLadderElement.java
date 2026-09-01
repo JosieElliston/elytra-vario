@@ -30,10 +30,11 @@ import org.joml.Vector3fc;
  * <h2>Reading it without looking at it</h2>
  *
  * <p>The rungs are tiered by length and weight so that an angle can be recovered from the
- * pattern alone, in peripheral vision, without resolving any digits: stubs every two
- * degrees near the centre, short dashed rungs every ten, solid rungs every twenty, and the
- * datum lines — the horizon and plus or minus forty — longest and brightest. Labels are
- * deliberately faint, and only the twenties carry one.
+ * pattern alone, in peripheral vision, without resolving any digits: faint stubs every two
+ * degrees near the centre, short rungs every ten, longer ones every twenty, and the datum
+ * lines — the horizon and plus or minus forty — longest and brightest. Every tier is solid;
+ * length and strength say everything a dash pattern would have. Labels are deliberately
+ * faint, and only the twenties carry one.
  *
  * <p>Nothing distinguishes above the horizon from below it, because the sky, the ground and
  * the labelled datum line already do.
@@ -72,10 +73,6 @@ import org.joml.Vector3fc;
  * cursor also measures.
  */
 public final class PitchLadderElement implements HudElement {
-	/** Dash geometry for the ten-degree rungs, in pixels. */
-	private static final int DASH = 4;
-	private static final int DASH_GAP = 3;
-
 	/** Gap between a rung's outer end and its label. */
 	private static final int LABEL_GAP = 4;
 
@@ -188,7 +185,7 @@ public final class PitchLadderElement implements HudElement {
 			pose.pushMatrix();
 			int y = subpixel(pose, centerY - offset);
 
-			rung(graphics, centerX, y, inner, outer, fade(color, edge), !prime && !major);
+			rung(graphics, centerX, y, inner, outer, fade(color, edge));
 
 			// Only the twenties are labelled. The rungs between them are unambiguous from
 			// their own tier, and a digit on every one is the clutter this ladder avoids.
@@ -247,7 +244,7 @@ public final class PitchLadderElement implements HudElement {
 
 			rung(graphics, centerX, y, VarioConfig.ladderCenterGap,
 					VarioConfig.ladderCenterGap + VarioConfig.ladderFineLength,
-					fade(VarioConfig.ladderFineColor, near * edge), false);
+					fade(VarioConfig.ladderFineColor, near * edge));
 
 			pose.popMatrix();
 		}
@@ -309,23 +306,15 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * One rung, drawn as a mirrored pair so the two halves stay in step: distances are
-	 * measured out from the centre and applied to both sides, which keeps the dashes lined
-	 * up across the gap instead of drifting apart.
+	 * One rung, drawn as a mirrored pair about the centre of the screen.
+	 *
+	 * <p>Every tier is solid. Length and strength already separate them, and a dash pattern
+	 * on top of that was a third channel saying what the first two had said.
 	 */
 	private void rung(GuiGraphicsExtractor graphics, int centerX, int y, int inner, int outer,
-			int color, boolean dashed) {
-		if (!dashed) {
-			graphics.fill(centerX + inner, y, centerX + outer, y + 1, color);
-			graphics.fill(centerX - outer, y, centerX - inner, y + 1, color);
-			return;
-		}
-
-		for (int d = inner; d < outer; d += DASH + DASH_GAP) {
-			int end = Math.min(d + DASH, outer);
-			graphics.fill(centerX + d, y, centerX + end, y + 1, color);
-			graphics.fill(centerX - end, y, centerX - d, y + 1, color);
-		}
+			int color) {
+		graphics.fill(centerX + inner, y, centerX + outer, y + 1, color);
+		graphics.fill(centerX - outer, y, centerX - inner, y + 1, color);
 	}
 
 	/**

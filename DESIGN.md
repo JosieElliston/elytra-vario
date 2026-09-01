@@ -51,11 +51,14 @@ rather than by being studied.
 
 **Tiers do the reading, not the digits.** Length and weight both carry the tier, so an angle
 can be recovered from the pattern alone in peripheral vision: faint stubs every two degrees
-near the centre, short dashed rungs every ten, solid rungs every twenty, and the datum lines —
-the horizon and ±40 — longest and brightest. Strength runs strictly downhill across the four,
-and the two weakest share an RGB so that nothing but alpha separates them. Only the twenties
-are labelled, and faintly. A digit on every rung is the clutter this arrangement exists to
-avoid.
+near the centre, short rungs every ten, longer ones every twenty, and the datum lines — the
+horizon and ±40 — longest and brightest. Strength runs strictly downhill across the four, and
+the two weakest share an RGB so that nothing but alpha separates them. Only the twenties are
+labelled, and faintly. A digit on every rung is the clutter this arrangement exists to avoid.
+
+Every tier is solid. The ten-degree rungs were dashed at first, which made a third channel say
+what length and strength had already said — and at that size the dashes mostly read as noise
+rather than as a pattern.
 
 **Nothing marks which side of the horizon a rung is on.** The sky, the ground and the labelled
 datum line already say which way up the world is, so spending dash pattern or colour on it
@@ -117,6 +120,14 @@ marker visibly jitters in a way the numeric readouts do not.
 ladder climb the screen in visible steps, worst on the labels, whose glyphs jump as a block.
 Each mark is therefore drawn on a pose translated by its own fractional part, which pushes the
 quantisation down to the physical pixel the GUI scale is drawn at.
+
+## Readouts that are off by default
+
+**Angle of attack.** Real, correct, and unused: the pump-cycle research does not refer to it,
+so on a panel that is watched continuously it was a row competing with rows being read. Kept
+behind `showAngleOfAttack` rather than deleted, because whether it matters is an open question
+rather than a settled one. The flight path marker still shows the same quantity spatially, as
+the vertical gap between it and the crosshair.
 
 ## Minecraft 26.2 notes
 
