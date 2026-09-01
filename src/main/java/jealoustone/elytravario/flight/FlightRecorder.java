@@ -54,6 +54,7 @@ public final class FlightRecorder {
 				position.x, position.y, position.z,
 				velocity.x, velocity.y, velocity.z,
 				player.getXRot(),
+				player.getYRot(),
 				player.getGravity(),
 				player.isFallFlying()));
 	}

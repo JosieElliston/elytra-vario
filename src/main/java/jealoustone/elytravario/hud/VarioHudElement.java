@@ -41,7 +41,6 @@ public final class VarioHudElement implements HudElement {
 	private static final int GRID = 0x26FFFFFF;
 	private static final int AXIS = 0x66FFFFFF;
 	private static final int TRAIL = 0x33CCAA;
-	private static final int CURRENT = 0xFFFFD633;
 
 	private static final int LINE = 10;
 	private static final int PAD = 4;
@@ -153,12 +152,19 @@ public final class VarioHudElement implements HudElement {
 			graphics.fill(px, py, px + 1, py + 1, (alpha << 24) | TRAIL);
 		}
 
-		int px = chartX(x, sample.horizontalSpeed());
+		// Both cursors share a row, since vertical speed is the same either way; only the
+		// horizontal coordinate differs. Whichever is drawn second wins where they overlap,
+		// which is most of the time in straight flight, when the two speeds are equal.
 		int py = chartY(y, sample.vy());
-		graphics.fill(px - 2, py, px + 3, py + 1, CURRENT);
-		graphics.fill(px, py - 2, px + 1, py + 3, CURRENT);
+		drawCursor(graphics, chartX(x, sample.forwardSpeed()), py, VarioConfig.cursorForwardColor);
+		drawCursor(graphics, chartX(x, sample.horizontalSpeed()), py, VarioConfig.cursorXzColor);
 
 		drawAxisLabels(graphics, font, x, y, width, height);
+	}
+
+	private void drawCursor(GuiGraphicsExtractor graphics, int px, int py, int color) {
+		graphics.fill(px - 2, py, px + 3, py + 1, color);
+		graphics.fill(px, py - 2, px + 1, py + 3, color);
 	}
 
 	/** Axis extremes in blocks/second, at half scale so they do not swamp the chart. */

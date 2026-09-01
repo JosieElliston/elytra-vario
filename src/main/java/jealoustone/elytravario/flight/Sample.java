@@ -1,5 +1,7 @@
 package jealoustone.elytravario.flight;
 
+import net.minecraft.util.Mth;
+
 /**
  * An immutable snapshot of the player's flight state, captured once per client tick.
  *
@@ -20,11 +22,30 @@ public record Sample(
 		double vy,
 		double vz,
 		float pitch,
+		float yaw,
 		double gravity,
 		boolean gliding
 ) {
 	public double horizontalSpeed() {
 		return Math.sqrt(vx * vx + vz * vz);
+	}
+
+	/**
+	 * Horizontal speed projected onto the horizontal look direction: how much of the
+	 * movement is going where the player is pointing.
+	 *
+	 * <p>Never exceeds {@link #horizontalSpeed()}, and equals it exactly when velocity and
+	 * look agree. The shortfall between the two is sideslip, so the pair together says how
+	 * much speed a turn is carrying sideways. Goes negative when moving backwards relative
+	 * to the look direction.
+	 *
+	 * <p>The horizontal look direction is {@code (-sin(yaw), cos(yaw))}: vanilla's look
+	 * vector is built from {@code -yaw}, and its {@code cos(pitch)} factor scales both
+	 * horizontal components equally, so it drops out once the direction is normalised.
+	 */
+	public double forwardSpeed() {
+		float yawRadians = yaw * ((float) Math.PI / 180.0f);
+		return vx * -Mth.sin(yawRadians) + vz * Mth.cos(yawRadians);
 	}
 
 	public double speedSqr() {

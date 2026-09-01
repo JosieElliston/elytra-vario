@@ -38,6 +38,14 @@ public final class VarioConfig {
 	public static double chartMinVy = -1.5;
 	public static double chartMaxVy = 1.5;
 
+	/**
+	 * Cursor colours, as ARGB. The two cursors sit on the same row of the chart and differ
+	 * only in their horizontal position, so the gap between them is the sideslip. Set either
+	 * to a grey such as {@code 0xFF6A7076} to demote it to a secondary reference.
+	 */
+	public static int cursorXzColor = 0xFFFFD633;
+	public static int cursorForwardColor = 0xFF55CCFF;
+
 	private VarioConfig() {
 	}
 }
