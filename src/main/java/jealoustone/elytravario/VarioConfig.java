@@ -7,6 +7,8 @@ public final class VarioConfig {
 	public static boolean enabled = true;
 	public static boolean onlyWhileGliding = false;
 	public static boolean showChart = true;
+	public static boolean showLadder = true;
+	public static boolean showFlightPath = true;
 
 	/** Top-left corner of the HUD, in scaled GUI pixels. */
 	public static int originX = 4;
@@ -50,6 +52,59 @@ public final class VarioConfig {
 	 */
 	public static int cursorXzColor = 0xFFFFD633;
 	public static int cursorForwardColor = 0xFF55CCFF;
+
+	/**
+	 * Pitch ladder spacing, in degrees. The rungs are placed by projection, so their spacing
+	 * on screen is a tangent and not uniform; this is the angular step, not a pixel pitch.
+	 */
+	public static int ladderStepDegrees = 5;
+
+	/**
+	 * How far above and below the centre of the view the ladder reaches, as a fraction of
+	 * half the view height. Rungs projecting outside this band are dropped rather than
+	 * clipped, so the ladder stays a band across the middle instead of filling the screen.
+	 *
+	 * <p>A fraction rather than a pixel count because the band is an <em>angle</em>: the
+	 * projection scale is itself proportional to the view height, so a fixed pixel band would
+	 * cover a different slice of sky at every GUI scale and resolution. At the default field
+	 * of view this reaches a little over 27 degrees either side of where you are looking.
+	 *
+	 * <p>The rung lengths below are pixel counts for the opposite reason — they are sized
+	 * against the labels, which are text and do not scale with the view.
+	 */
+	public static double ladderBandFraction = 0.75;
+
+	/**
+	 * Rung geometry, in scaled GUI pixels, measured from the centre of the screen. Each rung
+	 * is drawn twice, mirrored about the centre; {@code ladderCenterGap} is the half-width of
+	 * the hole left in the middle so the ladder does not cross the crosshair.
+	 */
+	public static int ladderCenterGap = 22;
+	public static int ladderRungLength = 30;
+
+	/** The horizon is drawn longer than the other rungs so it reads at a glance. */
+	public static int ladderHorizonLength = 46;
+
+	/**
+	 * Ticks to average velocity over for the flight path marker. One tick of velocity is
+	 * noisy enough to make the marker visibly jitter.
+	 */
+	public static int flightPathWindow = 4;
+
+	/**
+	 * Ladder colours, as ARGB. The rungs are deliberately translucent: the ladder sits over
+	 * the world rather than over a panel, and at full opacity it obscures more than it says.
+	 */
+	public static int horizonColor = 0xD8E8EAED;
+	public static int rungColor = 0xA8C2C8CE;
+	public static int ladderLabelColor = 0xFFB8BEC4;
+
+	/**
+	 * Colour of the flight path marker when it is pegged at the edge of the band, meaning
+	 * the true flight path is off the ladder and the marker's position is a floor or ceiling
+	 * rather than a reading.
+	 */
+	public static int flightPathPeggedColor = 0xFF6A7076;
 
 	private VarioConfig() {
 	}

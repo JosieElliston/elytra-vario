@@ -81,8 +81,8 @@ public final class VarioHudElement implements HudElement {
 	/** Returns the y coordinate just past the bottom of the panel. */
 	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
 		int width = VarioConfig.panelWidth;
-		// Ten readouts plus the separator line between the speed and energy groups.
-		int height = 11 * LINE + PAD * 2;
+		// Eleven readouts plus the separator line between the speed and energy groups.
+		int height = 12 * LINE + PAD * 2;
 
 		graphics.fill(x, y, x + width, y + height, PANEL_BG);
 		graphics.outline(x, y, width, height, BORDER);
@@ -98,6 +98,12 @@ public final class VarioHudElement implements HudElement {
 		row = row(graphics, font, x, row, "SPEED Y", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
 		row = row(graphics, font, x, row, "GLIDE",
 				Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
+
+		// How far the nose sits above the flight path, which is the vertical gap between the
+		// crosshair and the pitch ladder's flight path marker, read as a number.
+		double aoa = sample.angleOfAttack();
+		row = row(graphics, font, x, row, "AOA",
+				Double.isFinite(aoa) ? fmt("%+.1f\u00b0", aoa) : "--", VALUE);
 
 		graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);
 		row += LINE;

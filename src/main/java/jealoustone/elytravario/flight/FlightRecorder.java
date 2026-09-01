@@ -123,6 +123,34 @@ public final class FlightRecorder {
 	}
 
 	/**
+	 * Mean velocity over the last {@code window} ticks, in blocks/tick.
+	 *
+	 * <p>Taken as the straight-line displacement over the window rather than as a mean of
+	 * the per-tick velocities, which is the same quantity but does not accumulate rounding
+	 * over the buffer.
+	 *
+	 * <p>The flight path marker needs this rather than {@link #latest()}: a single tick of
+	 * velocity is noisy enough that an un-smoothed marker jitters by several degrees, and
+	 * unlike the numeric readouts a moving symbol makes that obvious.
+	 */
+	public Vec3 smoothedVelocity(int window) {
+		Sample now = latest();
+
+		if (now == null) {
+			return Vec3.ZERO;
+		}
+
+		Sample then = ago(window);
+
+		if (then == null) {
+			return new Vec3(now.vx(), now.vy(), now.vz());
+		}
+
+		return new Vec3(now.x() - then.x(), now.y() - then.y(), now.z() - then.z())
+				.scale(1.0 / window);
+	}
+
+	/**
 	 * Total-energy variometer reading, in blocks/second: how fast energy height is changing,
 	 * averaged over {@code window} ticks. This is the reading that says whether a pump cycle
 	 * is net gaining or losing, independent of whether you happen to be climbing right now.
