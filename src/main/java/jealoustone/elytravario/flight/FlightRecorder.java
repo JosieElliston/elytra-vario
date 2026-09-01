@@ -17,15 +17,42 @@ public final class FlightRecorder {
 	/** Ten seconds at 20 ticks/second. */
 	public static final int CAPACITY = 200;
 
+	/**
+	 * Movement in a single tick beyond which we assume a teleport rather than flight. Elytra
+	 * speeds stay well under two blocks/tick even with rockets, so this only trips on
+	 * discontinuities, which would otherwise register as an enormous bogus energy change.
+	 */
+	private static final double DISCONTINUITY_SQR = 100.0;
+
 	private final Sample[] buffer = new Sample[CAPACITY];
 	private int head = -1;
 	private int size;
 
 	public void tick(LocalPlayer player) {
-		Vec3 v = player.getDeltaMovement();
+		Vec3 position = player.position();
+		Sample previous = latest();
+
+		// Velocity is measured as the change in position over the tick, so that it reflects
+		// movement that actually happened. getDeltaMovement is the velocity the player is
+		// *trying* to have, which gravity keeps pointing downwards even while stood on the
+		// ground, since collision cancels it after the fact rather than by changing it.
+		// The two are identical in free flight and differ only on contact.
+		Vec3 velocity;
+
+		if (previous == null) {
+			velocity = player.getDeltaMovement();
+		} else {
+			velocity = position.subtract(previous.x(), previous.y(), previous.z());
+
+			if (velocity.lengthSqr() > DISCONTINUITY_SQR) {
+				clear();
+				velocity = player.getDeltaMovement();
+			}
+		}
+
 		push(new Sample(
-				v.x, v.y, v.z,
-				player.getY(),
+				position.x, position.y, position.z,
+				velocity.x, velocity.y, velocity.z,
 				player.getXRot(),
 				player.getGravity(),
 				player.isFallFlying()));

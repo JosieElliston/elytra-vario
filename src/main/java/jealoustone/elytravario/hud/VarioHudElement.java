@@ -96,7 +96,7 @@ public final class VarioHudElement implements HudElement {
 		row = row(graphics, font, x, row, "SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
 		row = row(graphics, font, x, row, "SPEED XYZ", speed(sample.speed()), VALUE);
 		// Coloured on the displayed blocks/second value, so the deadband matches TE RATE's.
-		row = row(graphics, font, x, row, "VERT SPD", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
+		row = row(graphics, font, x, row, "SPEED Y", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
 		row = row(graphics, font, x, row, "GLIDE",
 				Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
 
