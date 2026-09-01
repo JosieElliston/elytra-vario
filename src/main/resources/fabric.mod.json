@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "elytra-vario",
+	"version": "${version}",
+	"name": "Elytra Vario",
+	"description": "A glide-computer HUD for elytra flight: pitch, speed, energy, and a velocity-space chart.",
+	"authors": [
+		"jealoustone"
+	],
+	"contact": {},
+	"license": "CC0-1.0",
+	"icon": "assets/elytra-vario/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"jealoustone.elytravario.ElytraVarioClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "elytra-vario.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

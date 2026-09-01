@@ -1,0 +1,87 @@
+package jealoustone.elytravario.flight;
+
+import java.util.Arrays;
+
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.phys.Vec3;
+
+/**
+ * Fixed-size ring buffer of per-tick {@link Sample}s.
+ *
+ * <p>The interesting readouts are rates of change — the variometer above all — and a
+ * derivative cannot be recovered from a single render frame. Frames also run at the
+ * monitor's refresh rate while physics runs at 20 Hz, so sampling on the tick and
+ * differencing over a window is both correct and naturally smoothing.
+ */
+public final class FlightRecorder {
+	/** Ten seconds at 20 ticks/second. */
+	public static final int CAPACITY = 200;
+
+	private final Sample[] buffer = new Sample[CAPACITY];
+	private int head = -1;
+	private int size;
+
+	public void tick(LocalPlayer player) {
+		Vec3 v = player.getDeltaMovement();
+		push(new Sample(
+				v.x, v.y, v.z,
+				player.getY(),
+				player.getXRot(),
+				player.getGravity(),
+				player.isFallFlying()));
+	}
+
+	private void push(Sample sample) {
+		head = (head + 1) % CAPACITY;
+		buffer[head] = sample;
+
+		if (size < CAPACITY) {
+			size++;
+		}
+	}
+
+	/**
+	 * Drops all history. Called when the player goes away, since altitude is measured from
+	 * an arbitrary origin and a teleport or dimension change would otherwise show up as an
+	 * enormous spurious energy change.
+	 */
+	public void clear() {
+		head = -1;
+		size = 0;
+		Arrays.fill(buffer, null);
+	}
+
+	public int size() {
+		return size;
+	}
+
+	/** The newest sample, or null if nothing has been recorded yet. */
+	public Sample latest() {
+		return size == 0 ? null : buffer[head];
+	}
+
+	/** The sample {@code ticksAgo} ticks before the newest, or null if history is too short. */
+	public Sample ago(int ticksAgo) {
+		if (ticksAgo < 0 || ticksAgo >= size) {
+			return null;
+		}
+
+		return buffer[Math.floorMod(head - ticksAgo, CAPACITY)];
+	}
+
+	/**
+	 * Total-energy variometer reading, in blocks/second: how fast energy height is changing,
+	 * averaged over {@code window} ticks. This is the reading that says whether a pump cycle
+	 * is net gaining or losing, independent of whether you happen to be climbing right now.
+	 */
+	public double energyRate(int window) {
+		Sample now = latest();
+		Sample then = ago(window);
+
+		if (now == null || then == null) {
+			return 0.0;
+		}
+
+		return (now.totalHeight() - then.totalHeight()) / window * 20.0;
+	}
+}
