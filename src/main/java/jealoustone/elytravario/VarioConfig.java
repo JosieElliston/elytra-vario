@@ -12,8 +12,11 @@ public final class VarioConfig {
 	public static int originX = 4;
 	public static int originY = 4;
 
-	/** Width of the readout panel. Values are right-aligned against this. */
-	public static int panelWidth = 118;
+	/**
+	 * Width of the readout panel. Values are right-aligned against this, so it has to be
+	 * wide enough for the longest one ("0.000 b/t  0.0 b/s") plus its label.
+	 */
+	public static int panelWidth = 158;
 
 	/** Ticks to average the variometer over. Raw per-tick deltas are far too noisy to read. */
 	public static int varioWindow = 10;

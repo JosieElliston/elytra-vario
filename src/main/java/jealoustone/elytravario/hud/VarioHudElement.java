@@ -76,7 +76,8 @@ public final class VarioHudElement implements HudElement {
 	/** Returns the y coordinate just past the bottom of the panel. */
 	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
 		int width = VarioConfig.panelWidth;
-		int rows = 9;
+		// Nine readouts plus the separator line between the speed and energy groups.
+		int rows = 10;
 		int height = rows * LINE + PAD * 2;
 
 		graphics.fill(x, y, x + width, y + height, PANEL_BG);
@@ -121,14 +122,16 @@ public final class VarioHudElement implements HudElement {
 		graphics.outline(x, y, size, size, BORDER);
 
 		// Gridlines every half block/tick, with the zero axes picked out more brightly.
+		// Drawn with fill rather than the line helpers, whose bounds are inclusive on one
+		// end and exclusive on the other and so leave the grid a pixel short.
 		for (double v = Math.ceil(VarioConfig.chartMinVxz * 2.0) / 2.0; v <= VarioConfig.chartMaxVxz; v += 0.5) {
 			int px = chartX(x, size, v);
-			graphics.verticalLine(px, y, y + size - 1, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
+			graphics.fill(px, y, px + 1, y + size, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
 		}
 
 		for (double v = Math.ceil(VarioConfig.chartMinVy * 2.0) / 2.0; v <= VarioConfig.chartMaxVy; v += 0.5) {
 			int py = chartY(y, size, v);
-			graphics.horizontalLine(x, x + size - 1, py, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
+			graphics.fill(x, py, x + size, py + 1, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
 		}
 
 		// Trail, oldest first so the newest samples paint over the older ones.
