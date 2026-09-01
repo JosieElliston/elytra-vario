@@ -45,9 +45,6 @@ public final class VarioHudElement implements HudElement {
 	private static final int LINE = 10;
 	private static final int PAD = 4;
 
-	/** How long the peak-fed readouts blank out for when the apex latches: 0.1s, in ticks. */
-	private static final double BLANK_TICKS = 2.0;
-
 	private final FlightRecorder recorder;
 
 	public VarioHudElement(FlightRecorder recorder) {
@@ -74,12 +71,7 @@ public final class VarioHudElement implements HudElement {
 			return;
 		}
 
-		// Values fed from the apex blink out briefly as it latches, so that the moment they
-		// change is noticeable without the readout itself becoming hard to look at.
-		boolean blanked = recorder.ticksSinceApex()
-				+ deltaTracker.getGameTimeDeltaPartialTick(false) < BLANK_TICKS;
-
-		int bottom = drawPanel(graphics, minecraft.font, sample, VarioConfig.originX, VarioConfig.originY, blanked);
+		int bottom = drawPanel(graphics, minecraft.font, sample, VarioConfig.originX, VarioConfig.originY);
 
 		if (VarioConfig.showChart) {
 			drawChart(graphics, minecraft.font, sample, VarioConfig.originX, bottom + PAD);
@@ -87,7 +79,7 @@ public final class VarioHudElement implements HudElement {
 	}
 
 	/** Returns the y coordinate just past the bottom of the panel. */
-	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y, boolean blanked) {
+	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
 		int width = VarioConfig.panelWidth;
 		// Ten readouts plus the separator line between the speed and energy groups.
 		int height = 11 * LINE + PAD * 2;
@@ -110,14 +102,14 @@ public final class VarioHudElement implements HudElement {
 		graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);
 		row += LINE;
 
-		row = peakRow(graphics, font, x, row, "KE", sample.kineticHeight(), recorder.peakKineticHeight(), blanked);
-		row = peakRow(graphics, font, x, row, "PE", sample.potentialHeight(), recorder.peakPotentialHeight(), blanked);
-		row = peakRow(graphics, font, x, row, "TE", sample.totalHeight(), recorder.peakTotalHeight(), blanked);
+		row = peakRow(graphics, font, x, row, "KE", sample.kineticHeight(), recorder.peakKineticHeight());
+		row = peakRow(graphics, font, x, row, "PE", sample.potentialHeight(), recorder.peakPotentialHeight());
+		row = peakRow(graphics, font, x, row, "TE", sample.totalHeight(), recorder.peakTotalHeight());
 		row = row(graphics, font, x, row, "TE RATE", fmt("%+.2f b/s", energyRate), rateColor(energyRate));
 
 		double gain = recorder.lastCycleGain();
-		String gainText = Double.isFinite(gain) ? fmt("%+.1f b", gain) : "--";
-		row = row(graphics, font, x, row, "GAIN", blanked ? "" : gainText, rateColor(gain));
+		row = row(graphics, font, x, row, "GAIN",
+				Double.isFinite(gain) ? fmt("%+.1f b", gain) : "--", rateColor(gain));
 
 		return y + height;
 	}
@@ -176,19 +168,15 @@ public final class VarioHudElement implements HudElement {
 
 	/** A reading with the value held from the last apex dimmed alongside it. */
 	private int peakRow(GuiGraphicsExtractor graphics, Font font, int x, int y, String label,
-			double current, double peak, boolean blanked) {
+			double current, double peak) {
 		graphics.text(font, label, x + PAD, y, LABEL, true);
 
 		String peakText = Double.isFinite(peak) ? fmt("(%.1f)", peak) : "";
 		String currentText = fmt("%.1f b", current);
 		int right = x + VarioConfig.panelWidth - PAD;
-		// Width comes from the text even while it is hidden, so the current value beside it
-		// keeps its place rather than sliding across during the blink.
 		int peakWidth = font.width(peakText);
 
-		if (!blanked) {
-			graphics.text(font, peakText, right - peakWidth, y, MUTED, true);
-		}
+		graphics.text(font, peakText, right - peakWidth, y, MUTED, true);
 		graphics.text(font, currentText, right - peakWidth - PAD - font.width(currentText), y, VALUE, true);
 
 		return y + LINE;

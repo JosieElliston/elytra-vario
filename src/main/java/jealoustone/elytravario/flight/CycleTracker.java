@@ -76,10 +76,6 @@ public final class CycleTracker {
 		ticksSinceApex = 0;
 	}
 
-	/** Ticks since the apex last latched, or {@link Integer#MAX_VALUE} if it never has. */
-	public int ticksSinceApex() {
-		return apex == null ? Integer.MAX_VALUE : ticksSinceApex;
-	}
 
 	/**
 	 * The apex of the last completed cycle, or the best seen so far when no apex has been

@@ -82,10 +82,6 @@ public final class FlightRecorder {
 		return cycles.lastCycleGain();
 	}
 
-	/** Ticks since the apex last latched, for the readouts to flash on. */
-	public int ticksSinceApex() {
-		return cycles.ticksSinceApex();
-	}
 
 	private void push(Sample sample) {
 		head = (head + 1) % CAPACITY;
