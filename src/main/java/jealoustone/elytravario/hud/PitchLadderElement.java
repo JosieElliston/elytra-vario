@@ -24,7 +24,7 @@ import org.joml.Vector3fc;
  *
  * <p>Unlike the readout panel this is a <em>conformal</em> instrument: every mark is placed
  * by projecting a direction through the same camera the world was drawn with, so a rung
- * labelled {@code -20} lies exactly along the ground that is twenty degrees above the
+ * labeled {@code -20} lies exactly along the ground that is twenty degrees above the
  * horizon. The ladder and the terrain move together, which is what makes it readable at a
  * glance rather than by being studied.
  *
@@ -32,19 +32,19 @@ import org.joml.Vector3fc;
  *
  * <p>The rungs are tiered by length and weight so that an angle can be recovered from the
  * pattern alone, in peripheral vision, without resolving any digits: faint stubs every two
- * degrees near the centre, short rungs every ten, longer ones every twenty, and the datum
+ * degrees near the center, short rungs every ten, longer ones every twenty, and the datum
  * lines — the horizon and plus or minus forty — longest and brightest. Every tier is solid;
  * length and strength say everything a dash pattern would have. Labels are deliberately
  * faint, and only the twenties carry one.
  *
  * <p>Nothing distinguishes above the horizon from below it, because the sky, the ground and
- * the labelled datum line already do.
+ * the labeled datum line already do.
  *
  * <h2>The one mark that is not a scale</h2>
  *
  * <p>The rungs say where you are pointing. The optimal pitch bug says where you should be,
  * and it is the only advisory thing the ladder carries, so it is the only thing on it that
- * is not grey. It rides in the centre gap, the one radius no rung or label ever reaches,
+ * is not gray. It rides in the center gap, the one radius no rung or label ever reaches,
  * which is what lets it be added to a ladder that was deliberately decluttered without
  * taking anything back.
  *
@@ -56,9 +56,9 @@ import org.joml.Vector3fc;
  * <p>Minecraft's perspective matrix is built from a vertical field of view and the viewport
  * height, so the pixel scale is the same on both screen axes and no aspect ratio is needed:
  * a direction {@code t} units of tangent off the camera axis lands {@code t * scale} pixels
- * away from the centre, where {@code scale = halfHeight / tan(fov / 2)}. The GUI's
+ * away from the center, where {@code scale = halfHeight / tan(fov / 2)}. The GUI's
  * orthographic projection covers the whole framebuffer, so the half-height may be taken in
- * scaled GUI pixels and the centre of the GUI is the centre of the view.
+ * scaled GUI pixels and the center of the GUI is the center of the view.
  *
  * <p>The rung case reduces to vanilla's own {@code GameRenderer.projectHorizonToScreen},
  * which is {@code tan(cameraPitch) / tan(fov / 2)} — the same expression with the rung pitch
@@ -74,9 +74,9 @@ import org.joml.Vector3fc;
  *
  * <p>A rung is the set of directions at one pitch, which is a circle on the view sphere, and
  * a circle projects to a conic — so a rung is only truly straight where it crosses the
- * centre of the screen. Drawing straight horizontal rungs symmetric about the centre is
+ * center of the screen. Drawing straight horizontal rungs symmetric about the center is
  * therefore exact in the middle and bows away from the truth towards the ends, by an amount
- * that grows with how far off-centre the rung reaches. At the default rung length the error
+ * that grows with how far off-center the rung reaches. At the default rung length the error
  * is well under a pixel.
  *
  * <p>The flight path marker has no such problem. It is a single direction rather than a
@@ -88,7 +88,7 @@ public final class PitchLadderElement implements HudElement {
 	/** Gap between a rung's outer end and its label. */
 	private static final int LABEL_GAP = 4;
 
-	/** Half the font's line height, to centre a label on the rung it belongs to. */
+	/** Half the font's line height, to center a label on the rung it belongs to. */
 	private static final int LABEL_RISE = 4;
 
 	/**
@@ -181,14 +181,14 @@ public final class PitchLadderElement implements HudElement {
 	 * followed, and dimming it when the margin is large would hide it exactly when there is
 	 * a long way to go.
 	 *
-	 * <p>The wedges live inside the centre gap and point inwards, which is the only radius
+	 * <p>The wedges live inside the center gap and point inwards, which is the only radius
 	 * that never meets a rung or a label; see {@code VarioConfig.ladderBugGap}. Drawn as a
 	 * stack of rows rather than as a polygon, since the HUD's primitives are rectangles.
 	 *
 	 * <p><b>It pegs at the edge of the band rather than leaving.</b> A whole regime of flight
 	 * has its answer off the bottom of the ladder — in a slow descent the best pitch is
 	 * eighty-something degrees nose-down, far below anything the band reaches. Held at the
-	 * limit it takes the flight path marker's pegged grey, which already means the same thing
+	 * limit it takes the flight path marker's pegged gray, which already means the same thing
 	 * there: a direction to go, not a place to be.
 	 *
 	 * <p>The peg is a cheap courtesy rather than a necessity, and the code should not be read
@@ -253,7 +253,7 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * The tiered rungs, labelled in raw Minecraft pitch so that they agree in sign with the
+	 * The tiered rungs, labeled in raw Minecraft pitch so that they agree in sign with the
 	 * panel's {@code PITCH} row, with F3 and with elytrasim: negative is above the horizon.
 	 */
 	private void drawRungs(GuiGraphicsExtractor graphics, Font font, float cameraPitch,
@@ -292,7 +292,7 @@ public final class PitchLadderElement implements HudElement {
 
 			rung(graphics, centerX, y, inner, outer, fade(color, edge));
 
-			// Only the twenties are labelled. The rungs between them are unambiguous from
+			// Only the twenties are labeled. The rungs between them are unambiguous from
 			// their own tier, and a digit on every one is the clutter this ladder avoids.
 			if (major) {
 				String label = Integer.toString(pitch);
@@ -356,7 +356,7 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * Where a mark at {@code pitch} lands relative to the centre of the view, in pixels,
+	 * Where a mark at {@code pitch} lands relative to the center of the view, in pixels,
 	 * positive upwards. {@code NaN} for marks that are edge-on or behind the camera.
 	 */
 	private static double project(float cameraPitch, double pitch, double scale) {
@@ -370,7 +370,7 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * How strongly to draw a mark at {@code offset} pixels above centre: full inside the
+	 * How strongly to draw a mark at {@code offset} pixels above center: full inside the
 	 * band, tapering to nothing at its edge, zero beyond it and for marks the projection
 	 * could not place.
 	 *
@@ -411,7 +411,7 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * One rung, drawn as a mirrored pair about the centre of the screen.
+	 * One rung, drawn as a mirrored pair about the center of the screen.
 	 *
 	 * <p>Every tier is solid. Length and strength already separate them, and a dash pattern
 	 * on top of that was a third channel saying what the first two had said.
@@ -460,7 +460,7 @@ public final class PitchLadderElement implements HudElement {
 		int reach = Math.max(0, centerX - MARKER_MARGIN);
 
 		// Pegged at an edge the marker is a limit rather than a reading, so it is demoted to
-		// grey: still there to say which way the flight path went, no longer claiming where.
+		// gray: still there to say which way the flight path went, no longer claiming where.
 		boolean pegged = Math.abs(offsetX) > reach || offsetY > bandUp || offsetY < -bandDown;
 		int color = pegged ? VarioConfig.flightPathPeggedColor : VarioConfig.cursorForwardColor;
 
@@ -480,7 +480,7 @@ public final class PitchLadderElement implements HudElement {
 		pose.popMatrix();
 	}
 
-	/** Scales a colour's alpha, leaving its RGB alone. */
+	/** Scales a color's alpha, leaving its RGB alone. */
 	private static int fade(int color, double factor) {
 		int alpha = (int) Math.round(((color >>> 24) & 0xFF) * Mth.clamp(factor, 0.0, 1.0));
 		return (alpha << 24) | (color & 0x00FFFFFF);

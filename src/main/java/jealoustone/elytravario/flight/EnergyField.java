@@ -7,7 +7,7 @@ import net.minecraft.world.phys.Vec3;
  * cell, the most total energy one tick could gain from that velocity, over every pitch.
  *
  * <p>This is the same quantity the optimal pitch bug reports, evaluated everywhere instead of
- * only where the player happens to be — elytrasim's velocity-space grid, coloured by the
+ * only where the player happens to be — elytrasim's velocity-space grid, colored by the
  * energy change at the immediate optimal pitch. Where the bug says <em>which way to point
  * now</em>, the field says <em>where in velocity space energy can be made at all</em>, which
  * is the shape a pump cycle has to be flown around. Its most useful feature is the boundary
@@ -49,9 +49,9 @@ import net.minecraft.world.phys.Vec3;
 public final class EnergyField {
 	/**
 	 * Quantisation steps per side. The field is stored as levels rather than as numbers so
-	 * that equal-coloured pixels can be merged into horizontal runs, which is what makes it
+	 * that equal-colored pixels can be merged into horizontal runs, which is what makes it
 	 * affordable to draw: the default domain is twelve thousand cells but only about
-	 * twenty-six hundred runs. Twenty-four steps puts the colour difference between adjacent
+	 * twenty-six hundred runs. Twenty-four steps puts the color difference between adjacent
 	 * levels below what the eye separates at this chroma, so nothing bands.
 	 */
 	public static final int LEVELS = 24;
@@ -165,7 +165,7 @@ public final class EnergyField {
 	 * and it is smooth through zero, so the boundary is a clean seam rather than a step.
 	 *
 	 * <p>Zero and negative zero collapse to the same level on purpose. A cell a thousandth of
-	 * a block from break-even has no meaningful sign, and colouring it as though it did would
+	 * a block from break-even has no meaningful sign, and coloring it as though it did would
 	 * put a hard edge where the data has none.
 	 */
 	private int level(double energyChange) {

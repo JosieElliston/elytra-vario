@@ -42,7 +42,7 @@ import net.minecraft.world.phys.Vec3;
  * horizontal look length is then exactly zero, every conversion and turning term is skipped
  * by its own {@code > 0} guard, and the flight goes ballistic — no wing at all.
  *
- * <p>That is genuine vanilla behaviour, and it is reachable, because pushing the mouse to
+ * <p>That is genuine vanilla behavior, and it is reachable, because pushing the mouse to
  * the stop pins pitch at exactly minus ninety. But it is a knife edge one hundredth of a
  * degree wide, worth about a block per tick to step off, and across a fast descent it ties
  * with a nose-straight-<em>down</em> dive to within a millionth of a block. Searching it
@@ -117,7 +117,7 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 
 	/**
 	 * The most energy one tick could gain from this velocity, over every pitch, as a height
-	 * in blocks. This is what {@link EnergyField} colours a whole grid of, and it is the
+	 * in blocks. This is what {@link EnergyField} colors a whole grid of, and it is the
 	 * unrefined answer: see that class for why a whole degree is close enough there.
 	 */
 	public static double bestGain(Vec3 velocity, float yaw, double gravity) {

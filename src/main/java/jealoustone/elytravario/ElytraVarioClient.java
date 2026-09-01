@@ -60,6 +60,6 @@ public class ElytraVarioClient implements ClientModInitializer {
 				ElytraVario.id("pitch_ladder"),
 				new PitchLadderElement(RECORDER));
 
-		ElytraVario.LOGGER.info("Elytra Vario initialised");
+		ElytraVario.LOGGER.info("Elytra Vario initialized");
 	}
 }

@@ -46,7 +46,7 @@ public final class VarioHudElement implements HudElement {
 	private static final int LINE = 10;
 	private static final int PAD = 4;
 
-	/** The heatmap's ramp, expanded from the three configured colours; see {@link #palette()}. */
+	/** The heatmap's ramp, expanded from the three configured colors; see {@link #palette()}. */
 	private static int[] palette;
 	private static int paletteZero;
 	private static int paletteGain;
@@ -103,7 +103,7 @@ public final class VarioHudElement implements HudElement {
 		row = row(graphics, font, x, row, "PITCH", fmt("%.1f°", sample.pitch()), VALUE);
 		row = row(graphics, font, x, row, "SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
 		row = row(graphics, font, x, row, "SPEED XYZ", speed(sample.speed()), VALUE);
-		// Coloured on the displayed blocks/second value, so the deadband matches TE RATE's.
+		// Colored on the displayed blocks/second value, so the deadband matches TE RATE's.
 		row = row(graphics, font, x, row, "SPEED Y", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
 		row = row(graphics, font, x, row, "GLIDE",
 				Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
@@ -195,7 +195,7 @@ public final class VarioHudElement implements HudElement {
 	 * Fills the chart with the best energy change available at each velocity it can show; see
 	 * {@link EnergyField} for what that means and why it is affordable.
 	 *
-	 * <p>Drawn as horizontal runs of equal colour rather than pixel by pixel, which turns
+	 * <p>Drawn as horizontal runs of equal color rather than pixel by pixel, which turns
 	 * twelve thousand fills a frame into about twenty-six hundred. It is still the most
 	 * expensive thing on the HUD by an order of magnitude, and if it ever costs enough to
 	 * notice the answer is to upload the field as a texture and blit it once, not to draw less
@@ -203,7 +203,7 @@ public final class VarioHudElement implements HudElement {
 	 *
 	 * <p>Everything else on the chart is drawn afterwards, so the grid, the trail and both
 	 * cursors sit over the field rather than under it. The grid is translucent and picks up
-	 * the colour beneath it, which is the point: it is a reference, not a border.
+	 * the color beneath it, which is the point: it is a reference, not a border.
 	 */
 	private void drawEnergyField(GuiGraphicsExtractor graphics, Sample sample, int x, int y,
 			int width, int height) {
@@ -222,11 +222,11 @@ public final class VarioHudElement implements HudElement {
 	}
 
 	/**
-	 * The heatmap's colour for each level, rebuilt only when the configured colours change.
+	 * The heatmap's color for each level, rebuilt only when the configured colors change.
 	 *
 	 * <p>Interpolated in sRGB rather than in linear light. Linear light is the correct way to
 	 * mix two lights, but this is not mixing light: it is laying out a scale, and on a ramp
-	 * from near-black to a saturated colour the linear version spends most of its length near
+	 * from near-black to a saturated color the linear version spends most of its length near
 	 * the dark end and arrives at the mid-tones desaturated. Plain sRGB keeps the hue and
 	 * spaces the steps about as evenly as the eye reads them.
 	 */
@@ -252,7 +252,7 @@ public final class VarioHudElement implements HudElement {
 		return built;
 	}
 
-	/** Channel-wise interpolation between two ARGB colours, alpha included. */
+	/** Channel-wise interpolation between two ARGB colors, alpha included. */
 	private static int mix(int from, int to, float t) {
 		int argb = 0;
 

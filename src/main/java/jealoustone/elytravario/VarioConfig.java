@@ -36,7 +36,7 @@ public final class VarioConfig {
 	public static boolean showFlightPath = false;
 
 	/**
-	 * The optimal pitch bug: a pair of wedges in the ladder's centre gap marking the pitch
+	 * The optimal pitch bug: a pair of wedges in the ladder's center gap marking the pitch
 	 * that would gain the most energy over the next tick.
 	 *
 	 * <p>Only ever drawn while actually gliding, since that is the only state the underlying
@@ -88,8 +88,8 @@ public final class VarioConfig {
 	 *
 	 * <p><b>Opaque, unlike everything else on the HUD.</b> The panels are translucent because
 	 * they are chrome and the world behind them is worth seeing; this is data, and a
-	 * translucent heatmap would make the same energy figure read as one colour over the sky
-	 * and another over the ground. A map whose colours depend on what is behind it is not a
+	 * translucent heatmap would make the same energy figure read as one color over the sky
+	 * and another over the ground. A map whose colors depend on what is behind it is not a
 	 * map.
 	 *
 	 * <p>Cool and receding for loss, warm and advancing for gain, with a near-black at zero.
@@ -98,11 +98,11 @@ public final class VarioConfig {
 	 * every mark stays legible over every part of the field. It is also, deliberately, an
 	 * elytrasim scheme with elytrasim's two problems fixed — the sign flip is a black seam
 	 * instead of two indistinguishable purples, and both arms climb in brightness as well as
-	 * in colour instead of starting saturated and dark.
+	 * in color instead of starting saturated and dark.
 	 *
-	 * <p>For the panel's green-is-rising convention instead, set the gain colour to something
-	 * like {@code 0xFF389654} and the loss colour to {@code 0xFF8C3A30}. That reads well and
-	 * is not the default only because red and green are the one pair a colour-blind eye
+	 * <p>For the panel's green-is-rising convention instead, set the gain color to something
+	 * like {@code 0xFF389654} and the loss color to {@code 0xFF8C3A30}. That reads well and
+	 * is not the default only because red and green are the one pair a color-blind eye
 	 * cannot separate, and because green sits close enough to the trail's teal to blur it.
 	 */
 	public static int chartFieldZeroColor = 0xFF0C0D10;
@@ -120,9 +120,9 @@ public final class VarioConfig {
 	public static double chartFieldScale = 0.6;
 
 	/**
-	 * Cursor colours, as ARGB. The two cursors sit on the same row of the chart and differ
+	 * Cursor colors, as ARGB. The two cursors sit on the same row of the chart and differ
 	 * only in their horizontal position, so the gap between them is the sideslip. Set either
-	 * to a grey such as {@code 0xFF6A7076} to demote it to a secondary reference.
+	 * to a gray such as {@code 0xFF6A7076} to demote it to a secondary reference.
 	 */
 	public static int cursorXzColor = 0xFFFFD633;
 	public static int cursorForwardColor = 0xFF55CCFF;
@@ -142,10 +142,10 @@ public final class VarioConfig {
 	public static double ladderFineRangeDegrees = 12.0;
 
 	/**
-	 * How far above and below the centre of the view the ladder reaches, as a fraction of
+	 * How far above and below the center of the view the ladder reaches, as a fraction of
 	 * half the view height. One is exactly the screen edge.
 	 *
-	 * <p>Asymmetric on purpose. Below the centre the hotbar and the rest of the vanilla HUD
+	 * <p>Asymmetric on purpose. Below the center the hotbar and the rest of the vanilla HUD
 	 * want the room, but above it there is nothing, and stopping short there costs real
 	 * range: in a pump cycle the horizon is exactly the mark being aimed at while looking a
 	 * long way down, and it is the first thing a low ceiling clips.
@@ -172,8 +172,8 @@ public final class VarioConfig {
 	public static double ladderFadeFraction = 0.18;
 
 	/**
-	 * Rung geometry, in scaled GUI pixels, measured out from the centre of the screen. Each
-	 * rung is drawn twice, mirrored about the centre; {@code ladderCenterGap} is the
+	 * Rung geometry, in scaled GUI pixels, measured out from the center of the screen. Each
+	 * rung is drawn twice, mirrored about the center; {@code ladderCenterGap} is the
 	 * half-width of the hole left in the middle so the ladder does not cross the crosshair.
 	 *
 	 * <p>Length and weight both carry the tier, so an angle can be read from the pattern
@@ -201,16 +201,16 @@ public final class VarioConfig {
 	public static int flightPathWindow = 4;
 
 	/**
-	 * Ladder colours, as ARGB, ordered by tier. All are deliberately translucent: the ladder
+	 * Ladder colors, as ARGB, ordered by tier. All are deliberately translucent: the ladder
 	 * sits over the world rather than over a panel, and at full opacity it obscures more than
-	 * it says. The fine ticks' alpha is the value at the centre of the ladder, scaled down to
+	 * it says. The fine ticks' alpha is the value at the center of the ladder, scaled down to
 	 * nothing at the edge of the fine range.
 	 *
 	 * <p>The minor and fine tiers share an RGB, so that nothing but strength separates them
 	 * and the ramp from prime down to fine is monotonic.
 	 *
 	 * <p>Nothing distinguishes above the horizon from below it. The sky, the ground and the
-	 * labelled datum line already say which way up the world is.
+	 * labeled datum line already say which way up the world is.
 	 */
 	public static int ladderPrimeColor = 0xE0E8EAED;
 	public static int ladderMajorColor = 0xB4C6CCD2;
@@ -224,14 +224,14 @@ public final class VarioConfig {
 	public static int ladderLabelColor = 0xA0949AA0;
 
 	/**
-	 * Colour of the flight path marker when it is pegged at the edge of the band, meaning
+	 * Color of the flight path marker when it is pegged at the edge of the band, meaning
 	 * the true flight path is off the ladder and the marker's position is a floor or ceiling
 	 * rather than a reading.
 	 */
 	public static int flightPathPeggedColor = 0xFF6A7076;
 
 	/**
-	 * The optimal pitch bug's geometry, in scaled GUI pixels, and its colour.
+	 * The optimal pitch bug's geometry, in scaled GUI pixels, and its color.
 	 *
 	 * <p>It lives entirely inside {@code ladderCenterGap}, which is the one band of the
 	 * ladder nothing else ever draws in: rungs start at the gap's edge and labels sit beyond
@@ -246,9 +246,9 @@ public final class VarioConfig {
 	 * closes on the marked pitch like a caliper, and frames the crosshair when the pitch
 	 * being flown is already the best one.
 	 *
-	 * <p>Magenta because the ladder is otherwise entirely grey and the chart has already
+	 * <p>Magenta because the ladder is otherwise entirely gray and the chart has already
 	 * spent yellow and cyan — and because elytrasim draws the same quantity in the same
-	 * colour. Alpha matches the datum rungs: it is one small mark and it has to be findable.
+	 * color. Alpha matches the datum rungs: it is one small mark and it has to be findable.
 	 */
 	public static int ladderBugGap = 2;
 	public static int ladderBugLength = 8;

@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Shared constants for the mod. The actual entrypoint is {@link ElytraVarioClient};
- * this mod is client-only and has no server-side behaviour.
+ * this mod is client-only and has no server-side behavior.
  */
 public final class ElytraVario {
 	public static final String MOD_ID = "elytra-vario";

@@ -66,7 +66,7 @@ public final class ElytraPhysics {
 	 * <p>Position is not advanced here. Vanilla adds the returned velocity to the position
 	 * afterwards, and {@link OptimalPitch} accounts for that altitude itself.
 	 *
-	 * <p>Only the free-flight part is modelled: no collision, no block friction, no rocket.
+	 * <p>Only the free-flight part is modeled: no collision, no block friction, no rocket.
 	 * That is all the search needs, since it looks one tick ahead through open air.
 	 *
 	 * @param gravity vanilla passes its <em>effective</em> gravity here, which differs from

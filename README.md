@@ -24,7 +24,7 @@ Needs JDK 25.
 `V` toggles the whole HUD.
 
 Everything else is edited in `VarioConfig`, which is plain static fields with a comment on
-each — panel position and width, chart bounds and scale, ladder spacing, lengths and colours,
+each — panel position and width, chart bounds and scale, ladder spacing, lengths and colors,
 and switches for the chart, the heatmap, the ladder, the optimal pitch bug, the flight path
 marker and the angle of attack row. There is no config screen and no config file, so changes mean a recompile
 and are lost on restart.
@@ -51,18 +51,18 @@ trail is the last 100 ticks of total horizontal speed.
 
 ### The heatmap
 
-Behind all of that, every pixel of the chart is coloured by the most total energy one tick
+Behind all of that, every pixel of the chart is colored by the most total energy one tick
 could gain from the velocity that pixel stands for. It is the optimal pitch bug's number,
 worked out for the whole chart instead of only for where you are.
 
-| Colour | Means |
+| Color | Means |
 | --- | --- |
 | **Magenta** | Energy can be made here. The brighter, the more of it |
 | **Blue** | Energy must be lost here, whatever you do with the nose |
 | **The black seam between them** | Break-even, and the only line on the map worth learning |
 
 Inside the magenta a cycle can pay for itself; outside it nothing can. Watch where the trail
-crosses the seam rather than what colour it happens to be sitting on — the map is terrain, and
+crosses the seam rather than what color it happens to be sitting on — the map is terrain, and
 a good cycle spends time on both sides of it.
 
 The strip left of the origin is horizontal speed *backwards* relative to where you are looking.
@@ -78,13 +78,13 @@ or the chart's bounds change. After that it is free. Turn it off with `showEnerg
 ## The pitch ladder
 
 Drawn over the world and lined up with it, so a rung lies along the ground at the angle it is
-labelled with. Rungs are tiered by length and weight, to be read from the pattern rather than
+labeled with. Rungs are tiered by length and weight, to be read from the pattern rather than
 from the digits:
 
 | Mark | Every | Looks like |
 | --- | --- | --- |
 | Datum | horizon and ±40° | Longest and brightest; the horizon is longer still |
-| Major | 20° | Solid, medium length, labelled |
+| Major | 20° | Solid, medium length, labeled |
 | Minor | 10° | Short, dimmer |
 | Fine | 2° | Faint stubs, only near where you are looking, fading out with distance from it |
 
@@ -99,13 +99,13 @@ Nothing else marks which side of the horizon a rung is on — the sky and the gr
 
 A magenta wedge on each side of the crosshair, marking the pitch that would gain the most
 total energy over the next tick. It is the only advisory mark on the ladder and the only one
-that is not grey. The gap between the crosshair and the bug is the correction; when there is
+that is not gray. The gap between the crosshair and the bug is the correction; when there is
 none, the two wedges close around the crosshair.
 
 Drawn only while actually gliding. When the answer is further from the ladder's reach than the
-band goes it is held at the edge and turns grey, which means *keep going that way*, not *stop
+band goes it is held at the edge and turns gray, which means *keep going that way*, not *stop
 here*. Do not expect much of it there: pitch clamps at ±90, so the mouse finds the stop by
-itself and the grey wedge only names a direction you could have guessed. The bug earns its
+itself and the gray wedge only names a direction you could have guessed. The bug earns its
 place at interior angles, where it is an actual target to fly to.
 
 It is worth knowing what the number is before flying it:
@@ -114,7 +114,7 @@ It is worth knowing what the number is before flying it:
 | --- | --- | --- |
 | Steady glide | Exactly level, and it stays there | Yes — a real cusp, not a rounding |
 | Zoom climb | Tens of degrees nose-up, moving as speed bleeds off | Yes — this is the regime it earns its place in |
-| Slow descent | Near ninety nose-down, usually pegged grey | Yes, but it means *dive*, not *dive to exactly there* |
+| Slow descent | Near ninety nose-down, usually pegged gray | Yes, but it means *dive*, not *dive to exactly there* |
 | The dive that pays for a climb | Whatever loses least right now | **No** — one tick of lookahead is too short a view |
 
 The search is greedy: it tries every pitch, ticks the physics once, and keeps the best. That
@@ -131,7 +131,7 @@ instruments watched continuously they were clutter competing with readings actua
 | Switch | Brings back |
 | --- | --- |
 | `showAngleOfAttack` | An `AOA` row on the panel, which resizes itself around it |
-| `showFlightPath` | The flight path marker: a winged circle on the ladder marking where you are actually going, as against the crosshair's where you are looking. Its vertical gap from the crosshair is angle of attack drawn rather than printed, and its horizontal gap is sideslip. Greys out when pegged at the edge of the ladder |
+| `showFlightPath` | The flight path marker: a winged circle on the ladder marking where you are actually going, as against the crosshair's where you are looking. Its vertical gap from the crosshair is angle of attack drawn rather than printed, and its horizontal gap is sideslip. Grays out when pegged at the edge of the ladder |
 
 Sideslip is still readable without the marker, from the gap between the chart's two cursors.
 

@@ -41,7 +41,7 @@ public record Sample(
 	 *
 	 * <p>The horizontal look direction is {@code (-sin(yaw), cos(yaw))}: vanilla's look
 	 * vector is built from {@code -yaw}, and its {@code cos(pitch)} factor scales both
-	 * horizontal components equally, so it drops out once the direction is normalised.
+	 * horizontal components equally, so it drops out once the direction is normalized.
 	 */
 	public double forwardSpeed() {
 		float yawRadians = yaw * ((float) Math.PI / 180.0f);
