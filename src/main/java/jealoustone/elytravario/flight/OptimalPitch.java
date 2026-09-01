@@ -107,26 +107,44 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 		}
 
 		Vec3 velocity = new Vec3(sample.vx(), sample.vy(), sample.vz());
+		int coarse = sweep(velocity, sample.yaw(), sample.gravity());
+		double coarseGain = gain(velocity, sample.yaw(), sample.gravity(), coarse);
+		float best = refine(sample, velocity, coarse, coarseGain);
 
-		// A whole-degree sweep first, because the curve is not unimodal: the cusp at level
-		// flight and the cliffs at the bounds each make their own local maximum, so a
-		// gradient search started anywhere in particular would find the wrong one.
-		int coarse = 0;
-		double coarseGain = Double.NEGATIVE_INFINITY;
+		return new OptimalPitch(best, gain(velocity, sample.yaw(), sample.gravity(), best),
+				gain(velocity, sample.yaw(), sample.gravity(), sample.pitch()));
+	}
+
+	/**
+	 * The most energy one tick could gain from this velocity, over every pitch, as a height
+	 * in blocks. This is what {@link EnergyField} colours a whole grid of, and it is the
+	 * unrefined answer: see that class for why a whole degree is close enough there.
+	 */
+	public static double bestGain(Vec3 velocity, float yaw, double gravity) {
+		return gain(velocity, yaw, gravity, sweep(velocity, yaw, gravity));
+	}
+
+	/**
+	 * The best whole degree, found by trying all of them.
+	 *
+	 * <p>An exhaustive sweep rather than a gradient walk, because the curve is not unimodal:
+	 * the cusp at level flight and the cliffs at the bounds each make their own local
+	 * maximum, so a search started anywhere in particular would find the wrong one.
+	 */
+	private static int sweep(Vec3 velocity, float yaw, double gravity) {
+		int best = 0;
+		double bestGain = Double.NEGATIVE_INFINITY;
 
 		for (int pitch = -LIMIT; pitch <= LIMIT; pitch++) {
-			double gain = gain(sample, velocity, pitch);
+			double gain = gain(velocity, yaw, gravity, pitch);
 
-			if (gain > coarseGain) {
-				coarseGain = gain;
-				coarse = pitch;
+			if (gain > bestGain) {
+				bestGain = gain;
+				best = pitch;
 			}
 		}
 
-		float best = refine(sample, velocity, coarse, coarseGain);
-
-		return new OptimalPitch(best, gain(sample, velocity, best),
-				gain(sample, velocity, sample.pitch()));
+		return best;
 	}
 
 	/**
@@ -152,8 +170,8 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 
 		double a = high - INVERSE_PHI * (high - low);
 		double b = low + INVERSE_PHI * (high - low);
-		double gainA = gain(sample, velocity, a);
-		double gainB = gain(sample, velocity, b);
+		double gainA = gain(velocity, sample.yaw(), sample.gravity(), a);
+		double gainB = gain(velocity, sample.yaw(), sample.gravity(), b);
 
 		for (int step = 0; step < REFINE_STEPS; step++) {
 			if (gainA < gainB) {
@@ -161,13 +179,13 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 				a = b;
 				gainA = gainB;
 				b = low + INVERSE_PHI * (high - low);
-				gainB = gain(sample, velocity, b);
+				gainB = gain(velocity, sample.yaw(), sample.gravity(), b);
 			} else {
 				high = b;
 				b = a;
 				gainB = gainA;
 				a = high - INVERSE_PHI * (high - low);
-				gainA = gain(sample, velocity, a);
+				gainA = gain(velocity, sample.yaw(), sample.gravity(), a);
 			}
 		}
 
@@ -176,7 +194,7 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 		// Only taken if it really is better. Rounding inside the physics is coarse enough
 		// that on a flat peak the refinement can come out a hair below the whole degree it
 		// started from, and the cue should never be placed somewhere the sweep beat.
-		return gain(sample, velocity, refined) >= coarseGain ? refined : coarse;
+		return gain(velocity, sample.yaw(), sample.gravity(), refined) >= coarseGain ? refined : coarse;
 	}
 
 	/**
@@ -187,10 +205,9 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 	 * position after updating velocity. Leaving the second term out would score a dive and a
 	 * climb alike and make the whole reading meaningless.
 	 */
-	private static double gain(Sample sample, Vec3 velocity, double pitch) {
-		Vec3 next = ElytraPhysics.updateFallFlyingMovement(velocity, (float) pitch,
-				sample.yaw(), sample.gravity());
+	private static double gain(Vec3 velocity, float yaw, double gravity, double pitch) {
+		Vec3 next = ElytraPhysics.updateFallFlyingMovement(velocity, (float) pitch, yaw, gravity);
 
-		return (next.lengthSqr() - velocity.lengthSqr()) / (2.0 * sample.gravity()) + next.y;
+		return (next.lengthSqr() - velocity.lengthSqr()) / (2.0 * gravity) + next.y;
 	}
 }

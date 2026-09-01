@@ -3,9 +3,9 @@
 A client-side glide-computer HUD for elytra flight in Minecraft 26.2 (Fabric).
 
 It reads the player's state and displays speeds, energies, a velocity-space chart and a pitch
-ladder, so that pump cycles can be flown and tuned by instrument rather than by feel. The
-ladder also carries an optimal pitch bug, which is the one reading it works out rather than
-measures.
+ladder, so that pump cycles can be flown and tuned by instrument rather than by feel. Two of
+the readings are worked out rather than measured: an optimal pitch bug on the ladder, and a
+heatmap behind the chart showing where in velocity space energy can be made.
 
 Client-only: it watches the player and draws, and never talks to the server or changes how
 anything flies. It does not need to be installed on the other end.
@@ -25,8 +25,8 @@ Needs JDK 25.
 
 Everything else is edited in `VarioConfig`, which is plain static fields with a comment on
 each — panel position and width, chart bounds and scale, ladder spacing, lengths and colours,
-and switches for the chart, the ladder, the optimal pitch bug, the flight path marker and the
-angle of attack row. There is no config screen and no config file, so changes mean a recompile
+and switches for the chart, the heatmap, the ladder, the optimal pitch bug, the flight path
+marker and the angle of attack row. There is no config screen and no config file, so changes mean a recompile
 and are lost on restart.
 
 ## The readout panel
@@ -48,6 +48,32 @@ Horizontal speed against vertical speed. The **yellow** cursor is total horizont
 **cyan** cursor is horizontal speed projected onto the look direction. They coincide in
 straight flight, and the gap between them is sideslip — the signal for analysing turns. The
 trail is the last 100 ticks of total horizontal speed.
+
+### The heatmap
+
+Behind all of that, every pixel of the chart is coloured by the most total energy one tick
+could gain from the velocity that pixel stands for. It is the optimal pitch bug's number,
+worked out for the whole chart instead of only for where you are.
+
+| Colour | Means |
+| --- | --- |
+| **Magenta** | Energy can be made here. The brighter, the more of it |
+| **Blue** | Energy must be lost here, whatever you do with the nose |
+| **The black seam between them** | Break-even, and the only line on the map worth learning |
+
+Inside the magenta a cycle can pay for itself; outside it nothing can. Watch where the trail
+crosses the seam rather than what colour it happens to be sitting on — the map is terrain, and
+a good cycle spends time on both sides of it.
+
+The strip left of the origin is horizontal speed *backwards* relative to where you are looking.
+It is a real state and the physics has a real answer there, so it is drawn, but you will not
+be in it.
+
+The map assumes all your horizontal speed is going where the nose points. In a turn it is not,
+and the map is then optimistic by however far apart the two cursors are.
+
+It costs about 30ms to build, once, on the first frame it is drawn — and again only if gravity
+or the chart's bounds change. After that it is free. Turn it off with `showEnergyField`.
 
 ## The pitch ladder
 
@@ -118,8 +144,15 @@ Sideslip is still readable without the marker, from the gap between the chart's 
   reach into the readout panel. Nothing checks for the collision.
 - The ladder does not turn. Once yaw matters, rungs become conic sections and straight ticks
   stop being correct.
-- **The optimal pitch bug sees one tick ahead and no further.** It is a gradient, not a plan,
-  and it is silent about the part of a cycle where you are meant to be spending energy.
+- **The optimal pitch bug and the heatmap both see one tick ahead and no further.** They are a
+  gradient, not a plan, and they are silent about the part of a cycle where you are meant to be
+  spending energy.
+- The heatmap is drawn whenever the chart is, including while walking around, where the elytra
+  physics it describes does not apply. `onlyWhileGliding` suppresses the whole HUD if that
+  matters.
+- Building the heatmap blocks the frame it happens on. It is one hitch of about 30ms and then
+  never again, and it is deliberately not spread across frames: a half-built map that disagreed
+  with its own axes would be worse than a stutter.
 - The bug reads plain gravity where vanilla reads its *effective* gravity. The two differ only
   under Slow Falling while descending, where the cue will be slightly wrong; every energy
   readout on the panel makes the same simplification, so at least they agree with each other.

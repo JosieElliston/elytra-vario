@@ -10,6 +10,16 @@ public final class VarioConfig {
 	public static boolean showLadder = true;
 
 	/**
+	 * The delta-TE heatmap behind the chart: for every velocity the chart can show, the most
+	 * energy one tick could gain from it. See
+	 * {@link jealoustone.elytravario.flight.EnergyField}.
+	 *
+	 * <p>Costs about thirty milliseconds to build, once, and nothing afterwards until the
+	 * chart's domain or gravity changes.
+	 */
+	public static boolean showEnergyField = true;
+
+	/**
 	 * Angle of attack, in its two forms: a row on the panel, and the flight path marker on
 	 * the ladder, whose vertical gap from the crosshair is the same quantity drawn rather
 	 * than printed. Both are off by default.
@@ -70,6 +80,44 @@ public final class VarioConfig {
 	public static double chartMaxVxz = 3.0;
 	public static double chartMinVy = -1.5;
 	public static double chartMaxVy = 1.5;
+
+	/**
+	 * The heatmap's ramp. Energy being lost runs from {@code chartFieldZeroColor} to
+	 * {@code chartFieldLossColor}, energy being gained from the same zero to
+	 * {@code chartFieldGainColor}, interpolated in sRGB.
+	 *
+	 * <p><b>Opaque, unlike everything else on the HUD.</b> The panels are translucent because
+	 * they are chrome and the world behind them is worth seeing; this is data, and a
+	 * translucent heatmap would make the same energy figure read as one colour over the sky
+	 * and another over the ground. A map whose colours depend on what is behind it is not a
+	 * map.
+	 *
+	 * <p>Cool and receding for loss, warm and advancing for gain, with a near-black at zero.
+	 * The pair is chosen against the rest of the chart rather than for its own sake: the trail
+	 * is teal and the cursors are yellow and cyan, so the whole ramp keeps out of that arc and
+	 * every mark stays legible over every part of the field. It is also, deliberately, an
+	 * elytrasim scheme with elytrasim's two problems fixed — the sign flip is a black seam
+	 * instead of two indistinguishable purples, and both arms climb in brightness as well as
+	 * in colour instead of starting saturated and dark.
+	 *
+	 * <p>For the panel's green-is-rising convention instead, set the gain colour to something
+	 * like {@code 0xFF389654} and the loss colour to {@code 0xFF8C3A30}. That reads well and
+	 * is not the default only because red and green are the one pair a colour-blind eye
+	 * cannot separate, and because green sits close enough to the trail's teal to blur it.
+	 */
+	public static int chartFieldZeroColor = 0xFF0C0D10;
+	public static int chartFieldGainColor = 0xFF9E3692;
+	public static int chartFieldLossColor = 0xFF243858;
+
+	/**
+	 * The energy change, in blocks/tick, at which the heatmap's ramp is half way to saturated.
+	 *
+	 * <p>The ramp compresses rather than clips — {@code |x| / (|x| + this)} — because the
+	 * field spans three and a half blocks/tick end to end while everything worth looking at
+	 * happens in the first tenth of that. Lower values pull detail towards the boundary and
+	 * flatten the extremes; higher values do the reverse.
+	 */
+	public static double chartFieldScale = 0.6;
 
 	/**
 	 * Cursor colours, as ARGB. The two cursors sit on the same row of the chart and differ

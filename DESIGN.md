@@ -6,16 +6,19 @@ the docs and the internet will tell you. For what the mod is and how to use it, 
 
 ## Scope
 
-Almost everything here *observes*: pitch, speeds, energies and the chart are all measurable
-from the player entity, and none of them need a simulation. The one exception is the optimal
-pitch bug, which has to know what the next tick would do at a pitch that is not being flown,
-and so carries a copy of vanilla's `updateFallFlyingMovement` and a search over it.
+Most of this *observes*: pitch, speeds, energies and the chart's cursors are all measurable
+from the player entity, and none of them need a simulation. Two readings are not, and both ask
+the same question — what would the next tick do at a pitch that is not being flown? The
+optimal pitch bug asks it about the velocity the player actually has; the chart's heatmap asks
+it about every velocity the chart can draw.
 
-That was a deliberate expansion, not a quiet one, and it is kept as small as it can be: forty
-lines of vector arithmetic and a loop, in `ElytraPhysics` and `OptimalPitch`, with nothing
-else in the mod depending on them. The wider simulation work — longer horizons, energy flow
-fields, the velocity-space grids — belongs to
-[elytrasim](https://github.com/HactarCE/elytrasim) and stays there.
+So the mod carries a copy of vanilla's `updateFallFlyingMovement` and a search over it. That
+was a deliberate expansion, not a quiet one, and it is kept as small as it can be: forty lines
+of vector arithmetic and a loop, in `ElytraPhysics` and `OptimalPitch`, with `EnergyField`
+doing nothing but calling that loop in a grid. Nothing else in the mod depends on any of them.
+The wider simulation work — longer horizons, dynamic programming over whole cycles, the
+policies those produce — belongs to [elytrasim](https://github.com/HactarCE/elytrasim) and
+stays there. What has been brought over is one tick of lookahead and nothing more.
 
 **The physics is copied from bytecode, not written from the wiki.** Elytra motion is a chain
 of single-precision operations whose rounding is load-bearing, so `ElytraPhysics` uses
@@ -56,6 +59,87 @@ off a ledge closes a cycle too.
 **Its scale is one number.** Both chart dimensions derive from `chartScale` (pixels per
 block/tick), so a pixel is worth the same change in speed on both axes whatever the domain is.
 Widening a range grows the chart rather than rescaling it.
+
+## The delta-TE heatmap
+
+Behind the chart, every pixel is coloured by the most total energy one tick could gain from
+the velocity that pixel stands for — the optimal pitch bug's reading, evaluated everywhere
+instead of only where the player is. The bug says which way to point now; the map says where
+in velocity space energy can be made at all, which is the shape a pump cycle has to be flown
+around. The feature that matters is the boundary between the signs: inside it a cycle can pay
+for itself, outside it nothing can.
+
+**It is two-dimensional because the physics is indifferent to heading.** Velocity has three
+components and the search needs a yaw, which ought to make this a four-dimensional table. It
+collapses because rotating the world about the vertical axis rotates every term with it, so
+the field is computed once at yaw zero with the velocity laid along the look direction and is
+then correct for every heading.
+
+**What that misses is sideslip.** The horizontal axis is total horizontal speed and the field
+assumes all of it is going where the nose points. In a turn some of it is not, and the reading
+under the yellow cursor is optimistic by exactly the gap to the cyan one — which is the reason
+both cursors are drawn.
+
+**Negative horizontal speed is a real state, not padding.** The axis starts below zero so the
+origin sits inside the chart, and the strip to the left of it means moving backwards relative
+to the look direction. The physics has a definite answer there: the turning term hauls the
+velocity round to face forwards, which is violent and expensive. It is drawn because it is
+defined, not because it is common.
+
+**The build is cached and it is not baked.** A cell costs 179 ticks of physics and the default
+domain is 12,138 cells, so a build is about 30ms — one hitch, once, on the first frame, and
+again only if gravity or the chart's domain changes. Precomputing it at compile time would be
+faster and is deliberately not done: the domain is meant to become adjustable, and a table
+that cannot follow the axes it is drawn against would be worse than no table. The whole-degree
+sweep is also not refined here, unlike in the bug: refinement is worth at most 0.00012
+blocks/tick anywhere in the envelope, against a quantisation step of about 0.025, so it could
+not move a single pixel.
+
+**Drawn as runs, not pixels.** The field is stored quantised to 24 levels a side and adjacent
+cells of equal level are merged along each row, which turns 12,138 fills a frame into 2,557.
+That is still the most expensive thing on the HUD by an order of magnitude. If it ever costs
+enough to notice, the answer is to upload the field as a texture and blit it once — not to
+draw less of it, and not to spread the build across frames, which would make a stale map that
+disagrees with its own axes.
+
+### Its colours
+
+**Opaque, unlike everything else on the HUD.** The panels are translucent because they are
+chrome and the world behind them is worth seeing. This is data. A translucent heatmap would
+make the same energy figure read as one colour over the sky and another over the ground, and a
+map whose colours depend on what is behind it is not a map. The rest of the chart — grid,
+trail, both cursors — is drawn over the top, and the grid stays translucent on purpose, since
+it is a reference rather than a border.
+
+**Cool and receding for loss, warm and advancing for gain, near-black at zero.** It is an
+elytrasim scheme with elytrasim's two problems fixed. There, zero was two nearly identical
+dark purples, so the one boundary worth seeing was invisible; here the sign flip is a black
+seam that reads at a glance. There, both arms started saturated and dark and got muddier
+before they got brighter; here each arm climbs in lightness and in chroma together.
+
+**The hues are chosen against the rest of the chart, not for their own sake.** The trail is
+teal and the cursors are yellow and cyan, so the ramp keeps out of that arc entirely and every
+mark stays legible over every part of the field. Green-for-gaining would match the panel's
+`TE RATE`, and the two colours to swap in for it are in the config, but it is not the default:
+red and green are the one pair a colour-blind eye cannot separate, and green sits close enough
+to the trail's teal to blur it.
+
+**The magnitude compresses rather than clips.** `|x| / (|x| + chartFieldScale)`, with the
+scale at 0.6 blocks/tick. The field spans about three and a half blocks/tick end to end while
+everything worth looking at happens in the first tenth of that, so a linear ramp would
+saturate almost everywhere and show nothing. Compression never clips, so the extremes stay
+distinguishable from the merely large, and it is smooth through zero, so the boundary is a
+clean seam and not a step.
+
+**The palette interpolates in sRGB, not in linear light.** Linear light is the correct way to
+mix two lights, but this is not mixing light — it is laying out a scale. On a ramp from
+near-black to a saturated colour the linear version spends most of its length near the dark end
+and arrives at the mid-tones desaturated. Plain sRGB keeps the hue and spaces the steps about
+as evenly as the eye reads them.
+
+**No zero contour.** Drawing the boundary as an explicit line was tried and dropped: it is
+already the strongest edge on the map, and a bright line over it hid the structure either side
+of the thing it was pointing at.
 
 ## The pitch ladder
 
