@@ -57,33 +57,68 @@ public final class VarioConfig {
 	 * Pitch ladder spacing, in degrees. The rungs are placed by projection, so their spacing
 	 * on screen is a tangent and not uniform; this is the angular step, not a pixel pitch.
 	 */
-	public static int ladderStepDegrees = 5;
+	public static int ladderStepDegrees = 10;
+
+	/**
+	 * Finer ticks are drawn within {@code ladderFineRangeDegrees} of wherever the camera is
+	 * pointing, fading out at the edge of that range, so there is extra resolution exactly
+	 * where the eye already is without that detail cluttering the rest of the ladder.
+	 */
+	public static int ladderFineStepDegrees = 2;
+	public static double ladderFineRangeDegrees = 12.0;
 
 	/**
 	 * How far above and below the centre of the view the ladder reaches, as a fraction of
-	 * half the view height. Rungs projecting outside this band are dropped rather than
-	 * clipped, so the ladder stays a band across the middle instead of filling the screen.
+	 * half the view height. One is exactly the screen edge.
 	 *
-	 * <p>A fraction rather than a pixel count because the band is an <em>angle</em>: the
+	 * <p>Asymmetric on purpose. Below the centre the hotbar and the rest of the vanilla HUD
+	 * want the room, but above it there is nothing, and stopping short there costs real
+	 * range: in a pump cycle the horizon is exactly the mark being aimed at while looking a
+	 * long way down, and it is the first thing a low ceiling clips.
+	 *
+	 * <p>There is a hard limit above this that no setting can lift. The horizon is only in
+	 * the rendered view at all while looking down less than half the field of view — 35
+	 * degrees at the default 70 — because beyond that it is genuinely off the top of the
+	 * screen. A wider FOV is the only thing that extends it.
+	 *
+	 * <p>Fractions rather than pixel counts because the band is an <em>angle</em>: the
 	 * projection scale is itself proportional to the view height, so a fixed pixel band would
-	 * cover a different slice of sky at every GUI scale and resolution. At the default field
-	 * of view this reaches a little over 27 degrees either side of where you are looking.
+	 * cover a different slice of sky at every GUI scale and resolution.
 	 *
 	 * <p>The rung lengths below are pixel counts for the opposite reason — they are sized
 	 * against the labels, which are text and do not scale with the view.
 	 */
-	public static double ladderBandFraction = 0.75;
+	public static double ladderBandFractionUp = 0.97;
+	public static double ladderBandFractionDown = 0.75;
 
 	/**
-	 * Rung geometry, in scaled GUI pixels, measured from the centre of the screen. Each rung
-	 * is drawn twice, mirrored about the centre; {@code ladderCenterGap} is the half-width of
-	 * the hole left in the middle so the ladder does not cross the crosshair.
+	 * The outer fraction of the band over which marks fade out, so that they thin away at
+	 * the edge instead of blinking off a pixel at a time as the view moves.
+	 */
+	public static double ladderFadeFraction = 0.18;
+
+	/**
+	 * Rung geometry, in scaled GUI pixels, measured out from the centre of the screen. Each
+	 * rung is drawn twice, mirrored about the centre; {@code ladderCenterGap} is the
+	 * half-width of the hole left in the middle so the ladder does not cross the crosshair.
+	 *
+	 * <p>Length and weight both carry the tier, so an angle can be read from the pattern
+	 * without reading any digits: fine ticks are stubs, ten-degree rungs are short and
+	 * dashed, twenty-degree rungs are solid and longer, and the datum lines are longest.
 	 */
 	public static int ladderCenterGap = 22;
-	public static int ladderRungLength = 30;
+	public static int ladderFineLength = 7;
+	public static int ladderMinorLength = 12;
+	public static int ladderMajorLength = 26;
+	public static int ladderPrimeLength = 40;
 
-	/** The horizon is drawn longer than the other rungs so it reads at a glance. */
-	public static int ladderHorizonLength = 46;
+	/**
+	 * The horizon is drawn a little longer than the other prime rungs. It shares their weight,
+	 * as it should — nothing about the horizon is stronger than plus or minus forty — but it
+	 * is the datum the whole ladder is measured from, so it stays findable at a glance. Set to
+	 * zero to make all three identical.
+	 */
+	public static int ladderHorizonExtra = 10;
 
 	/**
 	 * Ticks to average velocity over for the flight path marker. One tick of velocity is
@@ -92,12 +127,27 @@ public final class VarioConfig {
 	public static int flightPathWindow = 4;
 
 	/**
-	 * Ladder colours, as ARGB. The rungs are deliberately translucent: the ladder sits over
-	 * the world rather than over a panel, and at full opacity it obscures more than it says.
+	 * Ladder colours, as ARGB, ordered by tier. All are deliberately translucent: the ladder
+	 * sits over the world rather than over a panel, and at full opacity it obscures more than
+	 * it says. The fine ticks' alpha is the value at the centre of the ladder, scaled down to
+	 * nothing at the edge of the fine range.
+	 *
+	 * <p>The minor and fine tiers share an RGB, so that nothing but strength separates them
+	 * and the ramp from prime down to fine is monotonic.
+	 *
+	 * <p>Nothing distinguishes above the horizon from below it. The sky, the ground and the
+	 * labelled datum line already say which way up the world is.
 	 */
-	public static int horizonColor = 0xD8E8EAED;
-	public static int rungColor = 0xA8C2C8CE;
-	public static int ladderLabelColor = 0xFFB8BEC4;
+	public static int ladderPrimeColor = 0xE0E8EAED;
+	public static int ladderMajorColor = 0xB4C6CCD2;
+	public static int ladderMinorColor = 0x9AB4BAC0;
+	public static int ladderFineColor = 0x4AB4BAC0;
+
+	/**
+	 * Rung labels. Weak on purpose: the tiers are meant to be read as a pattern in the
+	 * periphery, and the digits are there for when you look straight at them.
+	 */
+	public static int ladderLabelColor = 0xA0949AA0;
 
 	/**
 	 * Colour of the flight path marker when it is pegged at the edge of the band, meaning
