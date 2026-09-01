@@ -123,11 +123,17 @@ quantisation down to the physical pixel the GUI scale is drawn at.
 
 ## Readouts that are off by default
 
-**Angle of attack.** Real, correct, and unused: the pump-cycle research does not refer to it,
-so on a panel that is watched continuously it was a row competing with rows being read. Kept
-behind `showAngleOfAttack` rather than deleted, because whether it matters is an open question
-rather than a settled one. The flight path marker still shows the same quantity spatially, as
-the vertical gap between it and the crosshair.
+**Angle of attack, in both its forms.** Real, correct, and unused: the pump-cycle research
+does not refer to it, so on instruments watched continuously the `AOA` row and the flight path
+marker were both clutter competing with readings in use. Kept behind `showAngleOfAttack` and
+`showFlightPath` rather than deleted, because whether angle of attack matters is an open
+question rather than a settled one.
+
+Turning the marker off costs the ladder its only sideslip cue, which is the one thing it
+carried that the number did not. That is affordable because the chart shows sideslip too, as
+the gap between its two cursors — and the chart is the instrument that turning is analysed on
+anyway. The design notes below still describe how the marker is placed, because the code is
+still there and still correct.
 
 ## Minecraft 26.2 notes
 

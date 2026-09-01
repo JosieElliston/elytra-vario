@@ -8,14 +8,22 @@ public final class VarioConfig {
 	public static boolean onlyWhileGliding = false;
 	public static boolean showChart = true;
 	public static boolean showLadder = true;
-	public static boolean showFlightPath = true;
 
 	/**
-	 * The angle of attack readout, off by default. It is a real quantity and the code for it
-	 * is kept, but nothing in the pump-cycle research refers to it yet, so on the panel it is
-	 * a row of clutter competing with rows that are being read.
+	 * Angle of attack, in its two forms: a row on the panel, and the flight path marker on
+	 * the ladder, whose vertical gap from the crosshair is the same quantity drawn rather
+	 * than printed. Both are off by default.
+	 *
+	 * <p>The code for both is kept and correct. Nothing in the pump-cycle research refers to
+	 * angle of attack yet, so on instruments that are watched continuously they were clutter
+	 * competing with readings actually being used — and whether it matters is an open
+	 * question rather than a settled one.
+	 *
+	 * <p>Turning the marker back on also restores the only sideslip cue on the ladder; the
+	 * chart's cyan cursor still shows sideslip either way.
 	 */
 	public static boolean showAngleOfAttack = false;
+	public static boolean showFlightPath = false;
 
 	/** Top-left corner of the HUD, in scaled GUI pixels. */
 	public static int originX = 4;

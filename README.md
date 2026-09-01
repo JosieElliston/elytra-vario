@@ -39,10 +39,6 @@ and no config file, so changes mean a recompile and are lost on restart.
 | `TE RATE` | How fast total energy is changing, averaged over 10 ticks. Says whether the cycle is net gaining, independent of whether you happen to be climbing right now. |
 | `GAIN` | Total energy gained between the last two apexes: what the cycle was worth. |
 
-An `AOA` row — angle of attack, how far the nose sits above the flight path — is implemented
-but **off by default**, since nothing in the pump-cycle work refers to it yet. Set
-`showAngleOfAttack` to bring it back; the panel resizes itself around it.
-
 ## The chart
 
 Horizontal speed against vertical speed. The **yellow** cursor is total horizontal speed; the
@@ -70,11 +66,18 @@ Marks fade out as they approach the top and bottom of the ladder rather than bli
 Labels are in raw Minecraft pitch, matching the `PITCH` row: **negative is above the horizon**.
 Nothing else marks which side of the horizon a rung is on — the sky and the ground already do.
 
-The winged circle is the **flight path marker**: where you are actually going, as against the
-crosshair's where you are looking. The vertical gap between the two is angle of attack and the
-horizontal gap is sideslip, which is why it shares its colour with the chart's cyan cursor. It
-turns grey when pegged at the edge of the ladder, where its position is a limit rather than a
-reading.
+## Off by default
+
+Angle of attack — how far the nose sits above the flight path — is built and correct, in two
+forms, and both are switched off. Nothing in the pump-cycle work refers to it yet, and on
+instruments watched continuously they were clutter competing with readings actually in use.
+
+| Switch | Brings back |
+| --- | --- |
+| `showAngleOfAttack` | An `AOA` row on the panel, which resizes itself around it |
+| `showFlightPath` | The flight path marker: a winged circle on the ladder marking where you are actually going, as against the crosshair's where you are looking. Its vertical gap from the crosshair is angle of attack drawn rather than printed, and its horizontal gap is sideslip. Greys out when pegged at the edge of the ladder |
+
+Sideslip is still readable without the marker, from the gap between the chart's two cursors.
 
 ## Known limitations
 
