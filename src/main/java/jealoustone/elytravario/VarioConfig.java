@@ -22,18 +22,23 @@ public final class VarioConfig {
 	public static int varioWindow = 10;
 
 	/**
-	 * Chart width in pixels. The height is derived from this and the axis ranges so that a
-	 * pixel is worth the same change in speed on both axes; see VarioHudElement.chartScale.
+	 * Chart size, in pixels per block/tick. Both the width and the height are derived from
+	 * this and the axis ranges, so a pixel is always worth the same change in speed on both
+	 * axes, and widening a range grows the chart rather than rescaling it.
 	 */
-	public static int chartWidth = 102;
+	public static double chartScale = 34.0;
 	public static int chartTrailTicks = 100;
 
 	/**
 	 * Chart bounds in blocks/<em>tick</em>, matching the units elytrasim plots in, so the
 	 * in-game chart and the sim's screenshots can be compared directly. Axis labels are
 	 * rendered in blocks/second like the rest of the HUD.
+	 *
+	 * <p>The horizontal axis starts slightly below zero so that the origin sits inside the
+	 * chart rather than on its edge. Neither horizontal speed nor its look-projection is
+	 * bounded by that lower edge; it is there for legibility.
 	 */
-	public static double chartMinVxz = 0.0;
+	public static double chartMinVxz = -0.5;
 	public static double chartMaxVxz = 3.0;
 	public static double chartMinVy = -1.5;
 	public static double chartMaxVy = 1.5;

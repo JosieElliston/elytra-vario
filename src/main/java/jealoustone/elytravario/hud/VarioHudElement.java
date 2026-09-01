@@ -117,7 +117,7 @@ public final class VarioHudElement implements HudElement {
 	}
 
 	private void drawChart(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
-		int width = VarioConfig.chartWidth;
+		int width = chartWidth();
 		int height = chartHeight();
 
 		graphics.fill(x, y, x + width, y + height, PANEL_BG);
@@ -178,28 +178,32 @@ public final class VarioHudElement implements HudElement {
 		graphics.text(font, fmt("%+.0f", VarioConfig.chartMaxVy * TPS), x * 2 + 4, y * 2 + 4, MUTED, false);
 		graphics.text(font, fmt("%+.0f", VarioConfig.chartMinVy * TPS), x * 2 + 4, (y + height) * 2 - 12, MUTED, false);
 
+		// The horizontal origin no longer sits on the chart's edge, so name it.
+		String origin = "0";
+		graphics.text(font, origin, chartX(x, 0.0) * 2 - font.width(origin) / 2, (y + height) * 2 - 12, MUTED, false);
+
 		pose.popMatrix();
 	}
 
 	/**
-	 * Pixels per block/tick. Deliberately a single factor shared by both axes, so a pixel is
-	 * worth the same change in speed horizontally and vertically whatever the domain is.
+	 * Both dimensions come from one pixels-per-block/tick factor, so a pixel is worth the
+	 * same change in speed horizontally and vertically whatever the domain is.
 	 */
-	private static double chartScale() {
-		return VarioConfig.chartWidth / (VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz);
+	private static int chartWidth() {
+		return (int) Math.round((VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz) * VarioConfig.chartScale);
 	}
 
 	private static int chartHeight() {
-		return (int) Math.round((VarioConfig.chartMaxVy - VarioConfig.chartMinVy) * chartScale());
+		return (int) Math.round((VarioConfig.chartMaxVy - VarioConfig.chartMinVy) * VarioConfig.chartScale);
 	}
 
 	private static int chartX(int originX, double vxz) {
-		double px = (vxz - VarioConfig.chartMinVxz) * chartScale();
-		return originX + (int) Math.round(Mth.clamp(px, 0.0, VarioConfig.chartWidth - 1.0));
+		double px = (vxz - VarioConfig.chartMinVxz) * VarioConfig.chartScale;
+		return originX + (int) Math.round(Mth.clamp(px, 0.0, chartWidth() - 1.0));
 	}
 
 	private static int chartY(int originY, double vy) {
-		double py = (VarioConfig.chartMaxVy - vy) * chartScale();
+		double py = (VarioConfig.chartMaxVy - vy) * VarioConfig.chartScale;
 		return originY + (int) Math.round(Mth.clamp(py, 0.0, chartHeight() - 1.0));
 	}
 
