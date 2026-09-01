@@ -187,11 +187,15 @@ public final class PitchLadderElement implements HudElement {
 	 *
 	 * <p><b>It pegs at the edge of the band rather than leaving.</b> A whole regime of flight
 	 * has its answer off the bottom of the ladder — in a slow descent the best pitch is
-	 * eighty-something degrees nose-down, far below anything the band reaches — and that is
-	 * the moment the cue is at its most emphatic, so it is the worst moment to lose it. A bug
-	 * you cannot see is a bug you cannot fly to. Held at the limit it takes the flight path
-	 * marker's pegged grey, which already means the same thing there: a direction to go, not
-	 * a place to be.
+	 * eighty-something degrees nose-down, far below anything the band reaches. Held at the
+	 * limit it takes the flight path marker's pegged grey, which already means the same thing
+	 * there: a direction to go, not a place to be.
+	 *
+	 * <p>The peg is a cheap courtesy rather than a necessity, and the code should not be read
+	 * as claiming otherwise. Pitch clamps at ±90, so the stops need no aiming and a cue there
+	 * can only name a direction the situation already implies. The bug does its real work at
+	 * interior angles, where it is a target and there is no other. This is kept because it is
+	 * unobtrusive, not because anything depends on it.
 	 */
 	private void drawOptimalPitchBug(GuiGraphicsExtractor graphics, float cameraPitch,
 			float optimal, int centerX, int centerY, double scale, int bandUp, int bandDown) {

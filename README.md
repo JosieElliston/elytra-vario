@@ -78,7 +78,9 @@ none, the two wedges close around the crosshair.
 
 Drawn only while actually gliding. When the answer is further from the ladder's reach than the
 band goes it is held at the edge and turns grey, which means *keep going that way*, not *stop
-here*.
+here*. Do not expect much of it there: pitch clamps at ±90, so the mouse finds the stop by
+itself and the grey wedge only names a direction you could have guessed. The bug earns its
+place at interior angles, where it is an actual target to fly to.
 
 It is worth knowing what the number is before flying it:
 

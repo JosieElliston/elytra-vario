@@ -188,11 +188,16 @@ hide it exactly while it is being followed; fading it when the correction is lar
 it exactly when there is a long way to go and no way to snap to it. So it carries the same
 band-edge taper the rungs do and nothing else.
 
-**It pegs rather than leaving.** A whole regime — the slow descent above — has its answer
-eighty-something degrees nose-down, far below anything the band reaches, and that is when the
-cue is at its most emphatic. A bug you cannot see is a bug you cannot fly to, so it is held at
-the limit in the flight path marker's pegged grey, which already means a direction to go
-rather than a place to be.
+**It pegs rather than leaving, and earns less there than anywhere else.** A whole regime — the
+slow descent above — has its answer eighty-something degrees nose-down, far below anything the
+band reaches. Held at the limit the bug takes the flight path marker's pegged grey, which
+already means a direction to go rather than a place to be.
+
+That is worth little, though, and it is worth being straight about why. Pitch clamps at ±90,
+so the stops need no aiming: the mouse finds them on its own, and all a cue can add there is
+which way to slam, which the situation already implies. The bug does its real work at interior
+angles, where it is a mark to fly to and nothing else supplies one. The peg is kept because it
+costs nothing and stays out of the way, not because it is load-bearing.
 
 **It lives in the centre gap**, which is the only radius that never meets a rung or a label:
 rungs start at the gap's edge and labels sit beyond their outer ends. Everywhere further out
