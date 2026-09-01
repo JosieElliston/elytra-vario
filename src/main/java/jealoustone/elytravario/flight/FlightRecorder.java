@@ -81,10 +81,6 @@ public final class FlightRecorder {
 	}
 
 	/** Energies as they stood at the last apex; see {@link CycleTracker}. */
-	public double peakKineticHeight() {
-		return cycles.peakKineticHeight();
-	}
-
 	public double peakPotentialHeight() {
 		return cycles.peakPotentialHeight();
 	}

@@ -38,8 +38,8 @@ and are lost on restart.
 | `SPEED XYZ` | Total speed. |
 | `SPEED Y` | Vertical speed; negative descending. |
 | `GLIDE` | Blocks forward per block down. Negative while climbing, where it reads as blocks forward per block *gained*. `--` only when level with speed, or stationary. |
-| `KE` | Kinetic energy as a height. The dimmed figure in brackets is its value at the last apex. |
-| `PE` `TE` | Potential and total energy, **measured down from the last apex**: how far below the top of the cycle you are, and how much of it is recoverable. The dimmed figure to the left is the same height against the world's origin, which is what F3 and a map agree with. `--` until an apex has been seen. |
+| `KE` | Kinetic energy as a height: the altitude your speed is worth. |
+| `PE` `TE` | Potential and total energy, **measured from the last apex**: how far below the top of the cycle you are, and how much of it is recoverable. Green means you are above the last apex, which for `TE` is a cycle that has already paid for itself. The dimmed figure to the left is the same height against the world's origin, which is what F3 and a map agree with. `--` until an apex has been seen. |
 | `TE RATE` | How fast total energy is changing, averaged over 10 ticks. Says whether the cycle is net gaining, independent of whether you happen to be climbing right now. |
 | `GAIN` | Total energy gained between the last two apexes: what the cycle was worth. |
 

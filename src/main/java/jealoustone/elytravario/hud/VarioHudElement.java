@@ -46,6 +46,20 @@ public final class VarioHudElement implements HudElement {
 	private static final int LINE = 10;
 	private static final int PAD = 4;
 
+	/**
+	 * Column templates for the rows that carry two figures. Each figure is right-aligned
+	 * inside a column reserved from these, so gaining or losing a digit cannot shove the
+	 * figure beside it sideways — and since every value has a fixed number of decimals and a
+	 * fixed suffix, right-alignment also pins the decimal point. The only motion left is a
+	 * leading digit appearing, which is the least a changing number can do.
+	 *
+	 * <p>Measured through the font rather than written as pixel counts, so they stay correct
+	 * if the font ever changes. A value wider than its template is not clipped, it just
+	 * encroaches on the column to its left.
+	 */
+	private static final String DELTA_COLUMN = "-000.0 b";
+	private static final String ABSOLUTE_COLUMN = "-0000.0";
+
 	/** The heatmap's ramp, expanded from the three configured colors; see {@link #palette()}. */
 	private static int[] palette;
 	private static int paletteZero;
@@ -119,7 +133,7 @@ public final class VarioHudElement implements HudElement {
 		graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);
 		row += LINE;
 
-		row = peakRow(graphics, font, x, row, "KE", sample.kineticHeight(), recorder.peakKineticHeight());
+		row = row(graphics, font, x, row, "KE", fmt("%.1f b", sample.kineticHeight()), VALUE);
 		row = sinceApexRow(graphics, font, x, row, "PE", sample.potentialHeight(),
 				recorder.peakPotentialHeight());
 		row = sinceApexRow(graphics, font, x, row, "TE", sample.totalHeight(),
@@ -227,29 +241,21 @@ public final class VarioHudElement implements HudElement {
 			double current, double peak) {
 		graphics.text(font, label, x + PAD, y, LABEL, true);
 
-		String delta = Double.isFinite(peak) ? fmt("%+.1f b", current - peak) : "--";
+		boolean known = Double.isFinite(peak);
+		double change = current - peak;
+		String delta = known ? fmt("%+.1f b", change) : "--";
 		String absolute = fmt("%.1f", current);
-		int right = x + VarioConfig.panelWidth - PAD;
-		int deltaWidth = font.width(delta);
 
-		graphics.text(font, delta, right - deltaWidth, y, VALUE, true);
-		graphics.text(font, absolute, right - deltaWidth - PAD - font.width(absolute), y, MUTED, true);
+		int deltaRight = x + VarioConfig.panelWidth - PAD;
+		int absoluteRight = deltaRight - font.width(DELTA_COLUMN) - PAD;
 
-		return y + LINE;
-	}
-
-	/** A reading with the value held from the last apex dimmed alongside it. */
-	private int peakRow(GuiGraphicsExtractor graphics, Font font, int x, int y, String label,
-			double current, double peak) {
-		graphics.text(font, label, x + PAD, y, LABEL, true);
-
-		String peakText = Double.isFinite(peak) ? fmt("(%.1f)", peak) : "";
-		String currentText = fmt("%.1f b", current);
-		int right = x + VarioConfig.panelWidth - PAD;
-		int peakWidth = font.width(peakText);
-
-		graphics.text(font, peakText, right - peakWidth, y, MUTED, true);
-		graphics.text(font, currentText, right - peakWidth - PAD - font.width(currentText), y, VALUE, true);
+		// Coloured like the rate readouts, and for the same reason: below the last apex is
+		// energy still owed, above it is a cycle that has already paid for itself. The
+		// deadband is the one rateColor applies, so a reading sitting on the apex is white
+		// rather than flickering between the two.
+		graphics.text(font, delta, deltaRight - font.width(delta), y,
+				known ? rateColor(change) : VALUE, true);
+		graphics.text(font, absolute, absoluteRight - font.width(absolute), y, MUTED, true);
 
 		return y + LINE;
 	}

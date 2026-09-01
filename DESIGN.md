@@ -54,7 +54,17 @@ answers no question anyone flying a cycle is asking. Measured down from the last
 answer the one that matters: how far below the top am I, and how much of that is coming back.
 The raw height stays on the row, dimmed, because it is what F3 and a map agree with. Kinetic
 energy is left alone; speed has no arbitrary origin, so its absolute value is already the
-reading.
+reading, and its value at the apex was dropped rather than kept for symmetry.
+
+Both are coloured on the same green-and-red scale as the rate readouts, which for total energy
+says the thing worth knowing at a glance: below the last apex is energy still owed, above it is
+a cycle that has already paid for itself.
+
+**Two-figure rows reserve fixed columns.** Each figure is right-aligned inside a width measured
+from a template string, so a change in digit count cannot shove the figure beside it sideways.
+Every value has a fixed number of decimals and a fixed suffix, so right-alignment also pins the
+decimal point; the only motion left is a leading digit appearing, which is the least a changing
+number can do. Templates rather than pixel constants so the columns follow the font.
 
 **Nothing is recorded while the game is paused.** `Minecraft.tick()` is called with no pause
 guard — only the level's entities stop — so client ticks keep arriving in the menu, and the

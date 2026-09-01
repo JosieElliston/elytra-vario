@@ -89,11 +89,6 @@ public final class CycleTracker {
 		return bestSinceBoundary;
 	}
 
-	public double peakKineticHeight() {
-		Sample s = displayed();
-		return s == null ? Double.NaN : s.kineticHeight();
-	}
-
 	public double peakPotentialHeight() {
 		Sample s = displayed();
 		return s == null ? Double.NaN : s.potentialHeight();
