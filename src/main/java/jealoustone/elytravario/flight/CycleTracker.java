@@ -20,20 +20,23 @@ package jealoustone.elytravario.flight;
  */
 public final class CycleTracker {
 	/**
-	 * Vertical speed, in blocks/tick, needed to count as climbing or descending. A pump
+	 * Vertical speed, in blocks/tick, below which the player counts as descending. A pump
 	 * swings vertical speed by around a block per tick, so this only suppresses jitter about
 	 * zero during near-level flight, which would otherwise latch spurious apexes.
 	 */
-	private static final double VY_DEADBAND = 0.05;
+	private static final double DESCENT_ENTER = -0.05;
+
+	/** Vertical speed above which a descent is considered over and the apex re-arms. */
+	private static final double DESCENT_EXIT = -0.01;
 
 	/** Ticks after which a latched apex is stale and the running best is shown instead. */
 	private static final int STALE_TICKS = 600;
 
-	private boolean climbing;
+	private boolean descending;
 	private Sample bestSinceBoundary;
 	private Sample apex;
 	private double lastGain = Double.NaN;
-	private int ticksSinceApex;
+	private int ticksSinceApex = Integer.MAX_VALUE;
 
 	public void update(Sample sample) {
 		if (ticksSinceApex < Integer.MAX_VALUE) {
@@ -44,22 +47,38 @@ public final class CycleTracker {
 			bestSinceBoundary = sample;
 		}
 
-		if (!climbing) {
-			if (sample.vy() > VY_DEADBAND) {
-				climbing = true;
-			}
-		} else if (sample.vy() < -VY_DEADBAND) {
-			// Past the apex, so close the cycle out.
-			climbing = false;
+		double vy = sample.vy();
 
-			if (apex != null) {
-				lastGain = bestSinceBoundary.totalHeight() - apex.totalHeight();
+		if (descending) {
+			if (vy > DESCENT_EXIT) {
+				descending = false;
 			}
 
-			apex = bestSinceBoundary;
-			bestSinceBoundary = null;
-			ticksSinceApex = 0;
+			return;
 		}
+
+		if (vy >= DESCENT_ENTER) {
+			return;
+		}
+
+		// A descent has begun, so whatever height was reached is now behind us. Keyed on
+		// starting to descend rather than on having climbed first, so that walking off a
+		// ledge closes a cycle too: there is no climb before it, but there is still a
+		// height that was just left behind.
+		descending = true;
+
+		if (apex != null) {
+			lastGain = bestSinceBoundary.totalHeight() - apex.totalHeight();
+		}
+
+		apex = bestSinceBoundary;
+		bestSinceBoundary = null;
+		ticksSinceApex = 0;
+	}
+
+	/** Ticks since the apex last latched, or {@link Integer#MAX_VALUE} if it never has. */
+	public int ticksSinceApex() {
+		return apex == null ? Integer.MAX_VALUE : ticksSinceApex;
 	}
 
 	/**
@@ -99,10 +118,10 @@ public final class CycleTracker {
 	}
 
 	public void reset() {
-		climbing = false;
+		descending = false;
 		bestSinceBoundary = null;
 		apex = null;
 		lastGain = Double.NaN;
-		ticksSinceApex = 0;
+		ticksSinceApex = Integer.MAX_VALUE;
 	}
 }
