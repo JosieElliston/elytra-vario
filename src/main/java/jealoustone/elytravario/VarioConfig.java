@@ -14,24 +14,29 @@ public final class VarioConfig {
 
 	/**
 	 * Width of the readout panel. Values are right-aligned against this, so it has to be
-	 * wide enough for the longest one ("0.000 b/t  0.0 b/s") plus its label.
+	 * wide enough for the longest one plus its label.
 	 */
-	public static int panelWidth = 158;
+	public static int panelWidth = 116;
 
-	/** Ticks to average the variometer over. Raw per-tick deltas are far too noisy to read. */
+	/** Ticks to average the energy rate over. Raw per-tick deltas are far too noisy to read. */
 	public static int varioWindow = 10;
 
-	public static int chartSize = 100;
+	/**
+	 * Chart width in pixels. The height is derived from this and the axis ranges so that a
+	 * pixel is worth the same change in speed on both axes; see VarioHudElement.chartScale.
+	 */
+	public static int chartWidth = 102;
 	public static int chartTrailTicks = 100;
 
 	/**
-	 * Chart bounds in blocks/tick. Defaults span roughly the region elytrasim plots, so the
-	 * in-game chart and the sim's screenshots can be compared by eye.
+	 * Chart bounds in blocks/<em>tick</em>, matching the units elytrasim plots in, so the
+	 * in-game chart and the sim's screenshots can be compared directly. Axis labels are
+	 * rendered in blocks/second like the rest of the HUD.
 	 */
 	public static double chartMinVxz = 0.0;
 	public static double chartMaxVxz = 3.0;
-	public static double chartMinVy = -2.5;
-	public static double chartMaxVy = 1.0;
+	public static double chartMinVy = -1.5;
+	public static double chartMaxVy = 1.5;
 
 	private VarioConfig() {
 	}

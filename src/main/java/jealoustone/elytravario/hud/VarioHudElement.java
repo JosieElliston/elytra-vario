@@ -21,9 +21,15 @@ import org.joml.Matrix3x2fStack;
  *
  * <p>In 26.2 the HUD is built by extracting a render state rather than by issuing draw calls
  * directly, hence {@code extractRenderState} rather than a {@code render} method — but the
- * available primitives (text, fill, lines, scissor) are the same ones the old context had.
+ * available primitives (text, fill, scissor) are the same ones the old context had.
+ *
+ * <p>Speeds are stored in blocks/tick, the units vanilla physics uses, and converted to
+ * blocks/second only for display.
  */
 public final class VarioHudElement implements HudElement {
+	/** Ticks per second, the factor between internal blocks/tick and displayed blocks/second. */
+	private static final double TPS = 20.0;
+
 	private static final int PANEL_BG = 0xB0101014;
 	private static final int BORDER = 0xFF3A3F45;
 	private static final int LABEL = 0xFF9AA0A6;
@@ -77,36 +83,32 @@ public final class VarioHudElement implements HudElement {
 	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
 		int width = VarioConfig.panelWidth;
 		// Nine readouts plus the separator line between the speed and energy groups.
-		int rows = 10;
-		int height = rows * LINE + PAD * 2;
+		int height = 10 * LINE + PAD * 2;
 
 		graphics.fill(x, y, x + width, y + height, PANEL_BG);
 		graphics.outline(x, y, width, height, BORDER);
 
 		int row = y + PAD;
-		double vario = recorder.energyRate(VarioConfig.varioWindow);
+		double energyRate = recorder.energyRate(VarioConfig.varioWindow);
 		double glide = sample.glideRatio();
 
 		row = row(graphics, font, x, row, "PITCH", fmt("%.1f°", sample.pitch()), VALUE);
-		row = row(graphics, font, x, row, "SPD XZ", speed(sample.horizontalSpeed()), VALUE);
-		row = row(graphics, font, x, row, "SPD XYZ", speed(sample.speed()), VALUE);
+		row = row(graphics, font, x, row, "SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
+		row = row(graphics, font, x, row, "SPEED XYZ", speed(sample.speed()), VALUE);
+		// Coloured on the displayed blocks/second value, so the deadband matches TE RATE's.
+		row = row(graphics, font, x, row, "VERT SPD", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
 		row = row(graphics, font, x, row, "GLIDE",
 				Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
 
-		graphics.horizontalLine(x + PAD, x + width - PAD - 1, row + LINE / 2 - 1, BORDER);
+		graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);
 		row += LINE;
 
 		row = row(graphics, font, x, row, "KE", fmt("%.1f b", sample.kineticHeight()), VALUE);
 		row = row(graphics, font, x, row, "PE", fmt("%.1f b", sample.potentialHeight()), VALUE);
 		row = row(graphics, font, x, row, "TE", fmt("%.1f b", sample.totalHeight()), VALUE);
-		row = row(graphics, font, x, row, "CLIMB", fmt("%+.2f b/s", sample.vy() * 20.0), rateColor(sample.vy()));
-		row = row(graphics, font, x, row, "VARIO", fmt("%+.2f b/s", vario), rateColor(vario));
+		row = row(graphics, font, x, row, "TE RATE", fmt("%+.2f b/s", energyRate), rateColor(energyRate));
 
-		if (!sample.gliding()) {
-			graphics.text(font, "not gliding", x + PAD, y + height + 2, MUTED, true);
-		}
-
-		return y + height + (sample.gliding() ? 0 : LINE);
+		return y + height;
 	}
 
 	private int row(GuiGraphicsExtractor graphics, Font font, int x, int y, String label, String value, int color) {
@@ -116,22 +118,23 @@ public final class VarioHudElement implements HudElement {
 	}
 
 	private void drawChart(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
-		int size = VarioConfig.chartSize;
+		int width = VarioConfig.chartWidth;
+		int height = chartHeight();
 
-		graphics.fill(x, y, x + size, y + size, PANEL_BG);
-		graphics.outline(x, y, size, size, BORDER);
+		graphics.fill(x, y, x + width, y + height, PANEL_BG);
+		graphics.outline(x, y, width, height, BORDER);
 
 		// Gridlines every half block/tick, with the zero axes picked out more brightly.
 		// Drawn with fill rather than the line helpers, whose bounds are inclusive on one
 		// end and exclusive on the other and so leave the grid a pixel short.
 		for (double v = Math.ceil(VarioConfig.chartMinVxz * 2.0) / 2.0; v <= VarioConfig.chartMaxVxz; v += 0.5) {
-			int px = chartX(x, size, v);
-			graphics.fill(px, y, px + 1, y + size, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
+			int px = chartX(x, v);
+			graphics.fill(px, y, px + 1, y + height, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
 		}
 
 		for (double v = Math.ceil(VarioConfig.chartMinVy * 2.0) / 2.0; v <= VarioConfig.chartMaxVy; v += 0.5) {
-			int py = chartY(y, size, v);
-			graphics.fill(x, py, x + size, py + 1, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
+			int py = chartY(y, v);
+			graphics.fill(x, py, x + width, py + 1, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
 		}
 
 		// Trail, oldest first so the newest samples paint over the older ones.
@@ -145,41 +148,53 @@ public final class VarioHudElement implements HudElement {
 			}
 
 			int alpha = 20 + (int) ((1.0f - (float) i / trail) * 190.0f);
-			int px = chartX(x, size, past.horizontalSpeed());
-			int py = chartY(y, size, past.vy());
+			int px = chartX(x, past.horizontalSpeed());
+			int py = chartY(y, past.vy());
 			graphics.fill(px, py, px + 1, py + 1, (alpha << 24) | TRAIL);
 		}
 
-		int px = chartX(x, size, sample.horizontalSpeed());
-		int py = chartY(y, size, sample.vy());
+		int px = chartX(x, sample.horizontalSpeed());
+		int py = chartY(y, sample.vy());
 		graphics.fill(px - 2, py, px + 3, py + 1, CURRENT);
 		graphics.fill(px, py - 2, px + 1, py + 3, CURRENT);
 
-		drawAxisLabels(graphics, font, x, y, size);
+		drawAxisLabels(graphics, font, x, y, width, height);
 	}
 
-	/** Axis extremes, drawn at half scale so they do not swamp a 100px chart. */
-	private void drawAxisLabels(GuiGraphicsExtractor graphics, Font font, int x, int y, int size) {
+	/** Axis extremes in blocks/second, at half scale so they do not swamp the chart. */
+	private void drawAxisLabels(GuiGraphicsExtractor graphics, Font font, int x, int y, int width, int height) {
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
 		pose.scale(0.5f, 0.5f);
 
-		String maxVxz = fmt("%.1f", VarioConfig.chartMaxVxz);
-		graphics.text(font, maxVxz, (x + size) * 2 - font.width(maxVxz) - 4, (y + size) * 2 - 12, MUTED, false);
-		graphics.text(font, fmt("%.1f", VarioConfig.chartMaxVy), x * 2 + 4, y * 2 + 4, MUTED, false);
-		graphics.text(font, fmt("%.1f", VarioConfig.chartMinVy), x * 2 + 4, (y + size) * 2 - 12, MUTED, false);
+		String maxVxz = fmt("%.0f", VarioConfig.chartMaxVxz * TPS);
+		graphics.text(font, maxVxz, (x + width) * 2 - font.width(maxVxz) - 4, (y + height) * 2 - 12, MUTED, false);
+		graphics.text(font, fmt("%+.0f", VarioConfig.chartMaxVy * TPS), x * 2 + 4, y * 2 + 4, MUTED, false);
+		graphics.text(font, fmt("%+.0f", VarioConfig.chartMinVy * TPS), x * 2 + 4, (y + height) * 2 - 12, MUTED, false);
 
 		pose.popMatrix();
 	}
 
-	private static int chartX(int originX, int size, double vxz) {
-		double t = (vxz - VarioConfig.chartMinVxz) / (VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz);
-		return originX + (int) Math.round(Mth.clamp(t, 0.0, 1.0) * (size - 1));
+	/**
+	 * Pixels per block/tick. Deliberately a single factor shared by both axes, so a pixel is
+	 * worth the same change in speed horizontally and vertically whatever the domain is.
+	 */
+	private static double chartScale() {
+		return VarioConfig.chartWidth / (VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz);
 	}
 
-	private static int chartY(int originY, int size, double vy) {
-		double t = (VarioConfig.chartMaxVy - vy) / (VarioConfig.chartMaxVy - VarioConfig.chartMinVy);
-		return originY + (int) Math.round(Mth.clamp(t, 0.0, 1.0) * (size - 1));
+	private static int chartHeight() {
+		return (int) Math.round((VarioConfig.chartMaxVy - VarioConfig.chartMinVy) * chartScale());
+	}
+
+	private static int chartX(int originX, double vxz) {
+		double px = (vxz - VarioConfig.chartMinVxz) * chartScale();
+		return originX + (int) Math.round(Mth.clamp(px, 0.0, VarioConfig.chartWidth - 1.0));
+	}
+
+	private static int chartY(int originY, double vy) {
+		double py = (VarioConfig.chartMaxVy - vy) * chartScale();
+		return originY + (int) Math.round(Mth.clamp(py, 0.0, chartHeight() - 1.0));
 	}
 
 	private static int rateColor(double rate) {
@@ -196,6 +211,10 @@ public final class VarioHudElement implements HudElement {
 	}
 
 	private static String speed(double blocksPerTick) {
-		return fmt("%.3f b/t  %.1f b/s", blocksPerTick, blocksPerTick * 20.0);
+		return fmt("%.2f b/s", blocksPerTick * TPS);
+	}
+
+	private static String signedSpeed(double blocksPerTick) {
+		return fmt("%+.2f b/s", blocksPerTick * TPS);
 	}
 }
