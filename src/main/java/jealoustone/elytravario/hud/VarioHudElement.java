@@ -102,9 +102,9 @@ public final class VarioHudElement implements HudElement {
 		graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);
 		row += LINE;
 
-		row = row(graphics, font, x, row, "KE", fmt("%.1f b", sample.kineticHeight()), VALUE);
-		row = row(graphics, font, x, row, "PE", fmt("%.1f b", sample.potentialHeight()), VALUE);
-		row = row(graphics, font, x, row, "TE", fmt("%.1f b", sample.totalHeight()), VALUE);
+		row = peakRow(graphics, font, x, row, "KE", sample.kineticHeight(), recorder.peakKineticHeight());
+		row = peakRow(graphics, font, x, row, "PE", sample.potentialHeight(), recorder.peakPotentialHeight());
+		row = peakRow(graphics, font, x, row, "TE", sample.totalHeight(), recorder.peakTotalHeight());
 		row = row(graphics, font, x, row, "TE RATE", fmt("%+.2f b/s", energyRate), rateColor(energyRate));
 
 		return y + height;
@@ -160,6 +160,22 @@ public final class VarioHudElement implements HudElement {
 		drawCursor(graphics, chartX(x, sample.horizontalSpeed()), py, VarioConfig.cursorXzColor);
 
 		drawAxisLabels(graphics, font, x, y, width, height);
+	}
+
+	/** A reading with the value held from the last crest dimmed alongside it. */
+	private int peakRow(GuiGraphicsExtractor graphics, Font font, int x, int y, String label,
+			double current, double peak) {
+		graphics.text(font, label, x + PAD, y, LABEL, true);
+
+		String peakText = Double.isFinite(peak) ? fmt("(%.1f)", peak) : "";
+		String currentText = fmt("%.1f b", current);
+		int right = x + VarioConfig.panelWidth - PAD;
+		int peakWidth = font.width(peakText);
+
+		graphics.text(font, peakText, right - peakWidth, y, MUTED, true);
+		graphics.text(font, currentText, right - peakWidth - PAD - font.width(currentText), y, VALUE, true);
+
+		return y + LINE;
 	}
 
 	private void drawCursor(GuiGraphicsExtractor graphics, int px, int py, int color) {

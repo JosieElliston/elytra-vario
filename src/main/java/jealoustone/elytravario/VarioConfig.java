@@ -16,7 +16,7 @@ public final class VarioConfig {
 	 * Width of the readout panel. Values are right-aligned against this, so it has to be
 	 * wide enough for the longest one plus its label.
 	 */
-	public static int panelWidth = 116;
+	public static int panelWidth = 132;
 
 	/** Ticks to average the energy rate over. Raw per-tick deltas are far too noisy to read. */
 	public static int varioWindow = 10;

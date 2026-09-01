@@ -28,6 +28,10 @@ public final class FlightRecorder {
 	private int head = -1;
 	private int size;
 
+	private final PeakHold kineticPeak = new PeakHold();
+	private final PeakHold potentialPeak = new PeakHold();
+	private final PeakHold totalPeak = new PeakHold();
+
 	public void tick(LocalPlayer player) {
 		Vec3 position = player.position();
 		Sample previous = latest();
@@ -50,13 +54,32 @@ public final class FlightRecorder {
 			}
 		}
 
-		push(new Sample(
+		Sample sample = new Sample(
 				position.x, position.y, position.z,
 				velocity.x, velocity.y, velocity.z,
 				player.getXRot(),
 				player.getYRot(),
 				player.getGravity(),
-				player.isFallFlying()));
+				player.isFallFlying());
+
+		push(sample);
+
+		kineticPeak.update(sample.kineticHeight());
+		potentialPeak.update(sample.potentialHeight());
+		totalPeak.update(sample.totalHeight());
+	}
+
+	/** Kinetic energy height at the last crest; see {@link PeakHold}. */
+	public double peakKineticHeight() {
+		return kineticPeak.value();
+	}
+
+	public double peakPotentialHeight() {
+		return potentialPeak.value();
+	}
+
+	public double peakTotalHeight() {
+		return totalPeak.value();
 	}
 
 	private void push(Sample sample) {
@@ -77,6 +100,9 @@ public final class FlightRecorder {
 		head = -1;
 		size = 0;
 		Arrays.fill(buffer, null);
+		kineticPeak.reset();
+		potentialPeak.reset();
+		totalPeak.reset();
 	}
 
 	public int size() {
