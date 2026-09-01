@@ -81,8 +81,8 @@ public final class VarioHudElement implements HudElement {
 	/** Returns the y coordinate just past the bottom of the panel. */
 	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
 		int width = VarioConfig.panelWidth;
-		// Nine readouts plus the separator line between the speed and energy groups.
-		int height = 10 * LINE + PAD * 2;
+		// Ten readouts plus the separator line between the speed and energy groups.
+		int height = 11 * LINE + PAD * 2;
 
 		graphics.fill(x, y, x + width, y + height, PANEL_BG);
 		graphics.outline(x, y, width, height, BORDER);
@@ -106,6 +106,10 @@ public final class VarioHudElement implements HudElement {
 		row = peakRow(graphics, font, x, row, "PE", sample.potentialHeight(), recorder.peakPotentialHeight());
 		row = peakRow(graphics, font, x, row, "TE", sample.totalHeight(), recorder.peakTotalHeight());
 		row = row(graphics, font, x, row, "TE RATE", fmt("%+.2f b/s", energyRate), rateColor(energyRate));
+
+		double gain = recorder.lastCycleGain();
+		row = row(graphics, font, x, row, "GAIN",
+				Double.isFinite(gain) ? fmt("%+.1f b", gain) : "--", rateColor(gain));
 
 		return y + height;
 	}
