@@ -49,8 +49,19 @@ public record Sample(
 		return potentialHeight() + kineticHeight();
 	}
 
-	/** Blocks forward per block down. Infinite while climbing. */
+	/**
+	 * Blocks forward per block down. Negative while climbing, where it reads as blocks
+	 * forward per block <em>gained</em>.
+	 *
+	 * <p>The zero case is special-cased rather than left to IEEE arithmetic: negating a
+	 * {@code vy} of {@code 0.0} gives {@code -0.0}, which would make level flight divide out
+	 * to negative infinity and so report a climb.
+	 */
 	public double glideRatio() {
-		return vy < 0.0 ? horizontalSpeed() / -vy : Double.POSITIVE_INFINITY;
+		if (vy == 0.0) {
+			return horizontalSpeed() == 0.0 ? Double.NaN : Double.POSITIVE_INFINITY;
+		}
+
+		return horizontalSpeed() / -vy;
 	}
 }
