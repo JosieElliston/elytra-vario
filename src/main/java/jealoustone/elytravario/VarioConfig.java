@@ -75,11 +75,23 @@ public final class VarioConfig {
 	 * <p>The horizontal axis starts slightly below zero so that the origin sits inside the
 	 * chart rather than on its edge. Neither horizontal speed nor its look-projection is
 	 * bounded by that lower edge; it is there for legibility.
+	 *
+	 * <p>The top of the vertical axis is set by what a working pump cycle actually reaches, not
+	 * by what the physics allows. elytrasim's optimised three-hundred-tick cycle peaks at about
+	 * 1.76 blocks/tick of climb, so two covers it with a little room; terminal velocity is
+	 * nearer to three and a half, and reserving room for it would make the chart enormous to
+	 * show a state nothing useful passes through.
+	 *
+	 * <p>A cursor that leaves the domain is clamped to the edge rather than dropped, so it
+	 * stops being a reading and becomes a floor or a ceiling. There is no cue that this has
+	 * happened. A domain that slid to keep the cursor inside would fix that, and is worth
+	 * considering: the cost is that every distance on the chart would stop meaning a fixed
+	 * change in speed, and that the heatmap would have to be rebuilt as it moved.
 	 */
 	public static double chartMinVxz = -0.5;
 	public static double chartMaxVxz = 3.0;
 	public static double chartMinVy = -1.5;
-	public static double chartMaxVy = 1.5;
+	public static double chartMaxVy = 2.0;
 
 	/**
 	 * The heatmap's ramp. Energy being lost runs from {@code chartFieldZeroColor} to
@@ -116,11 +128,12 @@ public final class VarioConfig {
 	 * The energy change, in blocks/tick, at which the heatmap's ramp is half way to saturated.
 	 *
 	 * <p>The ramp compresses rather than clips — {@code |x| / (|x| + this)} — because the
-	 * field spans three and a half blocks/tick end to end while everything worth looking at
-	 * happens in the first tenth of that. Lower values pull detail towards the boundary and
-	 * flatten the extremes; higher values do the reverse.
+	 * field spans about four blocks/tick end to end while everything worth looking at happens
+	 * in the first tenth of that. Lower values pull detail towards the boundary and flatten the
+	 * extremes; higher values do the reverse. Note that this is a display setting only: it is
+	 * read when the texture is painted and never touches the cached physics.
 	 */
-	public static double chartFieldScale = 0.6;
+	public static double chartFieldScale = 0.4;
 
 	/**
 	 * Cursor colors, as ARGB. The two cursors sit on the same row of the chart and differ

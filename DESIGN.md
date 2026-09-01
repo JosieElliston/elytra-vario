@@ -87,20 +87,32 @@ velocity round to face forwards, which is violent and expensive. It is drawn bec
 defined, not because it is common.
 
 **The build is cached and it is not baked.** A cell costs 179 ticks of physics and the default
-domain is 12,138 cells, so a build is about 30ms — one hitch, once, on the first frame, and
-again only if gravity or the chart's domain changes. Precomputing it at compile time would be
-faster and is deliberately not done: the domain is meant to become adjustable, and a table
-that cannot follow the axes it is drawn against would be worse than no table. The whole-degree
-sweep is also not refined here, unlike in the bug: refinement is worth at most 0.00012
-blocks/tick anywhere in the envelope, against a quantisation step of about 0.025, so it could
-not move a single pixel.
+domain is 14,161 cells. That is about 30ms of arithmetic warm and **ten times that cold**,
+because the first build is also the first few million interpreted executions of the physics —
+so the honest figure is roughly a third of a second of freeze on the frame it first happens,
+and nothing afterwards until gravity or the chart's domain changes. Gliding for a few seconds
+first warms the same code through the optimal pitch bug and makes the build cheap.
+Precomputing it at compile time would avoid the hitch and is deliberately not done: the domain
+is meant to become adjustable, and a table that cannot follow the axes it is drawn against
+would be worse than no table. The whole-degree sweep is also not refined here, unlike in the
+bug: refinement is worth at most 0.00012 blocks/tick anywhere in the envelope, far below one
+step of an eight-bit ramp, so it could not move a single pixel.
 
-**Drawn as runs, not pixels.** The field is stored quantised to 24 levels a side and adjacent
-cells of equal level are merged along each row, which turns 12,138 fills a frame into 2,557.
-That is still the most expensive thing on the HUD by an order of magnitude. If it ever costs
-enough to notice, the answer is to upload the field as a texture and blit it once — not to
-draw less of it, and not to spread the build across frames, which would make a stale map that
-disagrees with its own axes.
+**Drawn as a texture, after an attempt at rectangles failed.** The first version drew the
+field with `fill`, one rectangle per horizontal run of equal colour. Merging runs needs the
+values quantised, and the quantisation was the problem. At a step coarse enough to be worth
+doing — 24 levels a side, which cut 14,161 rectangles to about 3,000 — the ramp banded
+visibly. At a step fine enough not to band, almost nothing merged: an unquantised field still
+comes to 10,919 runs on the default domain, so the whole trick bought about 20% for a picture
+that looked worse. Both ends of that trade are bad, so the field goes into a `DynamicTexture`
+and is blitted as one quad: no per-frame allocation, no quantisation, and the eight bits a
+channel the screen has anyway are the only rounding left. It also stops a display concern —
+how many colours to allow — from deciding how the physics results are stored.
+
+`DynamicTexture` samples `NEAREST` and the blit is one texel to one GUI pixel, so nothing is
+filtered on the way to the screen. Three costs with three separate triggers: the field rebuilds
+on a domain or gravity change, the pixels repaint on a colour or scale change, and the texture
+object is reallocated only when the chart changes size.
 
 ### Its colors
 
@@ -145,6 +157,22 @@ as evenly as the eye reads them.
 **No zero contour.** Drawing the boundary as an explicit line was tried and dropped: it is
 already the strongest edge on the map, and a bright line over it hid the structure either side
 of the thing it was pointing at.
+
+### Where the axes stop
+
+The top of the vertical axis is set by what a working cycle reaches, not by what the physics
+allows. elytrasim's optimised 300-tick cycle peaks at about 1.76 blocks/tick of climb, so the
+axis stops at 2.0; terminal velocity is nearer 3.5, and reserving room for it would make the
+chart enormous in order to show a state nothing useful passes through.
+
+A cursor outside the domain is clamped to the edge rather than dropped, so it silently stops
+being a reading and becomes a floor or a ceiling, with no cue that it has happened. **A domain
+that slid to keep the cursor inside would fix that, and is noted here as a possible future
+feature rather than a plan.** The costs are real: distances on the chart would stop meaning a
+fixed change in speed, which is the property the single `chartScale` exists to guarantee; the
+heatmap would have to be rebuilt as the domain moved, which is a third of a second the first
+time and 30ms after; and a map that moves under a cursor that is trying to stay still is a
+different instrument from a fixed one, quite possibly a worse one.
 
 ## The pitch ladder
 

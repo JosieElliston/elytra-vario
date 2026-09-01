@@ -193,76 +193,17 @@ public final class VarioHudElement implements HudElement {
 
 	/**
 	 * Fills the chart with the best energy change available at each velocity it can show; see
-	 * {@link EnergyField} for what that means and why it is affordable.
-	 *
-	 * <p>Drawn as horizontal runs of equal color rather than pixel by pixel, which turns
-	 * twelve thousand fills a frame into about twenty-six hundred. It is still the most
-	 * expensive thing on the HUD by an order of magnitude, and if it ever costs enough to
-	 * notice the answer is to upload the field as a texture and blit it once, not to draw less
-	 * of it.
+	 * {@link EnergyField} for what that means and what it costs, and
+	 * {@link EnergyFieldTexture} for why it arrives as a texture rather than as rectangles.
 	 *
 	 * <p>Everything else on the chart is drawn afterwards, so the grid, the trail and both
 	 * cursors sit over the field rather than under it. The grid is translucent and picks up
-	 * the color beneath it, which is the point: it is a reference, not a border.
+	 * the colour beneath it, which is the point: it is a reference, not a border.
 	 */
 	private void drawEnergyField(GuiGraphicsExtractor graphics, Sample sample, int x, int y,
 			int width, int height) {
-		EnergyField field = EnergyField.of(width, height, VarioConfig.chartMinVxz,
-				VarioConfig.chartMaxVy, VarioConfig.chartScale, sample.gravity(),
-				VarioConfig.chartFieldScale);
-
-		int[] palette = palette();
-		int[] runs = field.runs();
-
-		for (int i = 0; i < runs.length; i += 4) {
-			int row = runs[i];
-			graphics.fill(x + runs[i + 1], y + row, x + runs[i + 2] + 1, y + row + 1,
-					palette[runs[i + 3] + EnergyField.LEVELS]);
-		}
-	}
-
-	/**
-	 * The heatmap's color for each level, rebuilt only when the configured colors change.
-	 *
-	 * <p>Interpolated in sRGB rather than in linear light. Linear light is the correct way to
-	 * mix two lights, but this is not mixing light: it is laying out a scale, and on a ramp
-	 * from near-black to a saturated color the linear version spends most of its length near
-	 * the dark end and arrives at the mid-tones desaturated. Plain sRGB keeps the hue and
-	 * spaces the steps about as evenly as the eye reads them.
-	 */
-	private static int[] palette() {
-		if (palette != null && paletteZero == VarioConfig.chartFieldZeroColor
-				&& paletteGain == VarioConfig.chartFieldGainColor
-				&& paletteLoss == VarioConfig.chartFieldLossColor) {
-			return palette;
-		}
-
-		int[] built = new int[EnergyField.LEVELS * 2 + 1];
-
-		for (int level = -EnergyField.LEVELS; level <= EnergyField.LEVELS; level++) {
-			int end = level < 0 ? VarioConfig.chartFieldLossColor : VarioConfig.chartFieldGainColor;
-			built[level + EnergyField.LEVELS] = mix(VarioConfig.chartFieldZeroColor, end,
-					(float) Math.abs(level) / EnergyField.LEVELS);
-		}
-
-		palette = built;
-		paletteZero = VarioConfig.chartFieldZeroColor;
-		paletteGain = VarioConfig.chartFieldGainColor;
-		paletteLoss = VarioConfig.chartFieldLossColor;
-		return built;
-	}
-
-	/** Channel-wise interpolation between two ARGB colors, alpha included. */
-	private static int mix(int from, int to, float t) {
-		int argb = 0;
-
-		for (int shift = 0; shift < 32; shift += 8) {
-			int a = (from >>> shift) & 0xFF;
-			int b = (to >>> shift) & 0xFF;
-			argb |= (Math.round(a + (b - a) * t) & 0xFF) << shift;
-		}
-
-		return argb;
+		EnergyFieldTexture.blit(graphics, EnergyField.of(width, height, VarioConfig.chartMinVxz,
+				VarioConfig.chartMaxVy, VarioConfig.chartScale, sample.gravity()), x, y);
 	}
 
 	/** A reading with the value held from the last apex dimmed alongside it. */

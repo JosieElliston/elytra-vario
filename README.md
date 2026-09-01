@@ -72,8 +72,10 @@ be in it.
 The map assumes all your horizontal speed is going where the nose points. In a turn it is not,
 and the map is then optimistic by however far apart the two cursors are.
 
-It costs about 30ms to build, once, on the first frame it is drawn — and again only if gravity
-or the chart's bounds change. After that it is free. Turn it off with `showEnergyField`.
+It costs about a third of a second to build, once, on the first frame it is drawn — and again
+only if gravity or the chart's bounds change. After that it is free. Most of that is the JIT
+seeing the physics for the first time, so gliding for a few seconds before opening the chart
+makes it roughly ten times cheaper. Turn it off with `showEnergyField`.
 
 ## The pitch ladder
 
@@ -150,9 +152,13 @@ Sideslip is still readable without the marker, from the gap between the chart's 
 - The heatmap is drawn whenever the chart is, including while walking around, where the elytra
   physics it describes does not apply. `onlyWhileGliding` suppresses the whole HUD if that
   matters.
-- Building the heatmap blocks the frame it happens on. It is one hitch of about 30ms and then
-  never again, and it is deliberately not spread across frames: a half-built map that disagreed
-  with its own axes would be worse than a stutter.
+- Building the heatmap blocks the frame it happens on. It is one hitch of roughly a third of a
+  second and then never again, and it is deliberately not spread across frames: a half-built
+  map that disagreed with its own axes would be worse than a stutter.
+- **A cursor outside the chart's bounds is clamped to the edge, with no cue that it has
+  happened.** The vertical axis reaches 40 b/s of climb, which covers a good pump cycle's peak
+  of about 35, but a rocket will go past it. A domain that slid to keep the cursor inside is a
+  possible future feature; see [DESIGN.md](DESIGN.md) for what it would cost.
 - The bug reads plain gravity where vanilla reads its *effective* gravity. The two differ only
   under Slow Falling while descending, where the cue will be slightly wrong; every energy
   readout on the panel makes the same simplification, so at least they agree with each other.
