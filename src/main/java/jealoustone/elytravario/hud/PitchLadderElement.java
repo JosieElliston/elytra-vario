@@ -211,11 +211,11 @@ public final class PitchLadderElement implements HudElement {
 		// in VarioConfig means reordering these calls to match; nothing checks it.
 		//
 		// The last argument is whether the bug pegs at the edge of the band or leaves through
-		// it. The lookahead does not peg: in the dive its answer is bimodal and the far mode
-		// is forty to fifty degrees nose-up, so a pegging bug would sit parked at the top of
-		// the ladder through the longest phase of the cycle, saying something that is not even
-		// the phase's answer. It is better off the ladder there, which is also what the rule
-		// having nothing to say looks like everywhere else.
+		// it. Neither rule bug pegs, for the same underlying reason: each governs one phase,
+		// and each sends its answer off the ladder in the phases it does not govern. A mark
+		// held at the stop reads as a direction to keep going in, which invites following a
+		// rule exactly where it does not apply. The two bugs that do peg are both switched off
+		// by default and are not rules; see drawBug.
 		if (VarioConfig.showLookaheadPitch) {
 			OptimalPitch lookahead = recorder.optimalPitch(VarioConfig.lookaheadTicks);
 
@@ -228,7 +228,7 @@ public final class PitchLadderElement implements HudElement {
 
 		if (VarioConfig.showHoldPitch) {
 			drawBug(graphics, cameraPitch, recorder.flightPathHold(VarioConfig.flightPathWindow),
-					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor, true,
+					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor, false,
 					centerX, centerY, scale, bandUp, bandDown);
 		}
 
@@ -284,12 +284,19 @@ public final class PitchLadderElement implements HudElement {
 	 * does its real work at interior angles, where it is a target and there is nothing else
 	 * supplying one.
 	 *
-	 * <p>What tipped it for the lookahead bug is that its off-ladder answer is not a limit
-	 * being approached but a <em>different mode</em>. Through the dive the energy family is
-	 * bimodal, and the far mode is forty to fifty degrees nose-up — so a pegged lookahead bug
-	 * parks at the top of the ladder for the longest phase of a cycle while pointing at an
-	 * answer that is not the phase's. A gray mark at a stop reads as "keep going that way",
-	 * and there it would be a lie.
+	 * <p><b>Neither rule bug pegs.</b> Each governs one phase of a cycle and each sends its
+	 * answer off the ladder during the phases it does not govern — the lookahead into a second
+	 * mode forty to fifty degrees nose-up through the dive, the hold into a steep nose-down
+	 * answer once the dive is over and the rule has stopped applying. Pegged, both would sit at
+	 * a stop for whole phases reading as "keep going that way", which is an invitation to fly a
+	 * rule exactly where it is not the rule. Leaving is also what each already does when its
+	 * search returns nothing, so a bug that is not on the ladder means one thing rather than
+	 * two.
+	 *
+	 * <p>The two bugs that still peg are both switched off by default and neither is a phase
+	 * rule. For them the off-ladder answer really is a limit being approached: the one-tick
+	 * bug's near-ninety nose-down through a slow descent, and the velocity bug's plain
+	 * direction of travel, which cannot be anything but where you are going.
 	 */
 	private void drawBug(GuiGraphicsExtractor graphics, float cameraPitch, float pitch,
 			int riseSetting, int bugColor, boolean peg, int centerX, int centerY, double scale,

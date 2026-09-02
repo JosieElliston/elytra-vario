@@ -305,15 +305,23 @@ not advice. It is also what is left when colour has been spent, since a pegged b
 same gray whichever one it is. Nothing enforces the ordering — `drawBugs` draws in a fixed
 sequence that has to be kept in step with the rises by hand.
 
-**The lookahead bug leaves the ladder rather than pegging on it.** Every other bug is held at
-the edge of the band and turned gray when its answer is off the ladder, which reads as a
-direction to keep going in. That reading is wrong for this one. Its off-ladder answer through
-the dive is not a limit being approached but the *far mode of a bimodal choice* — stay level
-against zoom now at 40–50° nose-up — so a pegged bug would park at the top of the ladder for
-the longest phase of a cycle while pointing at an answer that is not the phase's. Leaving is
-also what it already does wherever its rule has nothing to say, so nothing new has to be
-learned to read it. The peg is now a per-bug argument to `drawBug` rather than a property of
-bugs, which is the honest shape for something that was always described as a cheap courtesy.
+**Neither rule bug pegs; both leave the ladder.** The original behaviour was to hold a bug at
+the edge of the band and turn it gray, which reads as a direction to keep going in. That
+reading is wrong for a rule that only governs one phase, and both of these do. The lookahead's
+off-ladder answer through the dive is not a limit being approached but the *far mode of a
+bimodal choice* — stay level against zoom now at 40–50° nose-up. The hold's is a steep
+nose-down pitch it starts reporting once the dive is over and the rule has stopped applying.
+Pegged, each would park at a stop for whole phases while inviting you to fly a rule exactly
+where it is not the rule.
+
+Leaving is also what each already does when its search returns nothing, which is the second
+half of the argument: a bug that is not on the ladder now means one thing rather than two.
+
+The peg survives as a per-bug argument to `drawBug` for the two switched-off bugs, where the
+off-ladder answer genuinely is a limit — the one-tick bug's near-90° nose-down through a slow
+descent, and the velocity bug's direction of travel, which cannot be anything but where you are
+going. That per-bug shape is the honest one for something that was always described here as a
+cheap courtesy rather than a necessity.
 
 **Only the two rules are on by default.** The one-tick bug and the velocity bug are both
 switched off, having been drawn and then flown. The one-tick bug is right only in phases some

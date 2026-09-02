@@ -70,10 +70,7 @@ public final class VarioConfig {
 	 * <li><b>Lookahead</b> — the constant pitch gaining the most energy over the next
 	 *     {@code lookaheadTicks}. This is the <em>gain phase</em> rule, the climb out of the
 	 *     flick, and it is the one to follow there; the one-tick bug is badly wrong through
-	 *     that phase. See {@link jealoustone.elytravario.flight.OptimalPitch}. Alone among the
-	 *     four it leaves the ladder instead of pegging gray at the edge, because through the
-	 *     dive its off-ladder answer is a second mode rather than a limit being approached, and
-	 *     a mark parked at the stop would be claiming otherwise.</li>
+	 *     that phase. See {@link jealoustone.elytravario.flight.OptimalPitch}.</li>
 	 * <li><b>Hold</b> — the pitch that leaves the flight path angle where it is. This is the
 	 *     <em>dive</em> rule, and it is parameter-free. See
 	 *     {@link jealoustone.elytravario.flight.FlightPathHold}.</li>
@@ -81,6 +78,12 @@ public final class VarioConfig {
 	 *     is the one bug drawn in gray; it is there so the hold bug can be read against it,
 	 *     the gap between the two being the angle of attack the hold is asking for.</li>
 	 * </ul>
+	 *
+	 * <p><b>Neither rule bug pegs at the edge of the ladder; both leave through it.</b> Each
+	 * governs one phase and sends its answer off the ladder in the phases it does not govern,
+	 * where a mark held at the stop would read as a direction to keep going in and so invite
+	 * flying a rule where it does not apply. The two that do peg are the two switched off by
+	 * default, neither of which is a rule.
 	 *
 	 * <p>The velocity bug and the flight path marker are the same quantity twice. The marker
 	 * is the honest two-dimensional version and also shows sideslip; the bug is its vertical

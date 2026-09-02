@@ -113,7 +113,7 @@ switch rules rather than what any rule is.
 | Bug | Colour | Marks | Its phase |
 | --- | --- | --- | --- |
 | Lookahead | Amber | The constant pitch gaining the most energy over the next 20 ticks | **The gain phase** — the climb out of the flick, where most of a cycle's energy is made |
-| Hold | Green | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree |
+| Hold | Green | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree. Gone once the dive is over |
 | Optimal pitch | Magenta | The same over one tick | *Off by default.* A gradient rather than a plan, and wrong through both phases above |
 | Velocity | Gray | Where you are actually going | *Off by default.* A reference, not advice, which is why it is the gray one |
 
@@ -133,17 +133,20 @@ can go, so they overlap whenever two rules agree. They are ranked by height as w
 and drawn tallest first, so a pile nests into chevrons instead of merging into one mark of
 uncertain colour. Which bug gets which height is tuned by eye and means nothing in itself.
 
-When an answer is further out than the band reaches, most of the bugs hold at the edge and
-turn gray, which means *keep going that way*, not *stop here*. Do not expect much of it there:
-pitch clamps at ±90, so the mouse finds the stop by itself. The bugs earn their place at
-interior angles, where they are actual targets to fly to.
+**When an answer is further out than the band reaches, a rule bug leaves the ladder.** Both
+of the bugs that are on by default do this. Each governs one phase and each sends its answer
+off the ladder during the phases it does not govern — the amber one into a second mode 40–50°
+nose-up through the dive, the green one into a steep nose-down answer once the dive is over.
+Held at the edge in gray they would read as *keep going that way* for whole phases at a time,
+which is an invitation to fly a rule exactly where it is not the rule. Gone says the one true
+thing instead, and it matches what each already does when its search has no answer at all — so
+a bug that is not there means one thing rather than two.
 
-**The amber bug is the exception: it leaves the ladder instead.** Its off-ladder answer is not
-a limit being approached but the far half of a bimodal choice — through the dive the energy
-family splits into *stay level* and *zoom now around 40–50° nose-up* — so a pegged amber bug
-would sit parked at the top of the ladder through the longest phase of a cycle, pointing at
-something that is not that phase's answer. Gone is the more honest reading, and it matches what
-the bug already does everywhere its rule has nothing to say.
+The two switched-off bugs still peg gray at the edge, because for them the off-ladder answer
+really is a limit being approached: near-90° nose-down through a slow descent for the magenta
+one, and the plain direction of travel for the gray one. Do not expect much of it. Pitch clamps
+at ±90, so the mouse finds the stop by itself; the bugs earn their place at interior angles,
+where they are actual targets to fly to.
 
 ### Reading the two energy bugs
 
