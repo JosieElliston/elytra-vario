@@ -112,8 +112,8 @@ switch rules rather than what any rule is.
 
 | Bug | Colour | Marks | Its phase |
 | --- | --- | --- | --- |
-| Hold | Green | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree |
 | Lookahead | Amber | The constant pitch gaining the most energy over the next 20 ticks | **The gain phase** — the climb out of the flick, where most of a cycle's energy is made |
+| Hold | Green | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree |
 | Optimal pitch | Magenta | The same over one tick | *Off by default.* A gradient rather than a plan, and wrong through both phases above |
 | Velocity | Gray | Where you are actually going | *Off by default.* A reference, not advice, which is why it is the gray one |
 
@@ -130,14 +130,20 @@ the evidence.
 
 They share one band of the ladder, since the center gap is the only place on it any of them
 can go, so they overlap whenever two rules agree. They are ranked by height as well as colour
-— tallest is the rule most relied on, so the hold bug is the biggest — and drawn tallest
-first, so a pile nests into chevrons instead of merging into one mark of uncertain colour.
-That ranking is also what survives the peg, where all four take the same gray.
+and drawn tallest first, so a pile nests into chevrons instead of merging into one mark of
+uncertain colour. Which bug gets which height is tuned by eye and means nothing in itself.
 
-When an answer is further out than the band reaches it is held at the edge and turns gray,
-which means *keep going that way*, not *stop here*. Do not expect much of it there: pitch
-clamps at ±90, so the mouse finds the stop by itself. The bugs earn their place at interior
-angles, where they are actual targets to fly to.
+When an answer is further out than the band reaches, most of the bugs hold at the edge and
+turn gray, which means *keep going that way*, not *stop here*. Do not expect much of it there:
+pitch clamps at ±90, so the mouse finds the stop by itself. The bugs earn their place at
+interior angles, where they are actual targets to fly to.
+
+**The amber bug is the exception: it leaves the ladder instead.** Its off-ladder answer is not
+a limit being approached but the far half of a bimodal choice — through the dive the energy
+family splits into *stay level* and *zoom now around 40–50° nose-up* — so a pegged amber bug
+would sit parked at the top of the ladder through the longest phase of a cycle, pointing at
+something that is not that phase's answer. Gone is the more honest reading, and it matches what
+the bug already does everywhere its rule has nothing to say.
 
 ### Reading the two energy bugs
 
@@ -159,8 +165,9 @@ phase and none outside it ever is.
 
 In the dive the two energy bugs are not merely imprecise but **bimodal** — short horizons say
 stay level, long ones say zoom now around 40–50° nose-up — and the truth is at neither. Expect
-the amber bug to jump between those two answers while diving. That is the reading, not a
-glitch, and it is why the dive gets a rule that never mentions energy.
+the amber bug to jump between staying near the horizon and vanishing off the top of the ladder
+while diving. That is the reading, not a glitch, and it is why the dive gets a rule that never
+mentions energy.
 
 ### Reading the hold bug
 

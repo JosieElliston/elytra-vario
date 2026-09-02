@@ -298,13 +298,22 @@ ladder that nothing else ever draws in, so all four have to live there, and they
 same rows whenever two rules agree — which is common. Colour alone would turn that into one
 mark of indeterminate hue. Ranking them by rise and drawing tallest first makes an overlap
 *nest* instead: the apexes coincide, the taller shoulders show past the shorter ones, and the
-pile reads as a set of chevrons. The ranking is by how much each rule is actually flown: the
-hold bug is the biggest, since it governs the dive and the dive is two thirds of a cycle's
-ticks, then the lookahead which governs the climb, then the one-tick diagnostic, and last the
-velocity bug, which is not advice at all and so is a flat pair of stubs rather than a wedge. It
-also survives the peg, where every bug takes the same gray and colour stops saying anything at
-all. Nothing enforces the ordering — `drawBugs` draws in a fixed sequence that has to be kept
-in step with the rises by hand.
+pile reads as a set of chevrons. Which bug gets which height is a display choice tuned in
+flight and carries no claim; only two things about it matter structurally, that the heights are
+distinct and that the flat pair of stubs is the velocity bug, the one mark of the four that is
+not advice. It is also what is left when colour has been spent, since a pegged bug takes the
+same gray whichever one it is. Nothing enforces the ordering — `drawBugs` draws in a fixed
+sequence that has to be kept in step with the rises by hand.
+
+**The lookahead bug leaves the ladder rather than pegging on it.** Every other bug is held at
+the edge of the band and turned gray when its answer is off the ladder, which reads as a
+direction to keep going in. That reading is wrong for this one. Its off-ladder answer through
+the dive is not a limit being approached but the *far mode of a bimodal choice* — stay level
+against zoom now at 40–50° nose-up — so a pegged bug would park at the top of the ladder for
+the longest phase of a cycle while pointing at an answer that is not the phase's. Leaving is
+also what it already does wherever its rule has nothing to say, so nothing new has to be
+learned to read it. The peg is now a per-bug argument to `drawBug` rather than a property of
+bugs, which is the honest shape for something that was always described as a cheap courtesy.
 
 **Only the two rules are on by default.** The one-tick bug and the velocity bug are both
 switched off, having been drawn and then flown. The one-tick bug is right only in phases some

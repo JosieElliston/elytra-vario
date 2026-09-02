@@ -70,7 +70,10 @@ public final class VarioConfig {
 	 * <li><b>Lookahead</b> — the constant pitch gaining the most energy over the next
 	 *     {@code lookaheadTicks}. This is the <em>gain phase</em> rule, the climb out of the
 	 *     flick, and it is the one to follow there; the one-tick bug is badly wrong through
-	 *     that phase. See {@link jealoustone.elytravario.flight.OptimalPitch}.</li>
+	 *     that phase. See {@link jealoustone.elytravario.flight.OptimalPitch}. Alone among the
+	 *     four it leaves the ladder instead of pegging gray at the edge, because through the
+	 *     dive its off-ladder answer is a second mode rather than a limit being approached, and
+	 *     a mark parked at the stop would be claiming otherwise.</li>
 	 * <li><b>Hold</b> — the pitch that leaves the flight path angle where it is. This is the
 	 *     <em>dive</em> rule, and it is parameter-free. See
 	 *     {@link jealoustone.elytravario.flight.FlightPathHold}.</li>
@@ -343,7 +346,7 @@ public final class VarioConfig {
 	 */
 	public static int ladderBugGap = 2;
 	public static int ladderBugLength = 8;
-	public static int ladderBugRise = 4;
+	public static int ladderBugRise = 2;
 	public static int optimalPitchColor = 0xE0FF5AE0;
 
 	/**
@@ -358,12 +361,12 @@ public final class VarioConfig {
 	 * rather than as one mark of uncertain color. It also survives the peg, where all four
 	 * take the same gray and color stops saying anything at all.
 	 *
-	 * <p>The ranking is by how much each rule is actually flown. The hold bug is the biggest:
-	 * it governs the dive, which is two thirds of a cycle's ticks, and it is the rule under
-	 * test. Then the lookahead, which governs the climb. Then the one-tick bug, which is a
-	 * diagnostic rather than a rule, and last the velocity bug, which is not advice at all and
-	 * so is a flat pair of stubs rather than a wedge. The last two are off by default, so in
-	 * practice the ranking separates the two bugs that are.
+	 * <p>Which bug gets which height is a display choice tuned in flight, and it is worth being
+	 * plain that it encodes no claim — the lookahead is the tallest and the hold one step under
+	 * it because that is what reads well with both of them up, not because the ordering means
+	 * anything. Only two things about these numbers matter structurally: that they are
+	 * distinct, and that the flat pair of stubs is the velocity bug, which is the one mark of
+	 * the four that is not advice.
 	 *
 	 * <p><b>{@code drawBugs} must draw them in descending order of rise</b>, since that is what
 	 * makes an overlap nest rather than hide the taller bug. Changing the ranking here means
@@ -372,8 +375,8 @@ public final class VarioConfig {
 	 * <p>A rise of zero is a single row: not a wedge, deliberately, since that bug is not
 	 * advice.
 	 */
-	public static int ladderHoldRise = 8;
 	public static int ladderLookaheadRise = 6;
+	public static int ladderHoldRise = 4;
 	public static int ladderVelocityRise = 0;
 
 	/**

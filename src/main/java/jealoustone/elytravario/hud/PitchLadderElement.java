@@ -70,10 +70,11 @@ import org.joml.Vector3fc;
  * </ul>
  *
  * <p>They share one band, since the center gap is the only place any of them can go, and are
- * told apart by color and by height — ranked by how much each rule is actually flown, so that
- * a pile of agreeing bugs nests into chevrons rather than merging into one mark. The ranking
- * still reads when every color has been spent: pegged at the edge of the band they all take
- * the same gray, and only the heights are left.
+ * told apart by color and by height, so that a pile of agreeing bugs nests into chevrons
+ * rather than merging into one mark. Which bug gets which height is a display choice tuned in
+ * flight and carries no claim; what the code depends on is only that the heights are distinct
+ * and that {@code drawBugs} draws them tallest first. The ranking is also what is left when
+ * every color has been spent, since a pegged bug takes the same gray whichever one it is.
  *
  * <p>Nothing here tells you which rule the phase you are in calls for. That switch is the
  * open part of the problem, and a display that guessed at it would be inventing the answer
@@ -196,8 +197,8 @@ public final class PitchLadderElement implements HudElement {
 	 * their apexes land on the same row whenever the rules agree, so a taller wedge drawn
 	 * first keeps its shoulders visible past every shorter one painted over it, and a pile of
 	 * agreeing bugs reads as nested chevrons instead of as one mark of indeterminate color.
-	 * Reversing this would hide the rules that are flown under the ones that are not, exactly
-	 * when they agree, which is when the pile is worth reading as a pile.
+	 * Reversing it would bury the taller bugs under the shorter ones exactly when they agree,
+	 * which is when the pile is worth reading as a pile.
 	 *
 	 * <p>Each is skipped when its rule has nothing to say. The two energy searches return null
 	 * whenever the player is not gliding, and the hold returns {@code NaN} both there and at
@@ -208,19 +209,27 @@ public final class PitchLadderElement implements HudElement {
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
 		// In descending order of rise, which is what makes an overlap nest. Retuning the rises
 		// in VarioConfig means reordering these calls to match; nothing checks it.
-		if (VarioConfig.showHoldPitch) {
-			drawBug(graphics, cameraPitch, recorder.flightPathHold(VarioConfig.flightPathWindow),
-					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
-		}
-
+		//
+		// The last argument is whether the bug pegs at the edge of the band or leaves through
+		// it. The lookahead does not peg: in the dive its answer is bimodal and the far mode
+		// is forty to fifty degrees nose-up, so a pegging bug would sit parked at the top of
+		// the ladder through the longest phase of the cycle, saying something that is not even
+		// the phase's answer. It is better off the ladder there, which is also what the rule
+		// having nothing to say looks like everywhere else.
 		if (VarioConfig.showLookaheadPitch) {
 			OptimalPitch lookahead = recorder.optimalPitch(VarioConfig.lookaheadTicks);
 
 			if (lookahead != null) {
 				drawBug(graphics, cameraPitch, lookahead.pitch(), VarioConfig.ladderLookaheadRise,
-						VarioConfig.lookaheadPitchColor, centerX, centerY, scale, bandUp, bandDown);
+						VarioConfig.lookaheadPitchColor, false,
+						centerX, centerY, scale, bandUp, bandDown);
 			}
+		}
+
+		if (VarioConfig.showHoldPitch) {
+			drawBug(graphics, cameraPitch, recorder.flightPathHold(VarioConfig.flightPathWindow),
+					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor, true,
+					centerX, centerY, scale, bandUp, bandDown);
 		}
 
 		if (VarioConfig.showOptimalPitch) {
@@ -228,7 +237,8 @@ public final class PitchLadderElement implements HudElement {
 
 			if (optimal != null) {
 				drawBug(graphics, cameraPitch, optimal.pitch(), VarioConfig.ladderBugRise,
-						VarioConfig.optimalPitchColor, centerX, centerY, scale, bandUp, bandDown);
+						VarioConfig.optimalPitchColor, true,
+						centerX, centerY, scale, bandUp, bandDown);
 			}
 		}
 
@@ -238,7 +248,7 @@ public final class PitchLadderElement implements HudElement {
 		if (VarioConfig.showVelocityPitch && sample.gliding()) {
 			drawBug(graphics, cameraPitch,
 					(float) recorder.flightPathPitch(VarioConfig.flightPathWindow),
-					VarioConfig.ladderVelocityRise, VarioConfig.velocityPitchColor,
+					VarioConfig.ladderVelocityRise, VarioConfig.velocityPitchColor, true,
 					centerX, centerY, scale, bandUp, bandDown);
 		}
 	}
@@ -263,21 +273,27 @@ public final class PitchLadderElement implements HudElement {
 	 * rather than a defensive check — it is how they say the state they are describing has no
 	 * such pitch — so it is tested for here and not left to fall out of the arithmetic.
 	 *
-	 * <p><b>It pegs at the edge of the band rather than leaving.</b> A whole regime of flight
-	 * has its answer off the bottom of the ladder — in a slow descent the best pitch is
-	 * eighty-something degrees nose-down, far below anything the band reaches. Held at the
-	 * limit it takes the flight path marker's pegged gray, which already means the same thing
-	 * there: a direction to go, not a place to be.
+	 * <p><b>{@code peg} chooses what happens when the answer is off the ladder.</b> Pegged, the
+	 * bug is held at the edge of the band and takes the flight path marker's gray, which means
+	 * a direction to go rather than a place to be. Unpegged, it tapers out over the last of the
+	 * band and is gone, exactly as it is when its rule has no answer at all.
 	 *
-	 * <p>The peg is a cheap courtesy rather than a necessity, and the code should not be read
-	 * as claiming otherwise. Pitch clamps at ±90, so the stops need no aiming and a cue there
-	 * can only name a direction the situation already implies. The bug does its real work at
-	 * interior angles, where it is a target and there is no other. This is kept because it is
-	 * unobtrusive, not because anything depends on it.
+	 * <p>The peg was the original behaviour and it is worth little either way, which is the
+	 * reason it is now a choice rather than a rule. Pitch clamps at ±90, so the stops need no
+	 * aiming and a cue there can only name a direction the situation already implies; a bug
+	 * does its real work at interior angles, where it is a target and there is nothing else
+	 * supplying one.
+	 *
+	 * <p>What tipped it for the lookahead bug is that its off-ladder answer is not a limit
+	 * being approached but a <em>different mode</em>. Through the dive the energy family is
+	 * bimodal, and the far mode is forty to fifty degrees nose-up — so a pegged lookahead bug
+	 * parks at the top of the ladder for the longest phase of a cycle while pointing at an
+	 * answer that is not the phase's. A gray mark at a stop reads as "keep going that way",
+	 * and there it would be a lie.
 	 */
 	private void drawBug(GuiGraphicsExtractor graphics, float cameraPitch, float pitch,
-			int riseSetting, int bugColor, int centerX, int centerY, double scale, int bandUp,
-			int bandDown) {
+			int riseSetting, int bugColor, boolean peg, int centerX, int centerY, double scale,
+			int bandUp, int bandDown) {
 		if (Float.isNaN(pitch)) {
 			return;
 		}
@@ -298,6 +314,12 @@ public final class PitchLadderElement implements HudElement {
 			offset = Math.tan(Math.toRadians(elevation)) * scale;
 			pegged = offset > bandUp || offset < -bandDown;
 			offset = Mth.clamp(offset, -bandDown, bandUp);
+		}
+
+		// A bug that does not peg leaves through the edge of the band like a rung does,
+		// tapering out over the last of it and then simply not being there.
+		if (pegged && !peg) {
+			return;
 		}
 
 		// Pegged it is a limit rather than a reading, so it is drawn at full strength: the
