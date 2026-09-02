@@ -10,28 +10,45 @@ import net.minecraft.world.phys.Vec3;
  * optimal pitch through the whole descent is the pitch that holds the flight path angle, to
  * within a few tenths of a degree — <b>0.73 degrees RMS over a hundred and fifty ticks, with
  * no parameter to tune</b>. Nothing else about the dive needs to be known: not the speed, not
- * how far through it you are, not where the cycle started. Hold the angle you have and the
- * dive flies itself.
+ * how far through it you are, not where the cycle started. The angle you have is enough to
+ * place the pitch.
  *
  * <p>It is the counterpart to {@link OptimalPitch}, and it exists because that class cannot
  * do this. Energy is being <em>spent</em> through the dive, so every lookahead worth the name
  * disagrees about how to spend it: short horizons say stay level, long ones say zoom, and the
  * truth is at neither. A rule that never mentions energy fits it instead.
  *
- * <h2>The hold leaks, and the leak is the rule</h2>
+ * <h2>What leaks is a policy, not this reading</h2>
  *
- * <p>This does not hold the angle exactly. Flying it, the flight path angle decays
- * first-order from wherever the dive is entered towards about 16.6 degrees below the horizon,
- * losing a twentieth of the remaining gap each tick — and that decay is what the optimum
- * does too. An <em>exact</em> hold is a worse rule: it keeps its entry angle forever and
- * bleeds height at three and a half blocks a second.
+ * <p>This holds the angle exactly. The target is the angle the smoothed velocity already has,
+ * so there is nothing for the search to decay towards and no rate at which it could: the bug
+ * moves when the flight moves and not otherwise. Worth saying because the rule is easy to
+ * confuse with the <em>flown</em> version of itself, which does leak. A controller aiming each
+ * tick a twentieth of the way from the angle it has towards a floor near 17.7 degrees below
+ * the horizon reaches 96 percent of the optimal cycle's climb, where holding exactly — with
+ * the entry pitch retuned to suit it, since the leak was doing that job too — reaches 89. An
+ * exact hold keeps whatever angle the dive was entered at, and the entry angle is not the one
+ * worth spending a whole descent at.
  *
- * <p>The floor it decays towards is derivable rather than fitted. It is the flight path angle
- * of the steady glide that maximises forward speed, which in vanilla's physics is a pitch of
- * about 53 degrees nose-down at 3.39 blocks per tick, descending at 16.58 degrees. So the
- * asymptote is a target the rule approaches and never a bound it is held inside: steering
- * straight at that angle instead of holding is a far weaker rule, 34 degrees RMS, and
- * saturates against the nose-up stop for the first sixty ticks of the dive.
+ * <p>That rate is not derived and is best treated as arbitrary: anywhere from a twentieth to
+ * an eighth of the gap per tick flies within noise of the same, and past about an eighth the
+ * cycle stops climbing at all. So there is no leak here worth copying — only a number that
+ * would have to be picked, to make a readout drift away from what it is reading.
+ *
+ * <p>The optimum's own flight path angle does drift, by some ten degrees across the descent,
+ * which is where the fit above spends its error. This sits two or three degrees nose-down of
+ * the optimum through the first stretch of the dive, while the angle is still coming down
+ * fast, and within a twentieth of a degree of it through the middle, where the angle is nearly
+ * stationary and the optimum is, tick for tick, holding what it has.
+ *
+ * <p>The floor a flown leak aims at is derivable rather than fitted. It is the flight path
+ * angle of the steady glide that maximises forward speed, which in vanilla's physics is a
+ * pitch of about 53 degrees nose-down at 3.39 blocks per tick, descending at 16.58 degrees —
+ * a degree below where tuning puts it, across a span of angle the speed curve is flat enough
+ * to be indifferent to. Either way it is a target such a policy approaches and never a bound
+ * anything is held inside: steering straight at that angle instead of holding is a far weaker
+ * rule, 34 degrees RMS, and saturates against the nose-up stop for the first sixty ticks of
+ * the dive.
  *
  * <h2>Holding the angle is not pointing along it</h2>
  *
