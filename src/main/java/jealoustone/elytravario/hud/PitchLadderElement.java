@@ -58,21 +58,22 @@ import org.joml.Vector3fc;
  * the fourth is the reference the dive's rule is read against:
  *
  * <ul>
+ * <li>the <b>hold</b> bug, the pitch that leaves the flight path angle where it is, which is
+ *     the dive;</li>
  * <li>the <b>lookahead</b> bug, the constant pitch that gains the most energy over the next
  *     twenty ticks, which is the climb;</li>
  * <li>the <b>optimal pitch</b> bug, the same over one tick, which is the greedy reading the
- *     ladder shipped with;</li>
- * <li>the <b>hold</b> bug, the pitch that leaves the flight path angle where it is, which is
- *     the dive;</li>
+ *     ladder shipped with — <em>off by default</em>, since it is a diagnostic rather than a
+ *     rule and is wrong through both of the phases above;</li>
  * <li>the <b>velocity</b> bug, where you are actually going, which is not advice and so is
- *     the one of the four that is gray.</li>
+ *     the one of the four that is gray — also <em>off by default</em>.</li>
  * </ul>
  *
  * <p>They share one band, since the center gap is the only place any of them can go, and are
- * told apart by color and by height — ranked by how far ahead each looks, so that a pile of
- * agreeing bugs nests into chevrons rather than merging into one mark. The ranking still
- * reads when every color has been spent: pegged at the edge of the band they all take the
- * same gray, and only the heights are left.
+ * told apart by color and by height — ranked by how much each rule is actually flown, so that
+ * a pile of agreeing bugs nests into chevrons rather than merging into one mark. The ranking
+ * still reads when every color has been spent: pegged at the edge of the band they all take
+ * the same gray, and only the heights are left.
  *
  * <p>Nothing here tells you which rule the phase you are in calls for. That switch is the
  * open part of the problem, and a display that guessed at it would be inventing the answer
@@ -195,7 +196,7 @@ public final class PitchLadderElement implements HudElement {
 	 * their apexes land on the same row whenever the rules agree, so a taller wedge drawn
 	 * first keeps its shoulders visible past every shorter one painted over it, and a pile of
 	 * agreeing bugs reads as nested chevrons instead of as one mark of indeterminate color.
-	 * Reversing this would hide the long-horizon rules under the short-horizon ones exactly
+	 * Reversing this would hide the rules that are flown under the ones that are not, exactly
 	 * when they agree, which is when the pile is worth reading as a pile.
 	 *
 	 * <p>Each is skipped when its rule has nothing to say. The two energy searches return null
@@ -205,6 +206,14 @@ public final class PitchLadderElement implements HudElement {
 	 */
 	private void drawBugs(GuiGraphicsExtractor graphics, Sample sample, float cameraPitch,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
+		// In descending order of rise, which is what makes an overlap nest. Retuning the rises
+		// in VarioConfig means reordering these calls to match; nothing checks it.
+		if (VarioConfig.showHoldPitch) {
+			drawBug(graphics, cameraPitch, recorder.flightPathHold(VarioConfig.flightPathWindow),
+					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor,
+					centerX, centerY, scale, bandUp, bandDown);
+		}
+
 		if (VarioConfig.showLookaheadPitch) {
 			OptimalPitch lookahead = recorder.optimalPitch(VarioConfig.lookaheadTicks);
 
@@ -221,12 +230,6 @@ public final class PitchLadderElement implements HudElement {
 				drawBug(graphics, cameraPitch, optimal.pitch(), VarioConfig.ladderBugRise,
 						VarioConfig.optimalPitchColor, centerX, centerY, scale, bandUp, bandDown);
 			}
-		}
-
-		if (VarioConfig.showHoldPitch) {
-			drawBug(graphics, cameraPitch, recorder.flightPathHold(VarioConfig.flightPathWindow),
-					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
 		}
 
 		// Gated on gliding like the other three, even though a direction of travel exists

@@ -112,10 +112,17 @@ switch rules rather than what any rule is.
 
 | Bug | Colour | Marks | Its phase |
 | --- | --- | --- | --- |
-| Lookahead | Amber | The constant pitch gaining the most energy over the next 20 ticks | **The gain phase** — the climb out of the flick, where most of a cycle's energy is made |
-| Optimal pitch | Magenta | The same over one tick | A gradient rather than a plan; right where energy is being gained, wrong where it is being spent |
 | Hold | Green | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree |
-| Velocity | Gray | Where you are actually going | None. It is a reference, not advice, which is why it is the gray one |
+| Lookahead | Amber | The constant pitch gaining the most energy over the next 20 ticks | **The gain phase** — the climb out of the flick, where most of a cycle's energy is made |
+| Optimal pitch | Magenta | The same over one tick | *Off by default.* A gradient rather than a plan, and wrong through both phases above |
+| Velocity | Gray | Where you are actually going | *Off by default.* A reference, not advice, which is why it is the gray one |
+
+Two are on. The one-tick bug parks on the horizon through the whole dive and pins to the
+nose-up stop entering the climb, so in the phases being flown it is two more marks saying
+nothing; it is kept because it is the reading elytrasim plots and the heatmap colours. The
+velocity bug was added so the hold could be read against something, but the hold is flown by
+putting the nose on it and the gap is a fact about the answer rather than an input to using
+it.
 
 **Nothing tells you which rule the phase you are in calls for.** That switch is the open part
 of the problem; a display that guessed at it would be inventing the answer rather than showing
@@ -123,9 +130,9 @@ the evidence.
 
 They share one band of the ladder, since the center gap is the only place on it any of them
 can go, so they overlap whenever two rules agree. They are ranked by height as well as colour
-— tallest is the longest view — and drawn tallest first, so a pile nests into chevrons instead
-of merging into one mark of uncertain colour. That ranking is also what survives the peg,
-where all four take the same gray.
+— tallest is the rule most relied on, so the hold bug is the biggest — and drawn tallest
+first, so a pile nests into chevrons instead of merging into one mark of uncertain colour.
+That ranking is also what survives the peg, where all four take the same gray.
 
 When an answer is further out than the band reaches it is held at the edge and turns gray,
 which means *keep going that way*, not *stop here*. Do not expect much of it there: pitch
@@ -183,6 +190,8 @@ instruments watched continuously they were clutter competing with readings actua
 
 | Switch | Brings back |
 | --- | --- |
+| `showOptimalPitch` | The magenta one-tick bug on the ladder |
+| `showVelocityPitch` | The gray velocity bug: where you are going, as a bug rather than a marker. Its gap from the hold bug is the angle of attack the hold is asking for — about 30° by the end of a dive, which is the answer to whether holding the angle means pointing along it |
 | `showAngleOfAttack` | An `AOA` row on the panel, which resizes itself around it |
 | `showFlightPath` | The flight path marker: a winged circle on the ladder marking where you are actually going, as against the crosshair's where you are looking. Its vertical gap from the crosshair is angle of attack drawn rather than printed, and its horizontal gap is sideslip. Grays out when pegged at the edge of the ladder |
 

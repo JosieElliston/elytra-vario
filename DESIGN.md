@@ -298,10 +298,23 @@ ladder that nothing else ever draws in, so all four have to live there, and they
 same rows whenever two rules agree — which is common. Colour alone would turn that into one
 mark of indeterminate hue. Ranking them by rise and drawing tallest first makes an overlap
 *nest* instead: the apexes coincide, the taller shoulders show past the shorter ones, and the
-pile reads as a set of chevrons. The ranking is by how far ahead each rule looks — twenty
-ticks, one tick, one tick of a hold, and none — which is a real ordering rather than an
-arbitrary one, and the flattest bug is the one that is not advice. It also survives the peg,
-where every bug takes the same gray and colour stops saying anything at all.
+pile reads as a set of chevrons. The ranking is by how much each rule is actually flown: the
+hold bug is the biggest, since it governs the dive and the dive is two thirds of a cycle's
+ticks, then the lookahead which governs the climb, then the one-tick diagnostic, and last the
+velocity bug, which is not advice at all and so is a flat pair of stubs rather than a wedge. It
+also survives the peg, where every bug takes the same gray and colour stops saying anything at
+all. Nothing enforces the ordering — `drawBugs` draws in a fixed sequence that has to be kept
+in step with the rises by hand.
+
+**Only the two rules are on by default.** The one-tick bug and the velocity bug are both
+switched off, having been drawn and then flown. The one-tick bug is right only in phases some
+other bug is also right in, and is conspicuously wrong in both phases that are actually being
+studied. The velocity bug was there so the hold could be read against something, on the theory
+that the gap between them is worth watching; it is not, because the hold is flown by putting
+the nose on it and the gap is a property of the answer rather than an input to using it. Both
+are kept behind switches rather than deleted — the one-tick reading is what elytrasim plots and
+what the heatmap colours, and the gap is the demonstration that holding an angle is not
+pointing along it.
 
 ### One tick of lookahead
 

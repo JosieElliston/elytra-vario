@@ -49,8 +49,15 @@ public final class VarioConfig {
 	 * physics describes. See {@link jealoustone.elytravario.flight.OptimalPitch}, and note
 	 * that its answer is greedy: trustworthy while energy is being gained, and a shorter view
 	 * than a pump cycle needs during the dive that pays for the climb.
+	 *
+	 * <p><b>Off by default.</b> Every phase it is right about is a phase another bug is right
+	 * about too, and the phases it is wrong about are the ones being flown and studied — it
+	 * parks on the horizon through the whole dive and pins to the nose-up stop entering the
+	 * climb. That made it two more marks in the one band the useful bugs share. It is kept
+	 * because it is the reading elytrasim plots and the heatmap colors, so it is the way to
+	 * see those two on the ladder.
 	 */
-	public static boolean showOptimalPitch = true;
+	public static boolean showOptimalPitch = false;
 
 	/**
 	 * The other three bugs, each marking a pitch some rule says to fly, all drawn in the same
@@ -79,7 +86,22 @@ public final class VarioConfig {
 	 */
 	public static boolean showLookaheadPitch = true;
 	public static boolean showHoldPitch = true;
-	public static boolean showVelocityPitch = true;
+
+	/**
+	 * <b>Off by default</b>, unlike the two above.
+	 *
+	 * <p>It was added so the hold bug could be read against something, on the theory that the
+	 * gap between them — the angle of attack the hold is asking for — is worth watching. In
+	 * the air it is not: the hold bug is flown by putting the nose on it, and the gap is a
+	 * fact about the answer rather than an input to flying it. So this is one more mark in a
+	 * crowded band for a number nothing is done with, which is the same case that keeps
+	 * {@code showAngleOfAttack} and {@code showFlightPath} off.
+	 *
+	 * <p>Turn it on to see that gap directly; it is about thirty degrees by the end of a dive,
+	 * and it is the answer to "does holding the angle mean pointing along it", which it does
+	 * not.
+	 */
+	public static boolean showVelocityPitch = false;
 
 	/**
 	 * How many ticks the lookahead bug holds a candidate pitch for before scoring it.
@@ -336,17 +358,22 @@ public final class VarioConfig {
 	 * rather than as one mark of uncertain color. It also survives the peg, where all four
 	 * take the same gray and color stops saying anything at all.
 	 *
-	 * <p>The ranking is by how far ahead each rule looks, which is a real ordering and not an
-	 * arbitrary one: twenty ticks, one tick, one tick of a hold, and none at all. So the
-	 * biggest wedge is the longest view and the flat pair of stubs is the bug that only
-	 * reports where you are already going. They are drawn tallest first, so the shorter ones
-	 * paint over the middle of the taller.
+	 * <p>The ranking is by how much each rule is actually flown. The hold bug is the biggest:
+	 * it governs the dive, which is two thirds of a cycle's ticks, and it is the rule under
+	 * test. Then the lookahead, which governs the climb. Then the one-tick bug, which is a
+	 * diagnostic rather than a rule, and last the velocity bug, which is not advice at all and
+	 * so is a flat pair of stubs rather than a wedge. The last two are off by default, so in
+	 * practice the ranking separates the two bugs that are.
+	 *
+	 * <p><b>{@code drawBugs} must draw them in descending order of rise</b>, since that is what
+	 * makes an overlap nest rather than hide the taller bug. Changing the ranking here means
+	 * reordering the calls there; nothing checks it.
 	 *
 	 * <p>A rise of zero is a single row: not a wedge, deliberately, since that bug is not
 	 * advice.
 	 */
+	public static int ladderHoldRise = 8;
 	public static int ladderLookaheadRise = 6;
-	public static int ladderHoldRise = 2;
 	public static int ladderVelocityRise = 0;
 
 	/**
