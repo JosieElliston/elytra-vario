@@ -281,7 +281,29 @@ ladder climb the screen in visible steps, worst on the labels, whose glyphs jump
 Each mark is therefore drawn on a pose translated by its own fractional part, which pushes the
 quantisation down to the physical pixel the GUI scale is drawn at.
 
-## The optimal pitch bug
+## The bugs
+
+**Four of them, because the optimum is piecewise myopic.** An optimised 300-tick cycle divides
+into a dive, a snap to level, a flick to near-vertical and a gain phase, and through the two
+long phases the globally optimal pitch agrees with a simple rule of the current state — a
+different rule in each. So the ladder carries a bug per rule rather than one cue pretending to
+cover the whole cycle, plus a gray reference bug the dive's rule is read against. What it
+deliberately does **not** carry is any indication of which phase you are in. The switch points
+are learnable — tuning them independently rediscovers the optimum's own — but they are the open
+part of the problem, and a display that guessed would be inventing the answer rather than
+showing the evidence.
+
+**They share one band and are ranked by height.** The center gap is the only radius on the
+ladder that nothing else ever draws in, so all four have to live there, and they land on the
+same rows whenever two rules agree — which is common. Colour alone would turn that into one
+mark of indeterminate hue. Ranking them by rise and drawing tallest first makes an overlap
+*nest* instead: the apexes coincide, the taller shoulders show past the shorter ones, and the
+pile reads as a set of chevrons. The ranking is by how far ahead each rule looks — twenty
+ticks, one tick, one tick of a hold, and none — which is a real ordering rather than an
+arbitrary one, and the flattest bug is the one that is not advice. It also survives the peg,
+where every bug takes the same gray and colour stops saying anything at all.
+
+### One tick of lookahead
 
 **It is greedy, and greedy is only sometimes right.** The search tries every pitch, ticks the
 physics once, and keeps whichever gains the most total energy — one tick of lookahead, which
@@ -351,13 +373,112 @@ the labels near ±20, and clearing the labels entirely puts it so far outboard i
 as part of the ladder. The wedges point inwards so the pair closes on the marked pitch like a
 caliper, and frames the crosshair when the pitch being flown is already the best one.
 
+### Twenty ticks of lookahead
+
+**One tick does not fit the gain phase at all.** Measured against the optimised cycle, greedy
+pins to the nose-up bound for the first seventeen ticks of the climb and is still forty degrees
+off well after that — 17.9° RMS over the phase. Holding a constant pitch for twenty ticks and
+scoring the energy at the end of them fits the same phase to **1.14°**. The fit is sharp:
+sixteen and twenty-four ticks both land near 3.8°.
+
+**Twenty is a compromise, not a constant, and it is not overfitted.** The horizon whose argmax
+actually lands on the optimum starts near twenty entering the gain phase and walks down to
+about twelve as the climb develops. Twelve is nose-up of the optimum at *every* gain tick and
+thirty-seven nose-down at every one; everything between crosses somewhere and nothing outside
+ever does, so the family {12…20} is exactly the set of horizons that are ever right. Fixed
+twenty is the best single stand-in and costs about a degree. Re-optimising the whole cycle
+against a family of objectives that trade climb for distance leaves the best horizon at 18–23
+throughout, so this is not a number fitted to one trajectory.
+
+**Flight is far less picky than the fit.** Re-tuning everything else per horizon, the cycle
+flies at 82.9% of optimum on one tick, 96.4% on sixteen, 96.1% on twenty and 97.1% on
+twenty-four. So sixteen to twenty-four is a plateau, and even the one-tick rule still flies —
+badly — because the switch points compensate.
+
+**The pitch is held constant across the horizon rather than re-optimised each tick.** That is
+the point of the reading: it asks what a fixed attitude is worth, not what the best possible
+flight from here is worth. The latter is a dynamic program and its answer is the whole cycle,
+which is not something a bug can express.
+
+**In the dive it goes bimodal.** Short horizons say stay level, long ones say zoom now around
+40–50° nose-up, and the optimum is at neither. The bug will jump between the two answers while
+diving. Nothing is done to damp that, because damping it would hide the one honest thing it
+has to say there, which is that a lookahead cannot answer this question.
+
+**It costs the horizon in physics ticks per candidate pitch** — measured at 65 µs a call
+against 3 µs for the one-tick search, once per client tick. The two searches are memoised on
+the recorder for the tick they are asked on, so the HUD's per-frame reads are free; that keeps
+the once-per-tick property without the `flight` package having to read display settings, which
+it deliberately does not do.
+
+### The hold bug, and the dive
+
+**The dive's rule never mentions energy.** It cannot: energy is being *spent* through the
+descent, so every lookahead worth the name disagrees about how to spend it. What fits instead
+is the pitch that leaves the flight path angle where it already is — at the optimal pitch, γ
+after the tick equals γ before it to within a few tenths of a degree, for **0.73° RMS over 150
+ticks with no parameter to tune**.
+
+**The hold leaks, and the leak is the rule.** Flown, γ decays first-order from wherever the
+dive is entered towards about 16.8° below the horizon, losing 4–5.5% of the remaining gap each
+tick, and the optimum decays the same way. An *exact* hold is a worse rule: it keeps its entry
+angle forever and loses height at 3.5 b/s. The asymptote is derivable rather than fitted — it
+is the steady glide that maximises forward speed, pitch 53.35°, v_z 3.389, γ 16.58° — but it is
+an asymptote and not a bound: steering γ straight at 16.58 instead of holding it is a much
+weaker rule, 34° RMS, saturated against the nose-up stop for the first sixty ticks.
+
+**Holding the angle is not pointing along it**, which is the obvious misreading and the reason
+the gray velocity bug is drawn at all. By the end of a dive the nose sits about 30° *below* the
+flight path — pitch 47° against γ 17° — so the two bugs are nowhere near each other, and the
+gap between them is the angle of attack the hold is asking for.
+
+**It is bisected on the residual's sign, not minimised on its magnitude.** The natural phrasing
+— the pitch that moves γ least — is a trap: at low speed two separate pitches hold a given
+angle, one nose-down and one nose-up, and a search over the magnitude oscillates between the
+branches tick to tick. Flown, that scores worse than doing nothing. So the scan runs from the
+nose-down stop towards nose-up and takes the first sign change, which is the nose-down root by
+construction. Where the residual never changes sign there is no such pitch — a near-vertical
+fall cannot be sustained by any attitude — and the search returns `NaN` and the bug is not
+drawn, rather than picking the least bad degree.
+
+**Nose-down the residual is smooth; nose-up it is a staircase.** Worth knowing because it
+explains a four-thousand-fold difference in the residuals the bisection reports. Nose-down, the
+look vector's horizontal part divides out of every term it appears in, so the only pitch left
+in the tick is inside the lift term's `Math.cos`, which is libm; measured residuals at the root
+are around 1e-7. Nose-up, the climb term calls `Mth.sin` directly, and that is a 65536-entry
+table, so the residual steps by up to 5e-4 and the bisection converges on a step rather than a
+root. That is a hundredth of a degree of pitch once the low gain has multiplied it back up —
+two orders of magnitude finer than the ladder can draw, so nothing is done about it.
+
+**The reading is low-gain, which makes it forgiving to fly and delicate to display.** A degree
+of pitch moves the next tick's γ by about a fifteenth of a degree, so any wobble in the
+measured velocity arrives at the answer multiplied by fifteen. It is therefore searched against
+the same 4-tick averaged velocity the flight path marker uses, which costs it four ticks of
+lag. Flying it, the error integrates over 190 ticks, which is the other half of the same fact.
+
+**Open question.** The γ floor is non-monotonic across the family of cycles that trade climb
+for distance: it peaks at 16.7–16.8° exactly at the pure-climb cycle, where the
+fastest-steady-glide derivation predicts it, and falls off in *both* directions — 14.5° when
+distance is weighted positively, 12.8° when weighted negatively. Weighting distance either way
+pulling the floor down is counterintuitive, and it is the one place the derivation might be
+luck rather than structure.
+
 ## Readouts that are off by default
 
-**Angle of attack, in both its forms.** Real, correct, and unused: the pump-cycle research
-does not refer to it, so on instruments watched continuously the `AOA` row and the flight path
+**Angle of attack, in both its forms.** Real, correct, and once unused: the pump-cycle research
+did not refer to it, so on instruments watched continuously the `AOA` row and the flight path
 marker were both clutter competing with readings in use. Kept behind `showAngleOfAttack` and
-`showFlightPath` rather than deleted, because whether angle of attack matters is an open
+`showFlightPath` rather than deleted, because whether angle of attack matters was an open
 question rather than a settled one.
+
+**That question has since been answered in one direction**, which is worth being honest about
+rather than quietly leaving the switches where they were. The dive's rule is read as a gap
+between the hold bug and the velocity bug, and that gap *is* angle of attack — so the ladder
+now shows it by default after all, as the distance between a green mark and a gray one. What
+the two switches still add over that is a printed figure and the exact two-dimensional
+placement with its sideslip. Neither is needed to fly the dive rule, so neither has been turned
+back on, but the rationale above no longer covers the quantity, only these two renderings of
+it.
 
 Turning the marker off costs the ladder its only sideslip cue, which is the one thing it
 carried that the number did not. That is affordable because the chart shows sideslip too, as

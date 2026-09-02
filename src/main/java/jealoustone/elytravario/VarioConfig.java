@@ -31,6 +31,12 @@ public final class VarioConfig {
 	 *
 	 * <p>Turning the marker back on also restores the only sideslip cue on the ladder; the
 	 * chart's cyan cursor still shows sideslip either way.
+	 *
+	 * <p>The open question has since closed, and these two switches did not move. The dive's
+	 * rule is read as the gap between the hold bug and the velocity bug, and that gap is angle
+	 * of attack — so the ladder does show it by default now, as a distance between two marks.
+	 * What is still off is the printed figure and the exact two-dimensional placement, neither
+	 * of which the rule needs.
 	 */
 	public static boolean showAngleOfAttack = false;
 	public static boolean showFlightPath = false;
@@ -45,6 +51,49 @@ public final class VarioConfig {
 	 * than a pump cycle needs during the dive that pays for the climb.
 	 */
 	public static boolean showOptimalPitch = true;
+
+	/**
+	 * The other three bugs, each marking a pitch some rule says to fly, all drawn in the same
+	 * band of the center gap and told apart by color and by height.
+	 *
+	 * <p>Together with the one above they are the four myopic rules an optimised pump cycle
+	 * turns out to obey piecewise, plus the reference they are read against:
+	 *
+	 * <ul>
+	 * <li><b>Lookahead</b> — the constant pitch gaining the most energy over the next
+	 *     {@code lookaheadTicks}. This is the <em>gain phase</em> rule, the climb out of the
+	 *     flick, and it is the one to follow there; the one-tick bug is badly wrong through
+	 *     that phase. See {@link jealoustone.elytravario.flight.OptimalPitch}.</li>
+	 * <li><b>Hold</b> — the pitch that leaves the flight path angle where it is. This is the
+	 *     <em>dive</em> rule, and it is parameter-free. See
+	 *     {@link jealoustone.elytravario.flight.FlightPathHold}.</li>
+	 * <li><b>Velocity</b> — where the player is actually going. Not advice, which is why it
+	 *     is the one bug drawn in gray; it is there so the hold bug can be read against it,
+	 *     the gap between the two being the angle of attack the hold is asking for.</li>
+	 * </ul>
+	 *
+	 * <p>The velocity bug and the flight path marker are the same quantity twice. The marker
+	 * is the honest two-dimensional version and also shows sideslip; the bug is its vertical
+	 * component alone, in the center gap where the other three are, which is where it is
+	 * wanted when the thing being read is a gap between two pitches.
+	 */
+	public static boolean showLookaheadPitch = true;
+	public static boolean showHoldPitch = true;
+	public static boolean showVelocityPitch = true;
+
+	/**
+	 * How many ticks the lookahead bug holds a candidate pitch for before scoring it.
+	 *
+	 * <p>Twenty because that is what fits the gain phase of an optimised cycle: 1.1 degrees
+	 * RMS against 17.9 for a single tick. The fit is sharp in the sense that sixteen and
+	 * twenty-four are both three times worse, but flight is far less picky than the fit —
+	 * every horizon from sixteen to twenty-four flies the cycle within a point of the best.
+	 * Below about eight it stops being the gain rule at all.
+	 *
+	 * <p>Costs this many ticks of physics per candidate pitch, once per tick, so raising it
+	 * is linear in something that is currently tens of microseconds.
+	 */
+	public static int lookaheadTicks = 20;
 
 	/** Top-left corner of the HUD, in scaled GUI pixels. */
 	public static int originX = 4;
@@ -211,8 +260,12 @@ public final class VarioConfig {
 	public static int ladderHorizonExtra = 10;
 
 	/**
-	 * Ticks to average velocity over for the flight path marker. One tick of velocity is
-	 * noisy enough to make the marker visibly jitter.
+	 * Ticks to average velocity over for everything that reads the direction of travel: the
+	 * flight path marker, the velocity bug and the hold bug. One tick of velocity is noisy
+	 * enough to make the marker visibly jitter.
+	 *
+	 * <p>The hold bug needs it most. Its answer moves about fifteen degrees of pitch for every
+	 * degree the flight path angle moves, so it magnifies exactly what this window suppresses.
 	 */
 	public static int flightPathWindow = 4;
 
@@ -270,6 +323,44 @@ public final class VarioConfig {
 	public static int ladderBugLength = 8;
 	public static int ladderBugRise = 4;
 	public static int optimalPitchColor = 0xE0FF5AE0;
+
+	/**
+	 * The other three bugs share that geometry and differ only in rise, which is the second
+	 * channel their identity is carried on.
+	 *
+	 * <p>Color alone would not be enough. All four bugs occupy one band — there is nowhere
+	 * else on the ladder for them, the center gap being the only radius no rung or label ever
+	 * reaches — so they overlap whenever the rules agree, and agreement is common. Ranking
+	 * them by height makes an overlap nest instead of merge: the apexes coincide, the taller
+	 * shoulders still show past the shorter ones, and the pile reads as a set of chevrons
+	 * rather than as one mark of uncertain color. It also survives the peg, where all four
+	 * take the same gray and color stops saying anything at all.
+	 *
+	 * <p>The ranking is by how far ahead each rule looks, which is a real ordering and not an
+	 * arbitrary one: twenty ticks, one tick, one tick of a hold, and none at all. So the
+	 * biggest wedge is the longest view and the flat pair of stubs is the bug that only
+	 * reports where you are already going. They are drawn tallest first, so the shorter ones
+	 * paint over the middle of the taller.
+	 *
+	 * <p>A rise of zero is a single row: not a wedge, deliberately, since that bug is not
+	 * advice.
+	 */
+	public static int ladderLookaheadRise = 6;
+	public static int ladderHoldRise = 2;
+	public static int ladderVelocityRise = 0;
+
+	/**
+	 * The other three bugs' colors.
+	 *
+	 * <p>Amber and green are picked the way the magenta was: away from the chart's yellow and
+	 * cyan, away from each other, and readable against both sky and ground. The velocity bug
+	 * is gray on purpose — it is the one mark of the four that is a reading rather than a
+	 * target, and gray is what the rest of this ladder uses to say exactly that. It shares its
+	 * RGB with the minor rungs.
+	 */
+	public static int lookaheadPitchColor = 0xE0FF9B3D;
+	public static int holdPitchColor = 0xE05FD98A;
+	public static int velocityPitchColor = 0xD0B4BAC0;
 
 	private VarioConfig() {
 	}

@@ -32,6 +32,22 @@ public final class FlightRecorder {
 
 	private OptimalPitch optimalPitch;
 
+	/**
+	 * The cues that cost real arithmetic but are not wanted every tick, memoised for the tick
+	 * they were asked on. The horizon and the window double as the cache keys, so a zero means
+	 * nothing has been computed yet — no window or horizon is ever zero.
+	 *
+	 * <p>Computed on demand rather than in {@link #tick} because their parameters are display
+	 * settings, and this package is deliberately free of {@code VarioConfig}: everything here
+	 * is a function of its arguments. Memoising keeps the once-per-tick property that matters
+	 * — the HUD asks once a frame, and every frame within a tick gets the same answer for the
+	 * price of one.
+	 */
+	private OptimalPitch lookahead;
+	private int lookaheadHorizon;
+	private float flightPathHold = Float.NaN;
+	private int flightPathHoldWindow;
+
 	public void tick(LocalPlayer player) {
 		Vec3 position = player.position();
 		Sample previous = latest();
@@ -69,7 +85,11 @@ public final class FlightRecorder {
 		// of vector arithmetic — but it is a function of the tick's state, so recomputing it
 		// for every frame would burn a few hundred thousand of them a second to arrive at
 		// the same answer, and would let two HUD elements disagree within one frame.
-		optimalPitch = OptimalPitch.search(sample);
+		optimalPitch = OptimalPitch.search(sample, 1);
+
+		// The tick's state has moved, so last tick's answers are stale.
+		lookaheadHorizon = 0;
+		flightPathHoldWindow = 0;
 	}
 
 	/**
@@ -78,6 +98,70 @@ public final class FlightRecorder {
 	 */
 	public OptimalPitch optimalPitch() {
 		return optimalPitch;
+	}
+
+	/**
+	 * The same search over a longer horizon: the constant pitch that would gain the most
+	 * energy over the next {@code horizon} ticks. Null under the same conditions as
+	 * {@link #optimalPitch()}.
+	 *
+	 * <p>One horizon is cached at a time, which is all the HUD asks for. Alternating between
+	 * two would recompute both every frame rather than returning a wrong answer.
+	 */
+	public OptimalPitch optimalPitch(int horizon) {
+		if (horizon <= 1) {
+			return optimalPitch;
+		}
+
+		if (lookaheadHorizon != horizon) {
+			Sample sample = latest();
+			lookahead = sample == null ? null : OptimalPitch.search(sample, horizon);
+			lookaheadHorizon = horizon;
+		}
+
+		return lookahead;
+	}
+
+	/**
+	 * The pitch that would hold the current flight path angle, or {@code NaN} when no pitch
+	 * would — including whenever the player is not gliding, since the rule is about a wing.
+	 *
+	 * <p>Searched against the velocity averaged over {@code window} ticks rather than the last
+	 * one. The answer is a low-gain function of that velocity, so a single tick's wobble would
+	 * arrive at the ladder multiplied by about fifteen; see {@link FlightPathHold}.
+	 */
+	public float flightPathHold(int window) {
+		int ticks = Math.max(1, window);
+
+		if (flightPathHoldWindow != ticks) {
+			Sample sample = latest();
+			flightPathHold = sample == null || !sample.gliding()
+					? Float.NaN
+					: FlightPathHold.search(smoothedVelocity(ticks), sample.yaw(),
+							sample.gravity());
+			flightPathHoldWindow = ticks;
+		}
+
+		return flightPathHold;
+	}
+
+	/**
+	 * The direction of travel as a pitch, positive descending, taken over the same smoothing
+	 * window — the flight path marker's vertical position, as a number.
+	 *
+	 * <p>{@code NaN} when there is no movement at all and so no direction to report. There is
+	 * no speed floor beyond that, because every caller already gates on gliding and a glide
+	 * slow enough for the reading to be noise is not a state the player can hold.
+	 */
+	public double flightPathPitch(int window) {
+		Vec3 velocity = smoothedVelocity(Math.max(1, window));
+		double horizontal = velocity.horizontalDistance();
+
+		if (velocity.lengthSqr() == 0.0) {
+			return Double.NaN;
+		}
+
+		return -Math.toDegrees(Math.atan2(velocity.y, horizontal));
 	}
 
 	/** Energies as they stood at the last apex; see {@link CycleTracker}. */
@@ -115,6 +199,10 @@ public final class FlightRecorder {
 		Arrays.fill(buffer, null);
 		cycles.reset();
 		optimalPitch = null;
+		lookahead = null;
+		lookaheadHorizon = 0;
+		flightPathHold = Float.NaN;
+		flightPathHoldWindow = 0;
 	}
 
 	public int size() {

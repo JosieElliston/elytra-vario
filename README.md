@@ -3,9 +3,10 @@
 A client-side glide-computer HUD for elytra flight in Minecraft 26.2 (Fabric).
 
 It reads the player's state and displays speeds, energies, a velocity-space chart and a pitch
-ladder, so that pump cycles can be flown and tuned by instrument rather than by feel. Two of
-the readings are worked out rather than measured: an optimal pitch bug on the ladder, and a
-heatmap behind the chart showing where in velocity space energy can be made.
+ladder, so that pump cycles can be flown and tuned by instrument rather than by feel. Some of
+the readings are worked out rather than measured: a set of bugs on the ladder marking where
+each of an optimised cycle's rules says to point, and a heatmap behind the chart showing where
+in velocity space energy can be made.
 
 Client-only: it watches the player and draws, and never talks to the server or changes how
 anything flies. It does not need to be installed on the other end.
@@ -25,8 +26,8 @@ Needs JDK 25.
 
 Everything else is edited in `VarioConfig`, which is plain static fields with a comment on
 each — panel position and width, chart bounds and scale, ladder spacing, lengths and colors,
-and switches for the chart, the heatmap, the ladder, the optimal pitch bug, the flight path
-marker and the angle of attack row. There is no config screen and no config file, so changes mean a recompile
+and switches for the chart, the heatmap, the ladder, each of the four pitch bugs, the flight
+path marker and the angle of attack row. There is no config screen and no config file, so changes mean a recompile
 and are lost on restart.
 
 ## The readout panel
@@ -98,32 +99,81 @@ Marks fade out as they approach the top and bottom of the ladder rather than bli
 Labels are in raw Minecraft pitch, matching the `PITCH` row: **negative is above the horizon**.
 Nothing else marks which side of the horizon a rung is on — the sky and the ground already do.
 
-## The optimal pitch bug
+## The bugs
 
-A magenta wedge on each side of the crosshair, marking the pitch that would gain the most
-total energy over the next tick. It is the only advisory mark on the ladder and the only one
-that is not gray. The gap between the crosshair and the bug is the correction; when there is
-none, the two wedges close around the crosshair.
+A pair of wedges on either side of the crosshair marks a pitch to fly. The gap between the
+crosshair and a bug is the correction; when there is none, its two wedges close around the
+crosshair. They are the only advisory marks on the ladder and the only things on it that are
+not gray, and they are drawn only while actually gliding.
 
-Drawn only while actually gliding. When the answer is further from the ladder's reach than the
-band goes it is held at the edge and turns gray, which means *keep going that way*, not *stop
-here*. Do not expect much of it there: pitch clamps at ±90, so the mouse finds the stop by
-itself and the gray wedge only names a direction you could have guessed. The bug earns its
-place at interior angles, where it is an actual target to fly to.
+There are four, because an optimised pump cycle turns out to be **piecewise myopic**: each
+phase of it follows a simple rule of the current state, and the hard part is knowing when to
+switch rules rather than what any rule is.
 
-It is worth knowing what the number is before flying it:
+| Bug | Colour | Marks | Its phase |
+| --- | --- | --- | --- |
+| Lookahead | Amber | The constant pitch gaining the most energy over the next 20 ticks | **The gain phase** — the climb out of the flick, where most of a cycle's energy is made |
+| Optimal pitch | Magenta | The same over one tick | A gradient rather than a plan; right where energy is being gained, wrong where it is being spent |
+| Hold | Green | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree |
+| Velocity | Gray | Where you are actually going | None. It is a reference, not advice, which is why it is the gray one |
 
-| Regime | What it says | Trust it? |
+**Nothing tells you which rule the phase you are in calls for.** That switch is the open part
+of the problem; a display that guessed at it would be inventing the answer rather than showing
+the evidence.
+
+They share one band of the ladder, since the center gap is the only place on it any of them
+can go, so they overlap whenever two rules agree. They are ranked by height as well as colour
+— tallest is the longest view — and drawn tallest first, so a pile nests into chevrons instead
+of merging into one mark of uncertain colour. That ranking is also what survives the peg,
+where all four take the same gray.
+
+When an answer is further out than the band reaches it is held at the edge and turns gray,
+which means *keep going that way*, not *stop here*. Do not expect much of it there: pitch
+clamps at ±90, so the mouse finds the stop by itself. The bugs earn their place at interior
+angles, where they are actual targets to fly to.
+
+### Reading the two energy bugs
+
+Both try every pitch, tick the physics forward holding it, and keep the best. The one-tick
+version is elytrasim's *immediate optimal pitch* exactly.
+
+| Regime | One tick says | Trust it? |
 | --- | --- | --- |
 | Steady glide | Exactly level, and it stays there | Yes — a real cusp, not a rounding |
 | Zoom climb | Tens of degrees nose-up, moving as speed bleeds off | Yes — this is the regime it earns its place in |
 | Slow descent | Near ninety nose-down, usually pegged gray | Yes, but it means *dive*, not *dive to exactly there* |
-| The dive that pays for a climb | Whatever loses least right now | **No** — one tick of lookahead is too short a view |
+| The gain phase | Pinned to the nose-up stop, then 40° off for a while | **No** — this is what the 20-tick bug is for |
+| The dive that pays for a climb | Whatever loses least right now | **No** — and neither is the 20-tick one; use the hold bug |
 
-The search is greedy: it tries every pitch, ticks the physics once, and keeps the best. That
-is the same *immediate optimal pitch* elytrasim plots, and it agrees with the far-sighted
-answer whenever energy is being gained, and wherever it snaps to level. Flying it every tick
-is not a strategy and will not fly a good cycle.
+Twenty ticks is not a tuned magic number so much as the best single stand-in for a horizon
+that really shortens as the climb develops, from about twenty at the start of the gain phase
+towards about twelve by the end of it. Every horizon in that range is right somewhere in the
+phase and none outside it ever is.
+
+In the dive the two energy bugs are not merely imprecise but **bimodal** — short horizons say
+stay level, long ones say zoom now around 40–50° nose-up — and the truth is at neither. Expect
+the amber bug to jump between those two answers while diving. That is the reading, not a
+glitch, and it is why the dive gets a rule that never mentions energy.
+
+### Reading the hold bug
+
+Point at it and the direction you are travelling one tick from now is the direction you are
+travelling now. Against an optimised 300-tick cycle it fits the optimal pitch through the
+whole descent to **0.73° RMS with nothing to tune**.
+
+It does not hold the angle exactly, and that is the point: flown, the flight path angle decays
+towards about 16.6° below the horizon, losing a twentieth of the remaining gap each tick, and
+the optimum decays the same way. An exact hold is a *worse* rule — it keeps its entry angle
+forever and bleeds height. The floor it decays towards is the flight path angle of the steady
+glide that maximises forward speed, which vanilla puts at 53° nose-down doing 3.39 blocks/tick.
+
+**Holding the angle is not pointing along it.** By the end of a dive the nose sits about 30°
+*below* the flight path, so the green bug and the gray one are nowhere near each other, and
+the gap between them is the angle of attack the hold is asking for. That gap is the reason the
+gray bug exists.
+
+The bug disappears when no pitch holds the current angle at all — a near-vertical fall cannot
+be sustained by any attitude — rather than picking the least bad degree.
 
 ## Off by default
 
@@ -147,9 +197,18 @@ Sideslip is still readable without the marker, from the gap between the chart's 
   reach into the readout panel. Nothing checks for the collision.
 - The ladder does not turn. Once yaw matters, rungs become conic sections and straight ticks
   stop being correct.
-- **The optimal pitch bug and the heatmap both see one tick ahead and no further.** They are a
-  gradient, not a plan, and they are silent about the part of a cycle where you are meant to be
-  spending energy.
+- **Nothing decides which bug to follow.** The four rules fit four phases, the switch points
+  are learnable, and the HUD does not attempt them. Reading it well means knowing which phase
+  you are in.
+- **The heatmap still sees one tick ahead and no further**, as does the magenta bug. They are a
+  gradient, not a plan.
+- **The 20-tick bug scores a pitch held constant for 20 ticks**, which is not what anybody
+  flies. It answers "what is a fixed attitude worth from here", not "what is the best flight
+  from here" — the latter is a dynamic program whose answer is the whole cycle.
+- The hold bug is a low-gain reading: a degree of pitch moves the next tick's flight path angle
+  by about a fifteenth of a degree, so it magnifies any wobble in the measured velocity by
+  about fifteen on the way to the answer. It is searched against a 4-tick average for that
+  reason, which also makes it that many ticks late.
 - The heatmap is drawn whenever the chart is, including while walking around, where the elytra
   physics it describes does not apply. `onlyWhileGliding` suppresses the whole HUD if that
   matters.
@@ -160,7 +219,7 @@ Sideslip is still readable without the marker, from the gap between the chart's 
   happened.** The vertical axis reaches 40 b/s of climb, which covers a good pump cycle's peak
   of about 35, but a rocket will go past it. A domain that slid to keep the cursor inside is a
   possible future feature; see [DESIGN.md](DESIGN.md) for what it would cost.
-- The bug reads plain gravity where vanilla reads its *effective* gravity. The two differ only
+- The bugs read plain gravity where vanilla reads its *effective* gravity. The two differ only
   under Slow Falling while descending, where the cue will be slightly wrong; every energy
   readout on the panel makes the same simplification, so at least they agree with each other.
 - **The horizon leaves the screen when you look down past half your FOV** — 35° at the default

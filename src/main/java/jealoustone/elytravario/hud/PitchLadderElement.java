@@ -19,8 +19,9 @@ import org.joml.Matrix3x2fStack;
 import org.joml.Vector3fc;
 
 /**
- * A pitch ladder drawn over the world view, with an optimal pitch bug showing where the
- * energy is, and a flight path marker showing where the player is actually going.
+ * A pitch ladder drawn over the world view, with a set of bugs showing where each of the pump
+ * cycle's rules says to point, and a flight path marker showing where the player is actually
+ * going.
  *
  * <p>Unlike the readout panel this is a <em>conformal</em> instrument: every mark is placed
  * by projecting a direction through the same camera the world was drawn with, so a rung
@@ -40,16 +41,42 @@ import org.joml.Vector3fc;
  * <p>Nothing distinguishes above the horizon from below it, because the sky, the ground and
  * the labeled datum line already do.
  *
- * <h2>The one mark that is not a scale</h2>
+ * <h2>The marks that are not a scale</h2>
  *
- * <p>The rungs say where you are pointing. The optimal pitch bug says where you should be,
- * and it is the only advisory thing the ladder carries, so it is the only thing on it that
- * is not gray. It rides in the center gap, the one radius no rung or label ever reaches,
- * which is what lets it be added to a ladder that was deliberately decluttered without
- * taking anything back.
+ * <p>The rungs say where you are pointing. The bugs say where you should be, and they are the
+ * only advisory things the ladder carries, so they are the only things on it that are not
+ * gray. They ride in the center gap, the one radius no rung or label ever reaches, which is
+ * what lets them be added to a ladder that was deliberately decluttered without taking
+ * anything back.
  *
- * <p>Reading it is one gesture: the gap between the crosshair and the bug is the correction,
- * and when there is none the two wedges close around the crosshair.
+ * <p>Reading one is a single gesture: the gap between the crosshair and the bug is the
+ * correction, and when there is none the two wedges close around the crosshair.
+ *
+ * <p>There are four of them, because an optimised pump cycle turns out to be piecewise
+ * myopic — each phase of it follows a simple rule of the state, and the hard part is knowing
+ * when to switch rules rather than what each rule is. Three of the bugs are those rules, and
+ * the fourth is the reference the dive's rule is read against:
+ *
+ * <ul>
+ * <li>the <b>lookahead</b> bug, the constant pitch that gains the most energy over the next
+ *     twenty ticks, which is the climb;</li>
+ * <li>the <b>optimal pitch</b> bug, the same over one tick, which is the greedy reading the
+ *     ladder shipped with;</li>
+ * <li>the <b>hold</b> bug, the pitch that leaves the flight path angle where it is, which is
+ *     the dive;</li>
+ * <li>the <b>velocity</b> bug, where you are actually going, which is not advice and so is
+ *     the one of the four that is gray.</li>
+ * </ul>
+ *
+ * <p>They share one band, since the center gap is the only place any of them can go, and are
+ * told apart by color and by height — ranked by how far ahead each looks, so that a pile of
+ * agreeing bugs nests into chevrons rather than merging into one mark. The ranking still
+ * reads when every color has been spent: pegged at the edge of the band they all take the
+ * same gray, and only the heights are left.
+ *
+ * <p>Nothing here tells you which rule the phase you are in calls for. That switch is the
+ * open part of the problem, and a display that guessed at it would be inventing the answer
+ * rather than showing the evidence.
  *
  * <h2>The projection</h2>
  *
@@ -154,16 +181,7 @@ public final class PitchLadderElement implements HudElement {
 		drawFineTicks(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 		drawRungs(graphics, minecraft.font, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 
-		if (VarioConfig.showOptimalPitch) {
-			// Null whenever the search has nothing to say, which is any time the player is
-			// not gliding — so the bug appears with the wing and leaves with it.
-			OptimalPitch optimal = recorder.optimalPitch();
-
-			if (optimal != null) {
-				drawOptimalPitchBug(graphics, cameraPitch, optimal.pitch(), centerX, centerY,
-						scale, bandUp, bandDown);
-			}
-		}
+		drawBugs(graphics, sample, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 
 		if (VarioConfig.showFlightPath) {
 			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown);
@@ -171,8 +189,61 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * The optimal pitch bug: a mirrored pair of wedges marking the pitch that would gain the
-	 * most energy over the next tick.
+	 * The four bugs, drawn tallest first.
+	 *
+	 * <p>The order is the whole trick to keeping them separable. They occupy one band and
+	 * their apexes land on the same row whenever the rules agree, so a taller wedge drawn
+	 * first keeps its shoulders visible past every shorter one painted over it, and a pile of
+	 * agreeing bugs reads as nested chevrons instead of as one mark of indeterminate color.
+	 * Reversing this would hide the long-horizon rules under the short-horizon ones exactly
+	 * when they agree, which is when the pile is worth reading as a pile.
+	 *
+	 * <p>Each is skipped when its rule has nothing to say. The two energy searches return null
+	 * whenever the player is not gliding, and the hold returns {@code NaN} both there and at
+	 * the states where no pitch holds the flight path angle at all — so the bugs appear with
+	 * the wing and leave with it, and the dive's bug also leaves when the dive is past saving.
+	 */
+	private void drawBugs(GuiGraphicsExtractor graphics, Sample sample, float cameraPitch,
+			int centerX, int centerY, double scale, int bandUp, int bandDown) {
+		if (VarioConfig.showLookaheadPitch) {
+			OptimalPitch lookahead = recorder.optimalPitch(VarioConfig.lookaheadTicks);
+
+			if (lookahead != null) {
+				drawBug(graphics, cameraPitch, lookahead.pitch(), VarioConfig.ladderLookaheadRise,
+						VarioConfig.lookaheadPitchColor, centerX, centerY, scale, bandUp, bandDown);
+			}
+		}
+
+		if (VarioConfig.showOptimalPitch) {
+			OptimalPitch optimal = recorder.optimalPitch();
+
+			if (optimal != null) {
+				drawBug(graphics, cameraPitch, optimal.pitch(), VarioConfig.ladderBugRise,
+						VarioConfig.optimalPitchColor, centerX, centerY, scale, bandUp, bandDown);
+			}
+		}
+
+		if (VarioConfig.showHoldPitch) {
+			drawBug(graphics, cameraPitch, recorder.flightPathHold(VarioConfig.flightPathWindow),
+					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor,
+					centerX, centerY, scale, bandUp, bandDown);
+		}
+
+		// Gated on gliding like the other three, even though a direction of travel exists
+		// without a wing: it is here to be read against the hold bug, and on its own it is
+		// what the flight path marker already says better.
+		if (VarioConfig.showVelocityPitch && sample.gliding()) {
+			drawBug(graphics, cameraPitch,
+					(float) recorder.flightPathPitch(VarioConfig.flightPathWindow),
+					VarioConfig.ladderVelocityRise, VarioConfig.velocityPitchColor,
+					centerX, centerY, scale, bandUp, bandDown);
+		}
+	}
+
+	/**
+	 * One bug: a mirrored pair of wedges marking a pitch, {@code rise} pixels tall at the
+	 * base and tapering to an apex on the row that is the reading. A rise of zero is a single
+	 * row rather than a wedge.
 	 *
 	 * <p>It is placed by the same projection as the rungs, so it lies against the world like
 	 * they do, and while it is on the ladder it carries the same edge fade they do and
@@ -184,6 +255,10 @@ public final class PitchLadderElement implements HudElement {
 	 * <p>The wedges live inside the center gap and point inwards, which is the only radius
 	 * that never meets a rung or a label; see {@code VarioConfig.ladderBugGap}. Drawn as a
 	 * stack of rows rather than as a polygon, since the HUD's primitives are rectangles.
+	 *
+	 * <p>A {@code NaN} pitch draws nothing. That is a real answer from two of the four rules
+	 * rather than a defensive check — it is how they say the state they are describing has no
+	 * such pitch — so it is tested for here and not left to fall out of the arithmetic.
 	 *
 	 * <p><b>It pegs at the edge of the band rather than leaving.</b> A whole regime of flight
 	 * has its answer off the bottom of the ladder — in a slow descent the best pitch is
@@ -197,9 +272,14 @@ public final class PitchLadderElement implements HudElement {
 	 * interior angles, where it is a target and there is no other. This is kept because it is
 	 * unobtrusive, not because anything depends on it.
 	 */
-	private void drawOptimalPitchBug(GuiGraphicsExtractor graphics, float cameraPitch,
-			float optimal, int centerX, int centerY, double scale, int bandUp, int bandDown) {
-		double elevation = cameraPitch - optimal;
+	private void drawBug(GuiGraphicsExtractor graphics, float cameraPitch, float pitch,
+			int riseSetting, int bugColor, int centerX, int centerY, double scale, int bandUp,
+			int bandDown) {
+		if (Float.isNaN(pitch)) {
+			return;
+		}
+
+		double elevation = cameraPitch - pitch;
 		double offset;
 		boolean pegged;
 
@@ -227,9 +307,8 @@ public final class PitchLadderElement implements HudElement {
 
 		int base = Math.max(1, VarioConfig.ladderCenterGap - VarioConfig.ladderBugGap);
 		int apex = Math.max(0, base - VarioConfig.ladderBugLength);
-		int rise = Math.max(0, VarioConfig.ladderBugRise);
-		int color = fade(pegged ? VarioConfig.flightPathPeggedColor
-				: VarioConfig.optimalPitchColor, edge);
+		int rise = Math.max(0, riseSetting);
+		int color = fade(pegged ? VarioConfig.flightPathPeggedColor : bugColor, edge);
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();

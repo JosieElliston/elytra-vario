@@ -3,20 +3,42 @@ package jealoustone.elytravario.flight;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The pitch that would gain the most total energy over the next tick, found by trying every
- * pitch and ticking the physics once at each.
+ * The pitch that would gain the most total energy over the next {@code horizon} ticks, found
+ * by trying every pitch and holding each one for the whole horizon.
  *
- * <p>This is elytrasim's <em>immediate optimal pitch</em>: greedy, with exactly one tick of
- * lookahead. It is a local reading and not a strategy — flying it every tick does not fly a
- * good cycle, because a one-tick horizon cannot see that trading energy away now buys more
- * of it back later. What it does say is which way the energy gradient points from where you
- * are, which is the thing that is hard to feel and easy to get backwards.
+ * <p>At {@code horizon == 1} this is elytrasim's <em>immediate optimal pitch</em>: greedy,
+ * with exactly one tick of lookahead. It is a local reading and not a strategy — flying it
+ * every tick does not fly a good cycle, because a one-tick horizon cannot see that trading
+ * energy away now buys more of it back later. What it does say is which way the energy
+ * gradient points from where you are, which is the thing that is hard to feel and easy to
+ * get backwards.
  *
  * <p>Greedy and far-sighted do not always disagree, though, and where they agree is worth
  * knowing: the true optimum matches this one while energy is being gained, and matches it
  * again wherever this one snaps to level. Those are the two regimes the cue can be taken at
  * face value in. It is the losing part of a cycle — the dive that pays for the climb — where
  * one tick of lookahead is too short a view to trust.
+ *
+ * <h2>Why a longer horizon is offered too</h2>
+ *
+ * <p>Measured against an optimised three-hundred-tick cycle, the gain phase — the climb out
+ * of the flick, which is where most of a cycle's energy is actually made — is not fitted by
+ * one tick of lookahead at all. Greedy pins to the nose-up bound for the first seventeen
+ * ticks of it and is still forty degrees off well after that, for a whole-phase error of
+ * about eighteen degrees RMS. <b>Holding a constant pitch for twenty ticks and scoring the
+ * energy at the end of them fits the same phase to 1.1 degrees</b>, and the optimum is sharp:
+ * sixteen and twenty-four ticks both land near 3.8 degrees.
+ *
+ * <p>Twenty is a compromise rather than a constant. The horizon whose argmax actually lands
+ * on the optimum starts around twenty entering the gain phase and shortens towards twelve as
+ * the climb develops; every horizon in that range is right somewhere and none outside it ever
+ * is. Fixed twenty is the best single stand-in and costs about a degree.
+ *
+ * <p>Outside the gain phase a longer horizon is not simply better. In the dive the family is
+ * <em>bimodal</em> — short horizons say stay level, long ones say zoom now, around forty to
+ * fifty degrees nose-up — and the true optimum is at neither, which is why the dive gets its
+ * own rule in {@link FlightPathHold} instead of a lookahead. Expect the long-horizon bug to
+ * jump between those two answers while diving; that is the reading, not a glitch.
  *
  * <h2>How to read it</h2>
  *
@@ -66,12 +88,15 @@ import net.minecraft.world.phys.Vec3;
  * of gravity apart. Gravity is positive, so the two agree on which pitch is best; only the
  * figures need converting.
  *
+ * @param horizon    how many ticks the pitch was held for when scoring it
  * @param pitch      the best pitch found, in degrees, in Minecraft's convention where
  *                   negative is nose-up
- * @param bestGain   energy change at that pitch, as a height in blocks per tick
- * @param actualGain energy change at the pitch actually being held, in the same units
+ * @param bestGain   energy change at that pitch over the whole horizon, as a height in
+ *                   blocks — a total, not a rate, so horizons are not comparable directly
+ * @param actualGain energy change over the same horizon at the pitch actually being held,
+ *                   in the same units
  */
-public record OptimalPitch(float pitch, double bestGain, double actualGain) {
+public record OptimalPitch(int horizon, float pitch, double bestGain, double actualGain) {
 	/**
 	 * How far from level the sweep reaches. Vanilla clamps player pitch to ninety, but the
 	 * last degree is left out on purpose; see the class notes on straight up.
@@ -89,30 +114,41 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 	private static final double INVERSE_PHI = (Math.sqrt(5.0) - 1.0) / 2.0;
 
 	/**
-	 * How much better the best pitch is than the one being held, as a height in blocks per
-	 * tick. Never negative, and zero when already flying the optimum.
+	 * How much better the best pitch is than the one being held, as a height in blocks over
+	 * the horizon. Never negative, and zero when already flying the optimum.
+	 *
+	 * <p>Only meaningful as a comparison against holding the current pitch for the whole
+	 * horizon, which past a tick or two is not what anybody flies. At long horizons read it
+	 * as "how much is on the table", not as a cost already being paid.
 	 */
 	public double margin() {
 		return bestGain - actualGain;
 	}
 
 	/**
-	 * Searches for the best pitch at the state this sample describes, or returns null if
-	 * there is nothing to search: gravity has to be positive for energy-as-height to mean
-	 * anything, and the whole model only applies while actually gliding.
+	 * Searches for the best pitch at the state this sample describes, held for
+	 * {@code horizon} ticks, or returns null if there is nothing to search: gravity has to be
+	 * positive for energy-as-height to mean anything, and the whole model only applies while
+	 * actually gliding.
+	 *
+	 * <p>Costs {@code horizon} ticks of physics per candidate pitch, so a hundred and
+	 * eighty-one plus sixteen of them in total. At the horizons the ladder uses that is tens
+	 * of microseconds once a tick, which is why nothing here is cached beyond the tick.
 	 */
-	public static OptimalPitch search(Sample sample) {
+	public static OptimalPitch search(Sample sample, int horizon) {
 		if (!sample.gliding() || sample.gravity() <= 0.0) {
 			return null;
 		}
 
+		int ticks = Math.max(1, horizon);
 		Vec3 velocity = new Vec3(sample.vx(), sample.vy(), sample.vz());
-		int coarse = sweep(velocity, sample.yaw(), sample.gravity());
-		double coarseGain = gain(velocity, sample.yaw(), sample.gravity(), coarse);
-		float best = refine(sample, velocity, coarse, coarseGain);
+		int coarse = sweep(velocity, sample.yaw(), sample.gravity(), ticks);
+		double coarseGain = gain(velocity, sample.yaw(), sample.gravity(), coarse, ticks);
+		float best = refine(sample, velocity, coarse, coarseGain, ticks);
 
-		return new OptimalPitch(best, gain(velocity, sample.yaw(), sample.gravity(), best),
-				gain(velocity, sample.yaw(), sample.gravity(), sample.pitch()));
+		return new OptimalPitch(ticks, best,
+				gain(velocity, sample.yaw(), sample.gravity(), best, ticks),
+				gain(velocity, sample.yaw(), sample.gravity(), sample.pitch(), ticks));
 	}
 
 	/**
@@ -121,7 +157,7 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 	 * unrefined answer: see that class for why a whole degree is close enough there.
 	 */
 	public static double bestGain(Vec3 velocity, float yaw, double gravity) {
-		return gain(velocity, yaw, gravity, sweep(velocity, yaw, gravity));
+		return gain(velocity, yaw, gravity, sweep(velocity, yaw, gravity, 1), 1);
 	}
 
 	/**
@@ -131,12 +167,12 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 	 * the cusp at level flight and the cliffs at the bounds each make their own local
 	 * maximum, so a search started anywhere in particular would find the wrong one.
 	 */
-	private static int sweep(Vec3 velocity, float yaw, double gravity) {
+	private static int sweep(Vec3 velocity, float yaw, double gravity, int horizon) {
 		int best = 0;
 		double bestGain = Double.NEGATIVE_INFINITY;
 
 		for (int pitch = -LIMIT; pitch <= LIMIT; pitch++) {
-			double gain = gain(velocity, yaw, gravity, pitch);
+			double gain = gain(velocity, yaw, gravity, pitch, horizon);
 
 			if (gain > bestGain) {
 				bestGain = gain;
@@ -160,7 +196,8 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 	 * <p>The bracket is the winning degree plus or minus one, which does contain the true
 	 * maximum: a coarser point outside it already scored lower than the winner.
 	 */
-	private static float refine(Sample sample, Vec3 velocity, int coarse, double coarseGain) {
+	private static float refine(Sample sample, Vec3 velocity, int coarse, double coarseGain,
+			int horizon) {
 		double low = Math.max(-LIMIT, coarse - 1.0);
 		double high = Math.min(LIMIT, coarse + 1.0);
 
@@ -170,8 +207,8 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 
 		double a = high - INVERSE_PHI * (high - low);
 		double b = low + INVERSE_PHI * (high - low);
-		double gainA = gain(velocity, sample.yaw(), sample.gravity(), a);
-		double gainB = gain(velocity, sample.yaw(), sample.gravity(), b);
+		double gainA = gain(velocity, sample.yaw(), sample.gravity(), a, horizon);
+		double gainB = gain(velocity, sample.yaw(), sample.gravity(), b, horizon);
 
 		for (int step = 0; step < REFINE_STEPS; step++) {
 			if (gainA < gainB) {
@@ -179,13 +216,13 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 				a = b;
 				gainA = gainB;
 				b = low + INVERSE_PHI * (high - low);
-				gainB = gain(velocity, sample.yaw(), sample.gravity(), b);
+				gainB = gain(velocity, sample.yaw(), sample.gravity(), b, horizon);
 			} else {
 				high = b;
 				b = a;
 				gainB = gainA;
 				a = high - INVERSE_PHI * (high - low);
-				gainA = gain(velocity, sample.yaw(), sample.gravity(), a);
+				gainA = gain(velocity, sample.yaw(), sample.gravity(), a, horizon);
 			}
 		}
 
@@ -194,20 +231,34 @@ public record OptimalPitch(float pitch, double bestGain, double actualGain) {
 		// Only taken if it really is better. Rounding inside the physics is coarse enough
 		// that on a flat peak the refinement can come out a hair below the whole degree it
 		// started from, and the cue should never be placed somewhere the sweep beat.
-		return gain(velocity, sample.yaw(), sample.gravity(), refined) >= coarseGain ? refined : coarse;
+		return gain(velocity, sample.yaw(), sample.gravity(), refined, horizon) >= coarseGain
+				? refined : coarse;
 	}
 
 	/**
-	 * Change in total energy height over one tick at this pitch, in blocks.
+	 * Change in total energy height over {@code horizon} ticks of holding this pitch, in
+	 * blocks.
 	 *
-	 * <p>Both halves of the energy move: kinetic by the change in speed, potential by the
-	 * altitude the <em>new</em> velocity carries the player through, since vanilla advances
-	 * position after updating velocity. Leaving the second term out would score a dive and a
-	 * climb alike and make the whole reading meaningless.
+	 * <p>Both halves of the energy move: kinetic by the change in speed over the whole
+	 * horizon, potential by the altitude every intermediate velocity carries the player
+	 * through, since vanilla advances position after updating velocity. Leaving the second
+	 * term out would score a dive and a climb alike and make the whole reading meaningless.
+	 *
+	 * <p>The pitch is held constant for the horizon rather than re-optimised each tick, which
+	 * is the point: it asks what a fixed attitude is worth, not what the best possible flight
+	 * from here is worth. Re-optimising would be a dynamic program and would answer a
+	 * different question — one whose answer is the whole cycle.
 	 */
-	private static double gain(Vec3 velocity, float yaw, double gravity, double pitch) {
-		Vec3 next = ElytraPhysics.updateFallFlyingMovement(velocity, (float) pitch, yaw, gravity);
+	private static double gain(Vec3 velocity, float yaw, double gravity, double pitch,
+			int horizon) {
+		Vec3 next = velocity;
+		double climb = 0.0;
 
-		return (next.lengthSqr() - velocity.lengthSqr()) / (2.0 * gravity) + next.y;
+		for (int tick = 0; tick < horizon; tick++) {
+			next = ElytraPhysics.updateFallFlyingMovement(next, (float) pitch, yaw, gravity);
+			climb += next.y;
+		}
+
+		return (next.lengthSqr() - velocity.lengthSqr()) / (2.0 * gravity) + climb;
 	}
 }
