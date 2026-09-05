@@ -391,8 +391,8 @@ public final class VarioConfig {
 	 * target, and gray is what the rest of this ladder uses to say exactly that. It shares its
 	 * RGB with the minor rungs.
 	 */
-	public static int lookaheadPitchColor = 0xE0FF9B3D;
-	public static int holdPitchColor = 0xE05FD98A;
+	public static int lookaheadPitchColor = 0xE0F7A900;
+	public static int holdPitchColor = 0xE000B533;
 	public static int velocityPitchColor = 0xD0B4BAC0;
 
 	private VarioConfig() {

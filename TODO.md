@@ -1,8 +1,11 @@
 # TODO
 
 - add draw_arrow_types for the hold flight-path angle
-
 - should we expose rules for when to switch?
+- make green bug a better color
+- add a tick at the max horizontal speed
+- add a tick at the min fall speed
+- add a tick at the max glide ratio
 
 ## myopic metrics
 
@@ -21,3 +24,31 @@ here are some pitch profiles you can reference, but you can optimize your own to
 
 - /Users/josie/Library/Application Support/ModrinthApp/profiles/main/minescript/pitches.py
 - /Users/josie/programming_local/elytrasim-luna/src/replay_pitches.rs
+
+## batch
+
+(this is elytrasim stuff, work in myopic-metrics, not elytra-vario)
+(should be in american english)
+
+i want to see how robust the myopic metrics (hold-angle during dive, 20-tick horizon during gain) are across near-optimal flight profiles under different constrains.
+
+investigate the family of flight profiles where
+
+under both time and distance constraints (the distance constraint by changing the utility function to a linear combination of energy and distance, not literally a constraint).
+
+try stitching the dive and gain phases from different profiles. they should agree on the snap-to-0 phase, which i've empirically observed to fairly robustly be of constant duration ~10 ticks, so the stitch should be pretty clean. just use the flick-up phase from the same profile as the gain phase, it doesn't seem to matter that much (actually maybe it does matter if you consider distance? be aware).
+
+also initial vel
+
+also regularization
+
+initial predive entry phase
+
+also interested in what differs between the constraints. entry phase and flick up
+
+write the sweep to find the optimal pitches, i'll run it on a cluster
+
+num_ticks: in 100 to 500, stride 10
+distance: idk
+regularization: idk
+
