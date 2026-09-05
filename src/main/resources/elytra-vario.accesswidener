@@ -1,0 +1,4 @@
+accessWidener v2 named
+
+# Use the same dynamic field of view as the world renderer for the pitch ladder.
+accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F

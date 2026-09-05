@@ -1,6 +1,6 @@
 # Elytra Vario
 
-A client-side HUD for elytra flight in Minecraft 26.2 (Fabric), with utilities for flying a pump cycle. Toggle with `V`.
+A client-side HUD for elytra flight in Minecraft 1.21.11 (Fabric), with utilities for flying a pump cycle. Toggle with `V`.
 
 ## Pitch ladder
 
@@ -31,3 +31,9 @@ We detect the apex of the previous cycle and display some metrics as a differenc
 Horizontal speed against vertical speed. The yellow cursor is total horizontal speed, and has a 100 tick trail. The cyan cursor is horizontal speed projected onto the look direction. They agree during straight flight.
 
 The heatmap is colored by the most total energy you can gain in one tick from that velocity.
+
+## Building this backport
+
+This branch targets Minecraft 1.21.11 with Fabric API 0.141.3+1.21.11 and Fabric Loader 0.19.3 or later. Run `./gradlew build` with JDK 25; the mod targets Java 21 for Minecraft 1.21.11. The installable jar is `build/libs/elytra-vario-1.0.0+mc1.21.11.jar`.
+
+This is a one-off backport from the 26.2 version. `ElytraPhysics.java` is retained unchanged from that version.

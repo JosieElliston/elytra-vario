@@ -11,7 +11,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
@@ -145,7 +145,7 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	@Override
-	public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
 		if (!VarioConfig.enabled || !VarioConfig.showLadder) {
 			return;
 		}
@@ -162,10 +162,9 @@ public final class PitchLadderElement implements HudElement {
 			return;
 		}
 
-		Camera camera = minecraft.gameRenderer.mainCamera();
+		Camera camera = minecraft.gameRenderer.getMainCamera();
 
-		// Before the first frame the camera holds neither a rotation nor a field of view, so
-		// there is no projection to place marks with.
+		// Before the first frame there is no initialized camera to project against.
 		if (!camera.isInitialized()) {
 			return;
 		}
@@ -173,7 +172,9 @@ public final class PitchLadderElement implements HudElement {
 		int centerX = graphics.guiWidth() / 2;
 		int centerY = graphics.guiHeight() / 2;
 		double halfHeight = graphics.guiHeight() / 2.0;
-		double scale = halfHeight / Math.tan(Math.toRadians(camera.getFov() / 2.0));
+		float fov = minecraft.gameRenderer.getFov(camera,
+				deltaTracker.getGameTimeDeltaPartialTick(true), true);
+		double scale = halfHeight / Math.tan(Math.toRadians(fov / 2.0));
 		int bandUp = (int) Math.round(halfHeight * VarioConfig.ladderBandFractionUp);
 		int bandDown = (int) Math.round(halfHeight * VarioConfig.ladderBandFractionDown);
 		float cameraPitch = camera.xRot();
@@ -205,7 +206,7 @@ public final class PitchLadderElement implements HudElement {
 	 * the states where no pitch holds the flight path angle at all — so the bugs appear with
 	 * the wing and leave with it, and the dive's bug also leaves when the dive is past saving.
 	 */
-	private void drawBugs(GuiGraphicsExtractor graphics, Sample sample, float cameraPitch,
+	private void drawBugs(GuiGraphics graphics, Sample sample, float cameraPitch,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
 		// In descending order of rise, which is what makes an overlap nest. Retuning the rises
 		// in VarioConfig means reordering these calls to match; nothing checks it.
@@ -298,7 +299,7 @@ public final class PitchLadderElement implements HudElement {
 	 * bug's near-ninety nose-down through a slow descent, and the velocity bug's plain
 	 * direction of travel, which cannot be anything but where you are going.
 	 */
-	private void drawBug(GuiGraphicsExtractor graphics, float cameraPitch, float pitch,
+	private void drawBug(GuiGraphics graphics, float cameraPitch, float pitch,
 			int riseSetting, int bugColor, boolean peg, int centerX, int centerY, double scale,
 			int bandUp, int bandDown) {
 		if (Float.isNaN(pitch)) {
@@ -367,7 +368,7 @@ public final class PitchLadderElement implements HudElement {
 	 * The tiered rungs, labeled in raw Minecraft pitch so that they agree in sign with the
 	 * panel's {@code PITCH} row, with F3 and with elytrasim: negative is above the horizon.
 	 */
-	private void drawRungs(GuiGraphicsExtractor graphics, Font font, float cameraPitch,
+	private void drawRungs(GuiGraphics graphics, Font font, float cameraPitch,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
 		int step = Math.max(1, VarioConfig.ladderStepDegrees);
 
@@ -409,9 +410,9 @@ public final class PitchLadderElement implements HudElement {
 				String label = Integer.toString(pitch);
 				int labelY = y - LABEL_RISE;
 				int labelColor = fade(VarioConfig.ladderLabelColor, edge);
-				graphics.text(font, label, centerX - outer - LABEL_GAP - font.width(label),
+				graphics.drawString(font, label, centerX - outer - LABEL_GAP - font.width(label),
 						labelY, labelColor, true);
-				graphics.text(font, label, centerX + outer + LABEL_GAP,
+				graphics.drawString(font, label, centerX + outer + LABEL_GAP,
 						labelY, labelColor, true);
 			}
 
@@ -425,7 +426,7 @@ public final class PitchLadderElement implements HudElement {
 	 * than offsets from the camera, so they are real angles that the view slides across
 	 * instead of a scale that follows the head around.
 	 */
-	private void drawFineTicks(GuiGraphicsExtractor graphics, float cameraPitch,
+	private void drawFineTicks(GuiGraphics graphics, float cameraPitch,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
 		int step = Math.max(1, VarioConfig.ladderFineStepDegrees);
 		int coarse = Math.max(1, VarioConfig.ladderStepDegrees);
@@ -527,7 +528,7 @@ public final class PitchLadderElement implements HudElement {
 	 * <p>Every tier is solid. Length and strength already separate them, and a dash pattern
 	 * on top of that was a third channel saying what the first two had said.
 	 */
-	private void rung(GuiGraphicsExtractor graphics, int centerX, int y, int inner, int outer,
+	private void rung(GuiGraphics graphics, int centerX, int y, int inner, int outer,
 			int color) {
 		graphics.fill(centerX + inner, y, centerX + outer, y + 1, color);
 		graphics.fill(centerX - outer, y, centerX - inner, y + 1, color);
@@ -541,7 +542,7 @@ public final class PitchLadderElement implements HudElement {
 	 * <p>Projected against the camera's own basis rather than from pitch and yaw, which
 	 * makes it exact on both axes and correct in every camera mode.
 	 */
-	private void drawFlightPath(GuiGraphicsExtractor graphics, Camera camera,
+	private void drawFlightPath(GuiGraphics graphics, Camera camera,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
 		Vec3 velocity = recorder.smoothedVelocity(VarioConfig.flightPathWindow);
 		double speed = velocity.length();
@@ -583,7 +584,7 @@ public final class PitchLadderElement implements HudElement {
 		int x = (int) Math.floor(exactX);
 		pose.translate((float) (exactX - x), 0.0f);
 
-		graphics.outline(x - 3, y - 3, 7, 7, color);
+		graphics.renderOutline(x - 3, y - 3, 7, 7, color);
 		graphics.fill(x - 10, y, x - 4, y + 1, color);
 		graphics.fill(x + 5, y, x + 11, y + 1, color);
 		graphics.fill(x, y - 8, x + 1, y - 3, color);

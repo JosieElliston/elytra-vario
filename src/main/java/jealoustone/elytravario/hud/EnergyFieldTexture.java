@@ -1,10 +1,13 @@
 package jealoustone.elytravario.hud;
 
+import jealoustone.elytravario.ElytraVario;
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.flight.EnergyField;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
 
 /**
  * Paints an {@link EnergyField} into a texture and blits it behind the chart.
@@ -37,6 +40,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
  * else is a blit.
  */
 final class EnergyFieldTexture {
+	private static final Identifier TEXTURE_ID = ElytraVario.id("energy_field");
 	private static DynamicTexture texture;
 	private static EnergyField painted;
 	private static int paintedZero;
@@ -48,9 +52,9 @@ final class EnergyFieldTexture {
 	}
 
 	/** Draws the field over the chart's interior, which is exactly the texture's size. */
-	static void blit(GuiGraphicsExtractor graphics, EnergyField field, int x, int y) {
-		DynamicTexture current = prepare(field);
-		graphics.blit(current.getTextureView(), current.getSampler(),
+	static void blit(GuiGraphics graphics, EnergyField field, int x, int y) {
+		prepare(field);
+		graphics.blit(TEXTURE_ID,
 				x, y, x + field.width(), y + field.height(), 0.0f, 1.0f, 0.0f, 1.0f);
 	}
 
@@ -66,14 +70,10 @@ final class EnergyFieldTexture {
 
 		if (texture == null || texture.getPixels().getWidth() != field.width()
 				|| texture.getPixels().getHeight() != field.height()) {
-			// Closing frees the native buffer and the GPU texture. Only reached when the
-			// chart's size changes, which needs a recompile, so at most once a session.
-			if (texture != null) {
-				texture.close();
-			}
-
+			// Registering the replacement closes the previous texture and its native buffer.
 			texture = new DynamicTexture("elytra-vario energy field", field.width(),
 					field.height(), false);
+			Minecraft.getInstance().getTextureManager().register(TEXTURE_ID, texture);
 		}
 
 		float[] gains = field.gains();

@@ -12,7 +12,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
 import org.joml.Matrix3x2fStack;
@@ -73,7 +73,7 @@ public final class VarioHudElement implements HudElement {
 	}
 
 	@Override
-	public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
 		if (!VarioConfig.enabled) {
 			return;
 		}
@@ -100,7 +100,7 @@ public final class VarioHudElement implements HudElement {
 	}
 
 	/** Returns the y coordinate just past the bottom of the panel. */
-	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
+	private int drawPanel(GuiGraphics graphics, Font font, Sample sample, int x, int y) {
 		int width = VarioConfig.panelWidth;
 		// Counted rather than fixed, since the angle of attack row is optional. The extra
 		// line is the separator between the speed and energy groups.
@@ -108,7 +108,7 @@ public final class VarioHudElement implements HudElement {
 		int height = (readouts + 1) * LINE + PAD * 2;
 
 		graphics.fill(x, y, x + width, y + height, PANEL_BG);
-		graphics.outline(x, y, width, height, BORDER);
+		graphics.renderOutline(x, y, width, height, BORDER);
 
 		int row = y + PAD;
 		double energyRate = recorder.energyRate(VarioConfig.varioWindow);
@@ -147,13 +147,13 @@ public final class VarioHudElement implements HudElement {
 		return y + height;
 	}
 
-	private int row(GuiGraphicsExtractor graphics, Font font, int x, int y, String label, String value, int color) {
-		graphics.text(font, label, x + PAD, y, LABEL, true);
-		graphics.text(font, value, x + VarioConfig.panelWidth - PAD - font.width(value), y, color, true);
+	private int row(GuiGraphics graphics, Font font, int x, int y, String label, String value, int color) {
+		graphics.drawString(font, label, x + PAD, y, LABEL, true);
+		graphics.drawString(font, value, x + VarioConfig.panelWidth - PAD - font.width(value), y, color, true);
 		return y + LINE;
 	}
 
-	private void drawChart(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
+	private void drawChart(GuiGraphics graphics, Font font, Sample sample, int x, int y) {
 		int width = chartWidth();
 		int height = chartHeight();
 
@@ -166,7 +166,7 @@ public final class VarioHudElement implements HudElement {
 			drawEnergyField(graphics, sample, x, y, width, height);
 		}
 
-		graphics.outline(x, y, width, height, BORDER);
+		graphics.renderOutline(x, y, width, height, BORDER);
 
 		// Gridlines every half block/tick, with the zero axes picked out more brightly.
 		// Drawn with fill rather than the line helpers, whose bounds are inclusive on one
@@ -216,7 +216,7 @@ public final class VarioHudElement implements HudElement {
 	 * cursors sit over the field rather than under it. The grid is translucent and picks up
 	 * the colour beneath it, which is the point: it is a reference, not a border.
 	 */
-	private void drawEnergyField(GuiGraphicsExtractor graphics, Sample sample, int x, int y,
+	private void drawEnergyField(GuiGraphics graphics, Sample sample, int x, int y,
 			int width, int height) {
 		EnergyFieldTexture.blit(graphics, EnergyField.of(width, height, VarioConfig.chartMinVxz,
 				VarioConfig.chartMaxVy, VarioConfig.chartScale, sample.gravity()), x, y);
@@ -237,9 +237,9 @@ public final class VarioHudElement implements HudElement {
 	 *
 	 * <p>The raw figure stays, dimmed, because it is what matches F3 and a map.
 	 */
-	private int sinceApexRow(GuiGraphicsExtractor graphics, Font font, int x, int y, String label,
+	private int sinceApexRow(GuiGraphics graphics, Font font, int x, int y, String label,
 			double current, double peak) {
-		graphics.text(font, label, x + PAD, y, LABEL, true);
+		graphics.drawString(font, label, x + PAD, y, LABEL, true);
 
 		boolean known = Double.isFinite(peak);
 		double change = current - peak;
@@ -253,32 +253,32 @@ public final class VarioHudElement implements HudElement {
 		// energy still owed, above it is a cycle that has already paid for itself. The
 		// deadband is the one rateColor applies, so a reading sitting on the apex is white
 		// rather than flickering between the two.
-		graphics.text(font, delta, deltaRight - font.width(delta), y,
+		graphics.drawString(font, delta, deltaRight - font.width(delta), y,
 				known ? rateColor(change) : VALUE, true);
-		graphics.text(font, absolute, absoluteRight - font.width(absolute), y, MUTED, true);
+		graphics.drawString(font, absolute, absoluteRight - font.width(absolute), y, MUTED, true);
 
 		return y + LINE;
 	}
 
-	private void drawCursor(GuiGraphicsExtractor graphics, int px, int py, int color) {
+	private void drawCursor(GuiGraphics graphics, int px, int py, int color) {
 		graphics.fill(px - 2, py, px + 3, py + 1, color);
 		graphics.fill(px, py - 2, px + 1, py + 3, color);
 	}
 
 	/** Axis extremes in blocks/second, at half scale so they do not swamp the chart. */
-	private void drawAxisLabels(GuiGraphicsExtractor graphics, Font font, int x, int y, int width, int height) {
+	private void drawAxisLabels(GuiGraphics graphics, Font font, int x, int y, int width, int height) {
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
 		pose.scale(0.5f, 0.5f);
 
 		String maxVxz = fmt("%.0f", VarioConfig.chartMaxVxz * TPS);
-		graphics.text(font, maxVxz, (x + width) * 2 - font.width(maxVxz) - 4, (y + height) * 2 - 12, MUTED, false);
-		graphics.text(font, fmt("%+.0f", VarioConfig.chartMaxVy * TPS), x * 2 + 4, y * 2 + 4, MUTED, false);
-		graphics.text(font, fmt("%+.0f", VarioConfig.chartMinVy * TPS), x * 2 + 4, (y + height) * 2 - 12, MUTED, false);
+		graphics.drawString(font, maxVxz, (x + width) * 2 - font.width(maxVxz) - 4, (y + height) * 2 - 12, MUTED, false);
+		graphics.drawString(font, fmt("%+.0f", VarioConfig.chartMaxVy * TPS), x * 2 + 4, y * 2 + 4, MUTED, false);
+		graphics.drawString(font, fmt("%+.0f", VarioConfig.chartMinVy * TPS), x * 2 + 4, (y + height) * 2 - 12, MUTED, false);
 
 		// The horizontal origin no longer sits on the chart's edge, so name it.
 		String origin = "0";
-		graphics.text(font, origin, chartX(x, 0.0) * 2 - font.width(origin) / 2, (y + height) * 2 - 12, MUTED, false);
+		graphics.drawString(font, origin, chartX(x, 0.0) * 2 - font.width(origin) / 2, (y + height) * 2 - 12, MUTED, false);
 
 		pose.popMatrix();
 	}
