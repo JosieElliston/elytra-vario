@@ -99,9 +99,6 @@ public final class VarioConfigScreen extends Screen {
 		}
 		OptionList list = addRenderableWidget(new OptionList(top, height - top - 76));
 		VarioInstrument instrument = instrument(page);
-		// The toggle key belongs directly under the visibility switch it overrides — which on a
-		// page whose switch is the header means at the top of the list instead.
-		if (instrument != null && header != null) list.append(keyRow = new KeyRow(instrument));
 		boolean separated = false;
 		for (var option : ConfigOptions.all()) {
 			if (option.page() != page || option.equals(header) || !shown(option, group)) continue;
@@ -111,8 +108,9 @@ public final class VarioConfigScreen extends Screen {
 				separated = true;
 			}
 			list.append(new OptionRow(option));
-			if (instrument != null && keyRow == null
-					&& VarioInstrument.byVisibilityKey(option.key()) == instrument) {
+			// The key flips the page's on/off switch, so it belongs with the pair of switches
+			// rather than loose among the settings for how the instrument draws.
+			if (instrument != null && option.key().equals(instrument.glidingOnlyKey())) {
 				list.append(keyRow = new KeyRow(instrument));
 			}
 		}
@@ -143,11 +141,11 @@ public final class VarioConfigScreen extends Screen {
 				.bounds(panelCenter + 2, height - 26, half - 2, 20).build());
 	}
 
-	/** The instrument this page governs as a whole, found through its visibility setting. */
+	/** The instrument this page governs as a whole, found through its visibility settings. */
 	private static VarioInstrument instrument(int page) {
 		for (var option : ConfigOptions.all()) {
 			if (option.page() != page) continue;
-			VarioInstrument found = VarioInstrument.byVisibilityKey(option.key());
+			VarioInstrument found = VarioInstrument.byOptionKey(option.key());
 			if (found != null) return found;
 		}
 		return null;

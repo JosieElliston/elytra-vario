@@ -14,6 +14,23 @@ import net.fabricmc.loader.api.FabricLoader;
 
 /** Validates before applying and replaces the saved file atomically. */
 public final class ConfigStore {
+	/** The two switches a retired three-way visibility setting became. */
+	private record Split(String show, String glidingOnly) { }
+
+	/**
+	 * Per-instrument visibility used to be one choice of always, only-while-gliding, or hidden,
+	 * before the toggle keys made the on/off half of it worth having on its own. A file written
+	 * before that split is read here rather than silently falling back to the defaults, which
+	 * would turn every hidden instrument back on. The old key is not written back, so one save
+	 * finishes the migration; this table can go once no config file predates the split.
+	 */
+	private static final Map<String, Split> RETIRED = Map.of(
+			"ladderVisibility", new Split("showLadder", "ladderGlidingOnly"),
+			"markerVisibility", new Split("showMarkers", "markersGlidingOnly"),
+			"chartVisibility", new Split("showChart", "chartGlidingOnly"),
+			"statsVisibility", new Split("showStats", "statsGlidingOnly"),
+			"speedoVisibility", new Split("showSpeedo", "speedoGlidingOnly"));
+
 	private static Path path() {
 		return FabricLoader.getInstance().getConfigDir().resolve("elytra-vario.json");
 	}
@@ -32,6 +49,14 @@ public final class ConfigStore {
 	public static Map<String, String> decode(String json) {
 		JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 		Map<String, String> values = ConfigOptions.defaults();
+		for (var entry : RETIRED.entrySet()) {
+			// A file holding both the old key and the new ones was written by a newer build, so
+			// what it says now wins over what it used to say.
+			if (!root.has(entry.getKey()) || root.has(entry.getValue().show())) continue;
+			String mode = root.get(entry.getKey()).getAsString();
+			values.put(entry.getValue().show(), Boolean.toString(!mode.equals("2")));
+			values.put(entry.getValue().glidingOnly(), Boolean.toString(mode.equals("1")));
+		}
 		for (var option : ConfigOptions.all()) {
 			if (root.has(option.key())) values.put(option.key(), root.get(option.key()).getAsString());
 		}

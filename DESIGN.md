@@ -572,21 +572,29 @@ still there and still correct.
 ## Toggle keys
 
 Each of the five instruments — pitch ladder, markers, velocity graph, flight stats, speedometer
-— has a key that hides and restores it, all unbound by default. Not the individual markers:
-those are five settings behind one visibility switch on one page, and the ladder's bugs are read
+— has a key that switches it off and back on, all unbound by default. Not the individual
+markers: those are five settings behind one switch on one page, and the ladder's bugs are read
 as one overlay, so five more binds would buy nothing that switching the whole set off does not.
 Unbound by default because five keys is a lot to take off a keyboard that already has `V` on it
 for an action most flights never need, and because the settings screen puts the binding control
-directly under the visibility switch it overrides, so anyone who wants one finds it there.
+directly beneath the pair of switches it flips, so anyone who wants one finds it there.
 
-**The key sets a runtime suppression, not the saved visibility setting.** The two are separate
-because the settings screen edits through a draft: a key that wrote into that draft would let a
-mid-flight keypress be persisted by a later Save of an unrelated color change, and it would need
-somewhere to remember whether the instrument had been *always* or *only while gliding* before it
-was hidden. The flag has neither problem. It costs one honest limitation, which the tooltip
-states: an instrument whose configured visibility is already Hidden cannot be keyed into view.
-Being runtime-only, the toggles are also forgotten on quit — which is what a momentary declutter
-key should do, and it means what comes back at launch is what the settings screen says.
+**Visibility was one three-way choice and is now two switches**, which is what makes the keys
+work. Always / only while gliding / hidden puts *off* in the same setting as *when*, so a key
+that toggles it has to remember which of the other two values to return to, and has nothing
+sensible to do when the setting already reads hidden — the first press either does nothing or
+silently overwrites a preference. Asking the two questions separately — is this instrument on,
+and is it wanted only while gliding — removes both problems at once. The key flips one boolean,
+and *only while gliding* is a preference that survives being switched off and on. It is also
+less to explain: two checkboxes rather than a dropdown whose third value is not about the same
+thing as its first two.
+
+**The key writes the setting and saves it**, rather than holding a runtime override on top of
+it. That is what makes it a toggle rather than a mode: there is one place the answer lives, the
+settings screen shows what the key did, and a HUD you switched off stays off across a restart,
+which is the honest reading of having switched it off. It goes through the same schema the Save
+button uses, so the write is validated and the file is replaced by exactly that code; a failed
+write is logged and the toggle still applies for the session.
 
 The binds themselves are ordinary `KeyMapping`s registered with the game, so they are in the
 vanilla Controls list like any other. Rebinding them from the mod's own screen is a convenience
@@ -594,6 +602,10 @@ on top of that, not a second store: the row sets the same mapping and writes `op
 immediately. That is the only arrangement in which the two menus agree — a bind held in this
 screen's draft would be silently reverted by a Cancel in the vanilla one — and it is why the
 toggle key row is the one row on a page that Cancel and Reset do not touch.
+
+Config files written before the split still read: `ConfigStore` translates a retired
+`*Visibility` value into the pair, since the alternative is that every hidden instrument quietly
+comes back. The old key is not written back, so one save finishes the migration.
 
 A key already bound elsewhere is shown in red with the conflicting binds named, and allowed.
 Vanilla allows the clash too; what it does is fire both actions, which is occasionally what was
@@ -874,7 +886,7 @@ Sideslip is still readable without the marker, from the gap between the chart's 
   about fifteen on the way to the answer. It uses the latest sampled velocity without
   temporal smoothing.
 - The heatmap is drawn whenever the chart is, including while walking around, where the elytra
-  physics it describes does not apply. Set graph visibility to Only while gliding to suppress it there.
+  physics it describes does not apply. Turn on the graph's Only while gliding to suppress it there.
 - Building the heatmap blocks the frame it happens on. It is one hitch of roughly a third of a
   second and then never again, and it is deliberately not spread across frames: a half-built
   map that disagreed with its own axes would be worse than a stutter.
