@@ -11,6 +11,21 @@ import org.junit.jupiter.api.Test;
 
 class ModulePositionEditorTest {
 	@Test
+	void preferredModuleWinsOverPaintOrderWhenBoundsOverlap() {
+		var stats = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS, 10, 10, 40, 40);
+		var speedometer = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.SPEEDOMETER, 20, 20, 40, 40);
+		var bounds = java.util.List.of(stats, speedometer);
+
+		assertEquals(speedometer, ModulePositionEditor.at(bounds, 25, 25));
+		assertEquals(stats, ModulePositionEditor.at(bounds, 25, 25,
+				ModulePositionEditor.Module.STATS));
+		assertEquals(speedometer, ModulePositionEditor.at(bounds, 55, 25,
+				ModulePositionEditor.Module.STATS));
+	}
+
+	@Test
 	void snapAlignsEdgesCentersAndAdjacentEdgesOnEachAxis() {
 		var other = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS, 100, 70, 40, 30);

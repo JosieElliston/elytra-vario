@@ -77,6 +77,16 @@ final class ModulePositionEditor {
 		return null;
 	}
 
+	/** Gives an actively dragged module first claim when overlapping another module. */
+	static Bounds at(List<Bounds> bounds, double x, double y, Module preferred) {
+		if (preferred != null) {
+			for (Bounds candidate : bounds) {
+				if (candidate.module == preferred && candidate.contains(x, y)) return candidate;
+			}
+		}
+		return at(bounds, x, y);
+	}
+
 	/**
 	 * Snaps a drag independently on each axis. Equal edges and centers align directly;
 	 * opposing edges keep {@code margin} pixels between the modules. Screen edges use the

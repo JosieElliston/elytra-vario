@@ -264,7 +264,8 @@ public final class VarioConfigScreen extends Screen {
 			return true;
 		}
 		if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && inPositionEditor(event.x())) {
-			ModulePositionEditor.Bounds target = moduleAt(event.x(), event.y());
+			ModulePositionEditor.Bounds target = moduleAt(
+					event.x(), event.y(), selectedModule());
 			if (target != null) {
 				if (page != target.module().page) {
 					page = target.module().page;
@@ -309,8 +310,9 @@ public final class VarioConfigScreen extends Screen {
 		return ModulePositionEditor.bounds(width, height, gliding);
 	}
 
-	private ModulePositionEditor.Bounds moduleAt(double x, double y) {
-		return ModulePositionEditor.at(moduleBounds(), x, y);
+	private ModulePositionEditor.Bounds moduleAt(double x, double y,
+			ModulePositionEditor.Module preferred) {
+		return ModulePositionEditor.at(moduleBounds(), x, y, preferred);
 	}
 
 	private ModulePositionEditor.Module selectedModule() {
@@ -493,7 +495,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 		if (minecraft.level != null) {
 			ModulePositionEditor.Bounds hovered = inPositionEditor(mouseX)
-					? moduleAt(mouseX, mouseY) : null;
+					? moduleAt(mouseX, mouseY, draggingModule) : null;
 			ModulePositionEditor.Module selected = selectedModule();
 			graphics.enableScissor(0, 0, Math.max(0, panelLeft - 4), height);
 			for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
