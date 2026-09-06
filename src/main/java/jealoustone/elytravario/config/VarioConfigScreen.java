@@ -263,7 +263,10 @@ public final class VarioConfigScreen extends Screen {
 			bind(InputConstants.Type.MOUSE.getOrCreate(event.button()));
 			return true;
 		}
-		if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && inPositionEditor(event.x())) {
+		// Containers may consume their empty background, so use the leaf hit test directly:
+		// real controls own their pixels, while modules get first claim everywhere else.
+		if (overControl(event.x(), event.y())) return super.mouseClicked(event, doubled);
+		if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && minecraft.level != null) {
 			ModulePositionEditor.Bounds target = moduleAt(
 					event.x(), event.y(), selectedModule());
 			if (target != null) {
@@ -299,10 +302,6 @@ public final class VarioConfigScreen extends Screen {
 		snapVerticalGuides = List.of();
 		snapHorizontalGuides = List.of();
 		return true;
-	}
-
-	private boolean inPositionEditor(double mouseX) {
-		return minecraft.level != null && mouseX < panelLeft - 4;
 	}
 
 	private List<ModulePositionEditor.Bounds> moduleBounds() {
@@ -435,7 +434,9 @@ public final class VarioConfigScreen extends Screen {
 		if (minecraft.level == null) {
 			super.extractBackground(graphics, mouseX, mouseY, delta);
 		} else {
-			// Leave the world and HUD sharp so edits can be inspected without closing settings.
+			// Editor marks share the HUD's layer. The panel remains above both, so its controls
+			// are never obscured when a module lies beneath them.
+			drawPositionEditor(graphics, mouseX, mouseY);
 			graphics.fill(panelLeft - 4, 0, panelLeft + panelWidth + 4, height, 0xB0101014);
 		}
 	}
@@ -493,40 +494,54 @@ public final class VarioConfigScreen extends Screen {
 		} else if (savedNotice) {
 			graphics.centeredText(font, text("saved"), panelCenter, height - 42, 0xFF66DD77);
 		}
-		if (minecraft.level != null) {
-			ModulePositionEditor.Bounds hovered = inPositionEditor(mouseX)
-					? moduleAt(mouseX, mouseY, draggingModule) : null;
-			ModulePositionEditor.Module selected = selectedModule();
-			graphics.enableScissor(0, 0, Math.max(0, panelLeft - 4), height);
-			for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
-				boolean isHovered = hovered != null && bounds.module() == hovered.module();
-				if (bounds.module() == selected || isHovered) {
-					int color = isHovered ? 0xFFFFFFFF : 0xFF66CCFF;
-					graphics.outline(bounds.x() - 1, bounds.y() - 1,
-							bounds.width() + 2, bounds.height() + 2, color);
-				}
-			}
-			if (draggingModule != null) {
-				drawSnapGuides(graphics);
-				for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
-					if (bounds.module() != draggingModule) continue;
-					int ghostX = Math.clamp((int) Math.round(dragX), 0,
-							Math.max(0, width - bounds.width()));
-					int ghostY = Math.clamp((int) Math.round(dragY), 0,
-							Math.max(0, height - bounds.height()));
-					if (ghostX != bounds.x() || ghostY != bounds.y()) {
-						graphics.outline(ghostX - 1, ghostY - 1,
-								bounds.width() + 2, bounds.height() + 2, 0xA0FFFFFF);
-					}
-				}
-			}
-			graphics.disableScissor();
-			if (hovered != null) {
-				int tooltipWidth = Math.max(40, Math.min(240, width - 24));
-				graphics.setTooltipForNextFrame(font,
-						font.split(text("positionEditor.tooltip"), tooltipWidth), mouseX, mouseY);
+		if (minecraft.level != null && !overControl(mouseX, mouseY)) {
+			ModulePositionEditor.Bounds hovered = moduleAt(mouseX, mouseY, draggingModule);
+			if (hovered == null) return;
+			int tooltipWidth = Math.max(40, Math.min(240, width - 24));
+			graphics.setTooltipForNextFrame(font,
+					font.split(text("positionEditor.tooltip"), tooltipWidth), mouseX, mouseY);
+		}
+	}
+
+	private void drawPositionEditor(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+		ModulePositionEditor.Bounds hovered = overControl(mouseX, mouseY)
+				? null : moduleAt(mouseX, mouseY, draggingModule);
+		ModulePositionEditor.Module selected = selectedModule();
+		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
+			boolean isHovered = hovered != null && bounds.module() == hovered.module();
+			if (bounds.module() == selected || isHovered) {
+				int color = isHovered ? 0xFFFFFFFF : 0xFF66CCFF;
+				graphics.outline(bounds.x() - 1, bounds.y() - 1,
+						bounds.width() + 2, bounds.height() + 2, color);
 			}
 		}
+		if (draggingModule == null) return;
+		drawSnapGuides(graphics);
+		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
+			if (bounds.module() != draggingModule) continue;
+			int ghostX = Math.clamp((int) Math.round(dragX), 0,
+					Math.max(0, width - bounds.width()));
+			int ghostY = Math.clamp((int) Math.round(dragY), 0,
+					Math.max(0, height - bounds.height()));
+			if (ghostX != bounds.x() || ghostY != bounds.y()) {
+				graphics.outline(ghostX - 1, ghostY - 1,
+						bounds.width() + 2, bounds.height() + 2, 0xA0FFFFFF);
+			}
+		}
+	}
+
+	/** Whether the pointer is over a leaf control rather than container background. */
+	private boolean overControl(double mouseX, double mouseY) {
+		return getChildAt(mouseX, mouseY)
+				.map(child -> overControl(child, mouseX, mouseY)).orElse(false);
+	}
+
+	private static boolean overControl(GuiEventListener listener, double mouseX, double mouseY) {
+		if (listener instanceof ContainerEventHandler container) {
+			return container.getChildAt(mouseX, mouseY)
+					.map(child -> overControl(child, mouseX, mouseY)).orElse(false);
+		}
+		return listener instanceof AbstractWidget && listener.isMouseOver(mouseX, mouseY);
 	}
 
 	private void drawSnapGuides(GuiGraphicsExtractor graphics) {
