@@ -36,8 +36,9 @@ final class ModulePositionEditor {
 
 	record Position(int x, int y) { }
 	record Guide(int coordinate, int from, int to) { }
-	record Snap(Position position, Guide verticalGuide, Guide horizontalGuide) { }
+	record Snap(Position position, List<Guide> verticalGuides, List<Guide> horizontalGuides) { }
 	private record Candidate(int position, Guide guide) { }
+	private record AxisSnap(int position, List<Guide> guides) { }
 
 	/** Bounds in paint order; callers search backwards so the topmost overlapping module wins. */
 	static List<Bounds> bounds(int screenWidth, int screenHeight, boolean gliding) {
@@ -129,12 +130,10 @@ final class ModulePositionEditor {
 			addIfVisible(ys, other.y + other.height + margin, maxY, bottom);
 			addIfVisible(ys, other.y - margin - height, maxY, top);
 		}
-		Candidate snappedX = nearest(rawX, xs, distance);
-		Candidate snappedY = nearest(rawY, ys, distance);
-		return new Snap(new Position(snappedX == null ? rawX : snappedX.position,
-				snappedY == null ? rawY : snappedY.position),
-				snappedX == null ? null : snappedX.guide,
-				snappedY == null ? null : snappedY.guide);
+		AxisSnap snappedX = nearest(rawX, xs, distance);
+		AxisSnap snappedY = nearest(rawY, ys, distance);
+		return new Snap(new Position(snappedX.position, snappedY.position),
+				snappedX.guides, snappedY.guides);
 	}
 
 	private static void addIfVisible(List<Candidate> candidates, int value, int maximum,
@@ -142,17 +141,24 @@ final class ModulePositionEditor {
 		if (value >= 0 && value <= maximum) candidates.add(new Candidate(value, guide));
 	}
 
-	private static Candidate nearest(int value, List<Candidate> candidates, int distance) {
-		Candidate result = null;
+	private static AxisSnap nearest(int value, List<Candidate> candidates, int distance) {
+		Integer position = null;
 		int closest = distance + 1;
 		for (Candidate candidate : candidates) {
 			int gap = Math.abs(candidate.position - value);
 			if (gap < closest) {
-				result = candidate;
+				position = candidate.position;
 				closest = gap;
 			}
 		}
-		return result;
+		if (position == null) return new AxisSnap(value, List.of());
+		List<Guide> guides = new ArrayList<>();
+		for (Candidate candidate : candidates) {
+			if (candidate.position == position && !guides.contains(candidate.guide)) {
+				guides.add(candidate.guide);
+			}
+		}
+		return new AxisSnap(position, List.copyOf(guides));
 	}
 
 	/** Moves the module's absolute top-left coordinates in screen space. */

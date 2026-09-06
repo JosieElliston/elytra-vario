@@ -61,8 +61,8 @@ public final class VarioConfigScreen extends Screen {
 	/** Pointer-driven position before snapping, retained so a snapped module can pull free. */
 	private double dragX;
 	private double dragY;
-	private ModulePositionEditor.Guide snapVerticalGuide;
-	private ModulePositionEditor.Guide snapHorizontalGuide;
+	private List<ModulePositionEditor.Guide> snapVerticalGuides = List.of();
+	private List<ModulePositionEditor.Guide> snapHorizontalGuides = List.of();
 	private boolean updatingCoordinates;
 
 	public VarioConfigScreen(Screen parent) {
@@ -275,8 +275,8 @@ public final class VarioConfigScreen extends Screen {
 				draggingModule = target.module();
 				dragX = target.x();
 				dragY = target.y();
-				snapVerticalGuide = null;
-				snapHorizontalGuide = null;
+				snapVerticalGuides = List.of();
+				snapHorizontalGuides = List.of();
 				return true;
 			}
 		}
@@ -296,8 +296,8 @@ public final class VarioConfigScreen extends Screen {
 	public boolean mouseReleased(MouseButtonEvent event) {
 		if (draggingModule == null) return super.mouseReleased(event);
 		draggingModule = null;
-		snapVerticalGuide = null;
-		snapHorizontalGuide = null;
+		snapVerticalGuides = List.of();
+		snapHorizontalGuides = List.of();
 		return true;
 	}
 
@@ -341,8 +341,8 @@ public final class VarioConfigScreen extends Screen {
 		ModulePositionEditor.Snap snap = ModulePositionEditor.snap(module, x, y,
 				moving.width(), moving.height(), bounds, width, height,
 				VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
-		snapVerticalGuide = snap.verticalGuide();
-		snapHorizontalGuide = snap.horizontalGuide();
+		snapVerticalGuides = snap.verticalGuides();
+		snapHorizontalGuides = snap.horizontalGuides();
 		ModulePositionEditor.Position snapped = snap.position();
 		String nextX = Integer.toString(snapped.x());
 		String nextY = Integer.toString(snapped.y());
@@ -531,13 +531,13 @@ public final class VarioConfigScreen extends Screen {
 
 	private void drawSnapGuides(GuiGraphicsExtractor graphics) {
 		int color = 0xFFFFD866;
-		if (snapVerticalGuide != null) {
-			int x = Math.clamp(snapVerticalGuide.coordinate(), 0, Math.max(0, width - 1));
-			graphics.fill(x, snapVerticalGuide.from(), x + 1, snapVerticalGuide.to(), color);
+		for (ModulePositionEditor.Guide guide : snapVerticalGuides) {
+			int x = Math.clamp(guide.coordinate(), 0, Math.max(0, width - 1));
+			graphics.fill(x, guide.from(), x + 1, guide.to(), color);
 		}
-		if (snapHorizontalGuide != null) {
-			int y = Math.clamp(snapHorizontalGuide.coordinate(), 0, Math.max(0, height - 1));
-			graphics.fill(snapHorizontalGuide.from(), y, snapHorizontalGuide.to(), y + 1, color);
+		for (ModulePositionEditor.Guide guide : snapHorizontalGuides) {
+			int y = Math.clamp(guide.coordinate(), 0, Math.max(0, height - 1));
+			graphics.fill(guide.from(), y, guide.to(), y + 1, color);
 		}
 	}
 
