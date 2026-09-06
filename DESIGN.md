@@ -204,60 +204,24 @@ different instrument from a fixed one, quite possibly a worse one.
 
 ## The speedometer
 
-**It says nothing new, deliberately.** Total, horizontal and vertical speed are already three
-rows on the readout panel. Digits have to be read; an angle can be caught in peripheral vision,
-and three angles about one hub turn the split between horizontal and vertical speed into a
-shape — a wide fan is speed going into climb or sink, a closed one is flight that is nearly
-level. That is the whole case for it, and it is a display case rather than a measurement one.
+**It says nothing new, deliberately.** Total, horizontal, and vertical speed are already three
+rows on the readout panel. The bars trade exact digits for shapes and aligned heights that can
+be compared in peripheral vision. Their fixed order is `Y`, `XZ`, `XYZ`, matching the component
+names used elsewhere in the HUD.
 
-**Vertical speed is drawn as a magnitude, and nothing carries the sign.** A scale that starts at
-zero cannot carry one, and vertical speed is negative through most of a dive, so the blue needle
-shows `|vy|`. The alternatives that would have kept the sign on the dial are worse for this
-instrument: mirroring the arc below its own flat side doubles the height and asks the eye to
-read a reflected scale, and giving vertical speed a second, signed scale of its own means the
-blue needle no longer shares a scale with the other two, which is the thing the dial exists to
-show. A small triangle under the hub was built and then removed — which way you are going is the
-most obvious fact in the view out of the window, and `SPEED Y` on the readout panel prints the
-sign for when a figure is wanted, so the mark was a third statement of something already known.
+**Vertical speed is a magnitude.** A zero-based shared scale cannot carry its sign, so the Y bar
+shows `|vy|`. Direction remains visible in the world and explicit in Flight Stats' signed
+`SPEED Y` row.
 
-**The background is the half disc, not a box around it.** The instrument is round and its
-corners hold nothing, so a rectangle behind it would be four wedges of dimmed world paying for
-no reading. This is the only panel where that is worth the extra drawing: it is the biggest one
-and the only one whose content does not fill its own bounds. It is filled a row at a time rather
-than a pixel at a time, because the fill is translucent and a pixel covered twice would blend
-twice and show as a seam — whole rows cannot overlap. The rim is drawn by the same walk that
-draws the arc, deduplicated for the same reason.
+**Reference markers are per component, not one line across unlike quantities.** The white
+max-horizontal-speed set marks the steady +53.366° solution: 20.191 b/s Y, 67.776 b/s XZ, and
+70.719 b/s XYZ. The gray terminal set marks straight-down steady state: 78.400 b/s Y and XYZ,
+and zero XZ. Both sets are independently toggleable and use one-pixel horizontal lines so they
+remain legible over a filled bar without competing with it.
 
-**The needles differ in length as well as in colour.** They turn about one hub, so two speeds
-agreeing means one needle lying exactly on another — and total and horizontal speed agree
-whenever flight is level, which is most of a glide. Length is what makes that overlap read as a
-pile rather than as one mark of indeterminate colour, and it is the only channel left twice
-over: at the stop, where every off-scale needle takes the same gray, and for the red and green
-pair, which is the one pair a colour-blind eye cannot separate. This is the same argument that
-ranks the ladder's bugs by height, for the same reason. Total speed takes the longest needle
-because it is the largest of the three by construction, so the tips run outwards in the same
-order they run clockwise.
-
-**The flat side of the half circle is not drawn.** A half turn puts both stops on that diameter,
-so a line along it would lie under every needle reading near zero or near full scale — which is
-where vertical speed spends the apex, and where an off-scale needle always is. It closes the shape
-at the cost of the two readings hardest to see. The ticks at either end already say where the
-scale stops.
-
-**Needles peg rather than leave**, unlike the ladder's bugs, which simply go once their
-answer is off the ladder. What the off-scale state means is what differs: a speed past the stop
-is a limit genuinely being exceeded and the scale is the only thing that ran out, whereas a bug
-off the ladder is advice that does not apply to the phase being flown. The gray is what says
-the position has stopped being a reading; it is a light one, because these marks sit on a panel
-with a gray of its own behind them rather than over the world.
-
-**Curves out of rectangles.** The HUD's only primitive is a rectangle, but it is submitted with
-the current pose and that pose may carry a rotation — `ColoredRectangleRenderState` transforms
-all four corners on the way to the vertex buffer. So every radial mark, needles and ticks alike,
-is one rectangle drawn along the x axis of a pose rotated to its own angle: exact at any angle,
-one draw call each. The arc is the one thing that cannot be, being a curve rather than a
-segment; it is walked at half a pixel of arc length and each distinct pixel filled once, which
-is gapless by construction and costs one fill per pixel covered rather than one per sample.
+**Bars peg rather than leave**, unlike ladder markers. A speed above full scale is still useful
+as a limit being exceeded, so its bar reaches the top and turns gray to say its height is no
+longer an exact reading.
 
 ## The pitch ladder
 

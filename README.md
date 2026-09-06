@@ -48,10 +48,14 @@ Some metrics are shown relative to the previous cycle's apex. Energy assumes uni
 
 ## Speedometer
 
-A speedometer ranging from 0 to 80 b/s. Three needles:
+A bar chart ranging from 0 to 80 b/s:
 
-| Needle | Speed                          | Length   |
-| ------ | ------------------------------ | -------- |
-| red    | total, `sqrt(vx² + vy² + vz²)` | longest  |
-| green  | horizontal, `sqrt(vx² + vz²)`  | middle   |
-| blue   | vertical, `\|vy\|`             | shortest |
+| Bar   | Speed                          |
+| ----- | ------------------------------ |
+| `Y`   | vertical magnitude, `\|vy\|`   |
+| `XZ`  | horizontal, `sqrt(vx² + vz²)`  |
+| `XYZ` | total, `sqrt(vx² + vy² + vz²)` |
+
+Optional white markers show the component speeds at the steady max-horizontal-speed glide:
+20.191 b/s Y, 67.776 b/s XZ, and 70.719 b/s XYZ. Optional gray markers show straight-down
+terminal velocity: 78.400 b/s Y and XYZ, and zero XZ.
