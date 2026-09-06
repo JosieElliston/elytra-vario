@@ -499,7 +499,8 @@ public final class VarioConfigScreen extends Screen {
 			if (hovered == null) return;
 			int tooltipWidth = Math.max(40, Math.min(240, width - 24));
 			graphics.setTooltipForNextFrame(font,
-					font.split(text("positionEditor.tooltip"), tooltipWidth), mouseX, mouseY);
+					font.split(text("positionEditor.tooltip",
+							text("page." + hovered.module().page)), tooltipWidth), mouseX, mouseY);
 		}
 	}
 

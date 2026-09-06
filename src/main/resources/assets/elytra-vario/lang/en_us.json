@@ -214,7 +214,7 @@
 	"config.elytra-vario.discard.save": "Save and exit",
 	"config.elytra-vario.advanced.tooltip": "Show additional controls at the bottom of the page.",
 	"config.elytra-vario.reset.tooltip": "Preview this page's defaults, including advanced controls. Save to keep them.",
-	"config.elytra-vario.positionEditor.tooltip": "Click to open this module's settings. Drag to move and snap it. With its settings selected, use the arrow keys to move it one pixel at a time without snapping; use the coordinate fields for an exact position.",
+	"config.elytra-vario.positionEditor.tooltip": "%s\nClick to open this module's settings. Drag to move and snap it. With its settings selected, use the arrow keys to move it one pixel at a time without snapping; use the coordinate fields for an exact position.",
 	"config.elytra-vario.positionEditor.controls": "You can also drag and snap the module in the world preview. With its settings selected, the arrow keys move it one pixel at a time without snapping.",
 	"config.elytra-vario.page.5": "Speedometer",
 	"config.elytra-vario.showSpeedo": "Show speedometer",
