@@ -30,6 +30,10 @@ public final class ConfigStore {
 			"chartVisibility", new Split("showChart", "chartGlidingOnly"),
 			"statsVisibility", new Split("showStats", "statsGlidingOnly"),
 			"speedoVisibility", new Split("showSpeedo", "speedoGlidingOnly"));
+	/** Flight Stats used to call its coordinates an origin. */
+	private static final Map<String, String> RETIRED_POSITIONS = Map.of(
+			"originX", "statsX",
+			"originY", "statsY");
 
 	private static Path path() {
 		return FabricLoader.getInstance().getConfigDir().resolve("elytra-vario.json");
@@ -56,6 +60,11 @@ public final class ConfigStore {
 			String mode = root.get(entry.getKey()).getAsString();
 			values.put(entry.getValue().show(), Boolean.toString(!mode.equals("2")));
 			values.put(entry.getValue().glidingOnly(), Boolean.toString(mode.equals("1")));
+		}
+		for (var entry : RETIRED_POSITIONS.entrySet()) {
+			if (root.has(entry.getKey()) && !root.has(entry.getValue())) {
+				values.put(entry.getValue(), root.get(entry.getKey()).getAsString());
+			}
 		}
 		for (var option : ConfigOptions.all()) {
 			if (root.has(option.key())) values.put(option.key(), root.get(option.key()).getAsString());

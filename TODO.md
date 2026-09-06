@@ -1,7 +1,7 @@
 # TODO
 
 - should we expose rules for when to switch?
-- good module position config
+- bar graph for speed, energy
 
 ## myopic metrics
 

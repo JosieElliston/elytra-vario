@@ -3,8 +3,8 @@ package jealoustone.elytravario.hud;
 /**
  * The speedometer's geometry: where the dial sits in its box, and what angle a speed is.
  *
- * <p>Separate from the drawing for the same reason {@link HudLayout} is: it is arithmetic with
- * no Minecraft in it, so it can be checked without a game.
+	 * <p>Separate from the drawing because it is arithmetic with no Minecraft in it, so it can
+	 * be checked without a game.
  *
  * <h2>The angle</h2>
  *
@@ -19,8 +19,8 @@ package jealoustone.elytravario.hud;
  * <h2>The box</h2>
  *
  * <p>The instrument is not a rectangle. It is a half disc of radius {@link #rim()} — the scale,
- * plus a margin wide enough for the arc's own width and for nothing else. What the box is, then,
- * is that shape's bounds, which is all the anchoring in {@link HudPosition} needs.
+	 * plus a margin wide enough for the arc's own width and for nothing else. What the box is, then,
+	 * is that shape's bounds, which is what positioning and screen clamping need.
  *
  * <p>The width is odd because a half disc spans a whole rim either side of its center column as
  * well as that column itself; an even box would leave one edge of the arc outside the bounds it

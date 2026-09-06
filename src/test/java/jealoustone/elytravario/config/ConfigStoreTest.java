@@ -24,7 +24,8 @@ class ConfigStoreTest {
 		assertEquals("true", values.get("showMaxHorizontalSpeedPitch"));
 		assertEquals("true", values.get("showMinimumFallSpeedPitch"));
 		assertEquals("true", values.get("showZeroPitch"));
-		assertEquals("3", values.get("speedoAnchor"));
+		assertEquals("144", values.get("speedoX"));
+		assertFalse(values.containsKey("speedoAnchor"));
 		assertFalse(values.containsKey("futureOption"));
 	}
 
@@ -43,6 +44,13 @@ class ConfigStoreTest {
 		// A file holding both was written after the split, so the new keys win.
 		assertEquals("true", ConfigStore.decode(
 				"{\"ladderVisibility\":\"2\",\"showLadder\":\"true\"}").get("showLadder"));
+	}
+
+	@Test void retiredStatsOriginBecomesItsAbsolutePosition() {
+		var values = ConfigStore.decode("{\"originX\":\"12\",\"originY\":\"34\"}");
+		assertEquals("12", values.get("statsX"));
+		assertEquals("34", values.get("statsY"));
+		assertFalse(ConfigStore.encode(values).contains("originX"));
 	}
 
 	@Test void savingReplacesTheFileAndPreservesDisplayUnits() throws Exception {
@@ -68,7 +76,7 @@ class ConfigStoreTest {
 
 	@Test void badNumbersAndColorsCannotReachTheRenderer() {
 		for (var bad : Map.of("chartScale", "NaN", "chartTrailTicks", "0.07",
-				"lookaheadTicks", "1.5", "ladderOpacity", "101", "statsAnchor", "5",
+				"lookaheadTicks", "1.5", "ladderOpacity", "101", "statsX", "5000",
 				"holdPitchColor", "garbage", "chartFieldGainColor", "009E3692").entrySet()) {
 			var values = ConfigOptions.defaults();
 			values.put(bad.getKey(), bad.getValue());

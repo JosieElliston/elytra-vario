@@ -142,8 +142,8 @@ public final class SpeedometerElement implements HudElement {
 		}
 
 		SpeedometerDial dial = new SpeedometerDial(VarioConfig.speedoRadius, VarioConfig.speedoMaxSpeed);
-		HudPosition position = HudPosition.resolve(VarioConfig.speedoAnchor, VarioConfig.speedoX,
-				VarioConfig.speedoY, dial.width(), dial.height(),
+		HudPosition position = HudPosition.clamp(VarioConfig.speedoX, VarioConfig.speedoY,
+				dial.width(), dial.height(),
 				graphics.guiWidth(), graphics.guiHeight());
 
 		draw(graphics, minecraft.font, dial, sample, position.x(), position.y());

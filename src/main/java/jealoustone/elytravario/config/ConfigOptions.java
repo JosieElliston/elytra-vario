@@ -109,7 +109,6 @@ public final class ConfigOptions {
 
 		add("showChart", 3, 0, 1, 1, 0, false, false);
 		add("chartGlidingOnly", 3, 0, 1, 1, 0, false, false);
-		add("chartAnchor", 3, 0, 1, 1, 9, false, false);
 		add("chartX", 3, -4096, 4096, 1, 0, false, false);
 		add("chartY", 3, -4096, 4096, 1, 0, false, false);
 		add("chartScale", 3, 4, 128, 1, 0, false, false);
@@ -134,9 +133,8 @@ public final class ConfigOptions {
 
 		add("showStats", 4, 0, 1, 1, 0, false, false);
 		add("statsGlidingOnly", 4, 0, 1, 1, 0, false, false);
-		add("statsAnchor", 4, 0, 1, 1, 5, false, false);
-		add("originX", 4, -4096, 4096, 1, 0, false, false);
-		add("originY", 4, -4096, 4096, 1, 0, false, false);
+		add("statsX", 4, -4096, 4096, 1, 0, false, false);
+		add("statsY", 4, -4096, 4096, 1, 0, false, false);
 		add("panelScale", 4, 0.5, 3, 1, 0, false, false);
 		add("panelOpacity", 4, 0, 100, 100, 0, false, false);
 		add("showPanelBorder", 4, 0, 1, 1, 0, false, false);
@@ -157,7 +155,6 @@ public final class ConfigOptions {
 
 		add("showSpeedo", 5, 0, 1, 1, 0, false, false);
 		add("speedoGlidingOnly", 5, 0, 1, 1, 0, false, false);
-		add("speedoAnchor", 5, 0, 1, 1, 5, false, false);
 		add("speedoX", 5, -4096, 4096, 1, 0, false, false);
 		add("speedoY", 5, -4096, 4096, 1, 0, false, false);
 		add("speedoRadius", 5, 12, 200, 1, 0, false, false);

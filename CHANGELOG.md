@@ -13,6 +13,10 @@ and key-registration APIs, not behavior.
 
 ### Added
 
+- An in-world position editor for Flight Stats, the Velocity Graph, and the Speedometer. Click a
+  module to open its settings, drag it to move it, or use the arrow keys for one-pixel changes;
+  the exact absolute coordinate fields remain editable. This replaces screen anchors and
+  graph-to-stats attachment; snapping will return separately in a later version.
 - Three optional constant pitch markers for the fastest steady horizontal glide, minimum steady
   fall rate, and zero pitch / best steady glide ratio. They are independent of player state,
   use neutral ladder colors, and default to on.
@@ -25,7 +29,8 @@ and key-registration APIs, not behavior.
 - Color settings now open a picker with red, green, blue, and, where supported, opacity
   sliders, a live swatch, and reversible live HUD preview. Opaque heatmap colors omit the
   opacity control, and the on-disk hexadecimal format remains compatible.
-- The speedometer now defaults to the bottom-right corner, clear of chat.
+- The default absolute layout places Flight Stats and the Speedometer beside one another, with
+  the Velocity Graph below them.
 
 ## [1.2.0+mc1.21.11] - 2026-09-06
 

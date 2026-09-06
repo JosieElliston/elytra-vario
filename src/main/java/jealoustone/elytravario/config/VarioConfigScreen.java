@@ -41,6 +41,7 @@ public final class VarioConfigScreen extends Screen {
 	private final Screen parent;
 	private final ConfigPreview preview = new ConfigPreview();
 	private final Map<String, String> draft = preview.draft();
+	private final Map<String, EditBox> coordinateBoxes = new HashMap<>();
 	/** Remembers which subpage each divided page was last showing. */
 	private final Map<Integer, Integer> subpages = new HashMap<>();
 	private int page;
@@ -55,6 +56,10 @@ public final class VarioConfigScreen extends Screen {
 	private int panelLeft;
 	private int panelWidth;
 	private int panelCenter;
+	private ModulePositionEditor.Module draggingModule;
+	private double dragRemainderX;
+	private double dragRemainderY;
+	private boolean updatingCoordinates;
 
 	public VarioConfigScreen(Screen parent) {
 		super(text("title"));
@@ -71,6 +76,7 @@ public final class VarioConfigScreen extends Screen {
 		capturing = null;
 		keyControl = null;
 		optionList = null;
+		coordinateBoxes.clear();
 		int span = Math.min(width - 16, minecraft.level != null ? 320 : 600);
 		int left = minecraft.level != null ? width - span - 8 : (width - span) / 2;
 		panelLeft = left;
@@ -212,6 +218,18 @@ public final class VarioConfigScreen extends Screen {
 			bind(event.key() == GLFW.GLFW_KEY_ESCAPE ? InputConstants.UNKNOWN : InputConstants.getKey(event));
 			return true;
 		}
+		// A text box keeps the arrows for moving its caret. Everywhere else they belong to the
+		// module whose settings page is selected, so page selection and module selection cannot
+		// disagree.
+		if (!typing(getFocused())) {
+			int dx = event.isLeft() ? -1 : event.isRight() ? 1 : 0;
+			int dy = event.isUp() ? -1 : event.isDown() ? 1 : 0;
+			ModulePositionEditor.Module selected = selectedModule();
+			if (selected != null && (dx != 0 || dy != 0)) {
+				move(selected, dx, dy);
+				return true;
+			}
+		}
 		if (super.keyPressed(event)) return true;
 		// The key that opened the settings closes them again, the way Escape does — a bind you
 		// press to look at the HUD settings is one you press again to get back to flying.
@@ -238,9 +256,82 @@ public final class VarioConfigScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (capturing == null) return super.mouseClicked(event, doubled);
-		bind(InputConstants.Type.MOUSE.getOrCreate(event.button()));
+		if (capturing != null) {
+			bind(InputConstants.Type.MOUSE.getOrCreate(event.button()));
+			return true;
+		}
+		if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && inPositionEditor(event.x())) {
+			ModulePositionEditor.Bounds target = moduleAt(event.x(), event.y());
+			if (target != null) {
+				if (page != target.module().page) {
+					page = target.module().page;
+					rebuildWidgets();
+				}
+				clearFocus();
+				draggingModule = target.module();
+				dragRemainderX = 0.0;
+				dragRemainderY = 0.0;
+				return true;
+			}
+		}
+		return super.mouseClicked(event, doubled);
+	}
+
+	@Override
+	public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
+		if (draggingModule == null) return super.mouseDragged(event, deltaX, deltaY);
+		dragRemainderX += deltaX;
+		dragRemainderY += deltaY;
+		int dx = (int) dragRemainderX;
+		int dy = (int) dragRemainderY;
+		dragRemainderX -= dx;
+		dragRemainderY -= dy;
+		if (dx != 0 || dy != 0) move(draggingModule, dx, dy);
 		return true;
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event) {
+		if (draggingModule == null) return super.mouseReleased(event);
+		draggingModule = null;
+		dragRemainderX = 0.0;
+		dragRemainderY = 0.0;
+		return true;
+	}
+
+	private boolean inPositionEditor(double mouseX) {
+		return minecraft.level != null && mouseX < panelLeft - 4;
+	}
+
+	private List<ModulePositionEditor.Bounds> moduleBounds() {
+		boolean gliding = minecraft.player != null && minecraft.player.isFallFlying();
+		return ModulePositionEditor.bounds(width, height, gliding);
+	}
+
+	private ModulePositionEditor.Bounds moduleAt(double x, double y) {
+		return ModulePositionEditor.at(moduleBounds(), x, y);
+	}
+
+	private ModulePositionEditor.Module selectedModule() {
+		for (ModulePositionEditor.Module module : ModulePositionEditor.Module.values()) {
+			if (module.page == page) return module;
+		}
+		return null;
+	}
+
+	private void move(ModulePositionEditor.Module module, int dx, int dy) {
+		ModulePositionEditor.Bounds rendered = null;
+		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
+			if (bounds.module() == module) rendered = bounds;
+		}
+		if (!ModulePositionEditor.nudge(module, dx, dy, draft, rendered, width, height)) return;
+		updatingCoordinates = true;
+		EditBox xBox = coordinateBoxes.get(module.xKey);
+		EditBox yBox = coordinateBoxes.get(module.yKey);
+		if (xBox != null) xBox.setValue(draft.get(module.xKey));
+		if (yBox != null) yBox.setValue(draft.get(module.yKey));
+		updatingCoordinates = false;
+		changed();
 	}
 
 	/** A choice or toggle as a standalone dropdown, for options shown outside the list. */
@@ -272,7 +363,16 @@ public final class VarioConfigScreen extends Screen {
 		if (!option.toggle() && option.choices() == 0 && !option.color()) {
 			body = body.copy().append("\n" + option.min() + " \u2013 " + option.max());
 		}
+		if (isCoordinate(option.key())) {
+			body = body.copy().append("\n").append(text("positionEditor.controls"));
+		}
 		return text(option.key()).copy().append("\n").append(body);
+	}
+
+	private static boolean isCoordinate(String key) {
+		return key.equals("chartX") || key.equals("chartY")
+				|| key.equals("statsX") || key.equals("statsY")
+				|| key.equals("speedoX") || key.equals("speedoY");
 	}
 
 	/** Advanced rows hide; rows belonging to another subpage are not part of this page's view. */
@@ -364,6 +464,26 @@ public final class VarioConfigScreen extends Screen {
 			graphics.drawCenteredString(font, text(error != null ? error : saveError), panelCenter, height - 42, 0xFFFF7777);
 		} else if (savedNotice) {
 			graphics.drawCenteredString(font, text("saved"), panelCenter, height - 42, 0xFF66DD77);
+		}
+		if (minecraft.level != null) {
+			ModulePositionEditor.Bounds hovered = inPositionEditor(mouseX)
+					? moduleAt(mouseX, mouseY) : null;
+			ModulePositionEditor.Module selected = selectedModule();
+			graphics.enableScissor(0, 0, Math.max(0, panelLeft - 4), height);
+			for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
+				boolean isHovered = hovered != null && bounds.module() == hovered.module();
+				if (bounds.module() == selected || isHovered) {
+					int color = isHovered ? 0xFFFFFFFF : 0xFF66CCFF;
+					graphics.outline(bounds.x() - 1, bounds.y() - 1,
+							bounds.width() + 2, bounds.height() + 2, color);
+				}
+			}
+			graphics.disableScissor();
+			if (hovered != null) {
+				int tooltipWidth = Math.max(40, Math.min(240, width - 24));
+				graphics.setTooltipForNextFrame(font,
+						font.split(text("positionEditor.tooltip"), tooltipWidth), mouseX, mouseY);
+			}
 		}
 	}
 
@@ -521,9 +641,10 @@ public final class VarioConfigScreen extends Screen {
 				box.setResponder(value -> {
 					draft.put(option.key(), value);
 					box.setTextColor(valid(value) ? 0xFFE0E0E0 : 0xFFFF7777);
-					changed();
+					if (!updatingCoordinates) changed();
 				});
 				box.setTextColor(valid(box.getValue()) ? 0xFFE0E0E0 : 0xFFFF7777);
+				if (isCoordinate(option.key())) coordinateBoxes.put(option.key(), box);
 				control = box;
 			}
 			control.setTooltip(Tooltip.create(tooltip(option)));
