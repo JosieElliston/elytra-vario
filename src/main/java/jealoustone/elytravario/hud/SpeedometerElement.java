@@ -7,6 +7,7 @@ import static jealoustone.elytravario.hud.HudChrome.LABEL;
 import static jealoustone.elytravario.hud.HudChrome.PANEL_BG;
 
 import jealoustone.elytravario.VarioConfig;
+import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.flight.FlightRecorder;
 import jealoustone.elytravario.flight.Sample;
 
@@ -136,7 +137,7 @@ public final class SpeedometerElement implements HudElement {
 			return;
 		}
 
-		if (!VarioConfig.visible(VarioConfig.speedoVisibility, sample.gliding())) {
+		if (!VarioInstrument.SPEEDOMETER.visible(sample.gliding())) {
 			return;
 		}
 

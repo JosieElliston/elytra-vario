@@ -349,11 +349,25 @@ public final class VarioConfig {
 	public static int lookaheadPitchColor = 0xE0F7A900;
 	public static int holdPitchColor = 0xE000B533;
 
-	// Per-instrument visibility: 0 = always, 1 = gliding, 2 = hidden.
-	public static int ladderVisibility = 0;
-	public static int markerVisibility = 0;
-	public static int chartVisibility = 0;
-	public static int statsVisibility = 0;
+	/**
+	 * Per-instrument visibility, as two independent questions rather than one three-way choice:
+	 * is this instrument switched on at all, and if so is it wanted only while gliding.
+	 *
+	 * <p>Two switches because the first of them is what a toggle key binds to. A single
+	 * always/gliding/hidden setting makes the off state one value of three, so a key that flips
+	 * it has to remember which of the other two to come back to — and if the setting is already
+	 * on hidden, there is nothing sensible for a first press to do. Splitting the question
+	 * removes both problems: the key flips one boolean, and <em>only while gliding</em> is a
+	 * preference that survives being switched off and on.
+	 */
+	public static boolean showLadder = true;
+	public static boolean showMarkers = true;
+	public static boolean showChart = true;
+	public static boolean showStats = true;
+	public static boolean ladderGlidingOnly = false;
+	public static boolean markersGlidingOnly = false;
+	public static boolean chartGlidingOnly = false;
+	public static boolean statsGlidingOnly = false;
 	public static boolean showLadderLabels = true;
 	public static boolean showFineTicks = true;
 	public static double ladderOpacity = 1.0;
@@ -425,7 +439,8 @@ public final class VarioConfig {
 	 * paying for no reading — which matters here more than on the other panels, this being the
 	 * large one whose content does not fill its own bounds.
 	 */
-	public static int speedoVisibility = 0;
+	public static boolean showSpeedo = true;
+	public static boolean speedoGlidingOnly = false;
 	public static int speedoAnchor = 2;
 	public static int speedoX = 4;
 	public static int speedoY = 4;
@@ -495,8 +510,8 @@ public final class VarioConfig {
 	public static boolean showSpeedoBorder = true;
 	public static double speedoOpacity = 0.45;
 
-	public static boolean visible(int mode, boolean gliding) {
-		return enabled && mode != 2 && (mode != 1 || gliding);
+	public static boolean visible(boolean shown, boolean glidingOnly, boolean gliding) {
+		return enabled && shown && (!glidingOnly || gliding);
 	}
 
 	private VarioConfig() {

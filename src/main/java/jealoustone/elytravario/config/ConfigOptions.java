@@ -12,8 +12,8 @@ import jealoustone.elytravario.VarioConfig;
 /** One schema for screen controls, disk validation, defaults, and runtime application. */
 public final class ConfigOptions {
 	private static final List<Option> OPTIONS = new ArrayList<>();
-	/** Per page, the one option that sits above the subpage selector rather than in the list. */
-	private static final Map<Integer, String> HEADERS = Map.of(2, "markerVisibility");
+	// Which options sit above a page's subpage selector rather than in its list is the screen's
+	// question, and VarioInstrument already names them, so nothing here has to.
 
 	public record Option(Field field, int page, String group, double min, double max, double factor,
 			int choices, boolean color, boolean advanced, String defaultValue) {
@@ -63,7 +63,8 @@ public final class ConfigOptions {
 	static {
 		add("enabled", 0, 0, 1, 1, 0, false, false);
 
-		add("ladderVisibility", 1, 0, 1, 1, 3, false, false);
+		add("showLadder", 1, 0, 1, 1, 0, false, false);
+		add("ladderGlidingOnly", 1, 0, 1, 1, 0, false, false);
 		add("ladderOpacity", 1, 0, 100, 100, 0, false, false);
 		add("ladderCenterGap", 1, 12, 100, 1, 0, false, false);
 		add("ladderBandFractionUp", 1, 5, 100, 100, 0, false, false);
@@ -79,9 +80,10 @@ public final class ConfigOptions {
 		add("ladderFineRangeDegrees", 1, 1, 30, 1, 0, false, true);
 		add("ladderFadeFraction", 1, 0, 50, 100, 0, false, true);
 
-		// The visibility switch heads the page; the rest is one subpage per marker, in the
+		// The on/off switch heads the page; the rest is one subpage per marker, in the
 		// order of the subpage dropdown and of the rows within each subpage.
-		add("markerVisibility", 2, 0, 1, 1, 3, false, false);
+		add("showMarkers", 2, 0, 1, 1, 0, false, false);
+		add("markersGlidingOnly", 2, 0, 1, 1, 0, false, false);
 
 		add("showLookaheadPitch", 2, "lookahead", 0, 1, 1, 0, false, false);
 		add("lookaheadPitchColor", 2, "lookahead", 0, 1, 1, 0, true, false);
@@ -96,7 +98,8 @@ public final class ConfigOptions {
 		add("showFlightPath", 2, "flightPath", 0, 1, 1, 0, false, false);
 		add("flightPathColor", 2, "flightPath", 0, 1, 1, 0, true, false);
 
-		add("chartVisibility", 3, 0, 1, 1, 3, false, false);
+		add("showChart", 3, 0, 1, 1, 0, false, false);
+		add("chartGlidingOnly", 3, 0, 1, 1, 0, false, false);
 		add("chartAnchor", 3, 0, 1, 1, 9, false, false);
 		add("chartX", 3, -4096, 4096, 1, 0, false, false);
 		add("chartY", 3, -4096, 4096, 1, 0, false, false);
@@ -120,7 +123,8 @@ public final class ConfigOptions {
 		add("cursorForwardColor", 3, 0, 1, 1, 0, true, false);
 		add("chartFieldScale", 3, 0.001, 10, 1, 0, false, true);
 
-		add("statsVisibility", 4, 0, 1, 1, 3, false, false);
+		add("showStats", 4, 0, 1, 1, 0, false, false);
+		add("statsGlidingOnly", 4, 0, 1, 1, 0, false, false);
 		add("statsAnchor", 4, 0, 1, 1, 5, false, false);
 		add("originX", 4, -4096, 4096, 1, 0, false, false);
 		add("originY", 4, -4096, 4096, 1, 0, false, false);
@@ -142,7 +146,8 @@ public final class ConfigOptions {
 		add("negativeColor", 4, 0, 1, 1, 0, true, false);
 		add("panelWidth", 4, 132, 400, 1, 0, false, true);
 
-		add("speedoVisibility", 5, 0, 1, 1, 3, false, false);
+		add("showSpeedo", 5, 0, 1, 1, 0, false, false);
+		add("speedoGlidingOnly", 5, 0, 1, 1, 0, false, false);
 		add("speedoAnchor", 5, 0, 1, 1, 5, false, false);
 		add("speedoX", 5, -4096, 4096, 1, 0, false, false);
 		add("speedoY", 5, -4096, 4096, 1, 0, false, false);
@@ -179,16 +184,6 @@ public final class ConfigOptions {
 	}
 
 	public static List<Option> all() { return List.copyOf(OPTIONS); }
-
-	/** The page's master switch, shown above its subpage selector, or null when it has none. */
-	public static Option header(int page) {
-		String key = HEADERS.get(page);
-		if (key == null) return null;
-		for (Option option : OPTIONS) {
-			if (option.page() == page && option.key().equals(key)) return option;
-		}
-		throw new IllegalStateException(key);
-	}
 
 	/** The page's subpages, in declaration order; empty when the page is not divided. */
 	public static List<String> groups(int page) {

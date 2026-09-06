@@ -24,6 +24,23 @@ class ConfigStoreTest {
 		assertFalse(values.containsKey("futureOption"));
 	}
 
+	@Test void retiredVisibilityChoicesBecomeTheirTwoSwitches() {
+		var values = ConfigStore.decode(
+				"{\"ladderVisibility\":\"2\",\"chartVisibility\":\"1\",\"statsVisibility\":\"0\"}");
+		assertEquals("false", values.get("showLadder"));
+		assertEquals("false", values.get("ladderGlidingOnly"));
+		assertEquals("true", values.get("showChart"));
+		assertEquals("true", values.get("chartGlidingOnly"));
+		assertEquals("true", values.get("showStats"));
+		assertEquals("false", values.get("statsGlidingOnly"));
+		// Untouched instruments keep their defaults, and the old key does not survive a save.
+		assertEquals("true", values.get("showMarkers"));
+		assertFalse(ConfigStore.encode(values).contains("ladderVisibility"));
+		// A file holding both was written after the split, so the new keys win.
+		assertEquals("true", ConfigStore.decode(
+				"{\"ladderVisibility\":\"2\",\"showLadder\":\"true\"}").get("showLadder"));
+	}
+
 	@Test void savingReplacesTheFileAndPreservesDisplayUnits() throws Exception {
 		var values = ConfigOptions.defaults();
 		values.put("chartMinVxz", "-20");
@@ -74,13 +91,13 @@ class ConfigStoreTest {
 			values.put("chartMinVxz", "-20");
 			values.put("chartTrailTicks", "7.5");
 			values.put("chartFieldGainColor", "123456");
-			values.put("ladderVisibility", "2");
+			values.put("showLadder", "false");
 			ConfigOptions.apply(values);
 			assertEquals(-1, VarioConfig.chartMinVxz);
 			assertEquals(150, VarioConfig.chartTrailTicks);
 			assertEquals(0xFF123456, VarioConfig.chartFieldGainColor);
-			assertTrue(VarioConfig.visible(VarioConfig.markerVisibility, true));
-			assertFalse(VarioConfig.visible(VarioConfig.ladderVisibility, true));
+			assertTrue(VarioConfig.visible(VarioConfig.showMarkers, VarioConfig.markersGlidingOnly, true));
+			assertFalse(VarioConfig.visible(VarioConfig.showLadder, VarioConfig.ladderGlidingOnly, true));
 			values.put("enabled", "false");
 			values.put("chartScale", "Infinity");
 			assertThrows(IllegalArgumentException.class, () -> ConfigOptions.apply(values));

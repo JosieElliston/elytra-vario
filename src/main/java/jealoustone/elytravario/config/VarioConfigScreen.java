@@ -5,7 +5,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.mojang.blaze3d.platform.InputConstants;
 import jealoustone.elytravario.ElytraVario;
+import jealoustone.elytravario.VarioInstrument;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
@@ -18,10 +22,13 @@ import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 /** Six scrollable pages with live HUD previews and an explicit, non-closing Save.
- * A page may divide into subpages, chosen by a dropdown under its master switch. */
+ * A page may divide into subpages, chosen by a dropdown under the switches the whole page shares. */
 public final class VarioConfigScreen extends Screen {
 	private static final int PAGE_COUNT = 6;
 	private final Screen parent;
@@ -30,6 +37,9 @@ public final class VarioConfigScreen extends Screen {
 	/** Remembers which subpage each divided page was last showing. */
 	private final Map<Integer, Integer> subpages = new HashMap<>();
 	private int page;
+	/** The instrument whose toggle key is waiting for the next key or mouse press, if any. */
+	private VarioInstrument capturing;
+	private KeyControl keyControl;
 	private boolean advanced;
 	private String saveError;
 	private Button saveButton;
@@ -49,6 +59,9 @@ public final class VarioConfigScreen extends Screen {
 
 	@Override
 	protected void init() {
+		// A rebuild discards the control that armed the capture, so the capture goes with it.
+		capturing = null;
+		keyControl = null;
 		int span = Math.min(width - 16, minecraft.level != null ? 320 : 600);
 		int left = minecraft.level != null ? width - span - 8 : (width - span) / 2;
 		panelLeft = left;
@@ -66,10 +79,20 @@ public final class VarioConfigScreen extends Screen {
 		}
 		int tabRows = (PAGE_COUNT + columns - 1) / columns;
 		int top = 32 + tabRows * 22;
-		// The master switch stays in view while the subpage selector changes under it.
-		ConfigOptions.Option header = ConfigOptions.header(page);
-		if (header != null) {
-			addRenderableWidget(valueSelector(header, left + 4, top, span - 8));
+		// Whether the instrument is shown, whether it is wanted only while gliding, and the key
+		// that flips the first: three answers about the page as a whole, so they sit above both
+		// the subpage selector and the scrolling list rather than among the settings for how the
+		// instrument draws. On the markers page in particular they are not the selected marker's.
+		VarioInstrument instrument = instrument(page);
+		List<String> pageWide = instrument == null ? List.of()
+				: List.of(instrument.showKey(), instrument.glidingOnlyKey());
+		for (String key : pageWide) {
+			addRenderableWidget(valueSelector(option(key), left + 4, top, span - 8));
+			top += 24;
+		}
+		if (instrument != null) {
+			keyControl = new KeyControl(instrument);
+			addRenderableWidget(keyControl.button(left + 4, top, span - 8));
 			top += 24;
 		}
 		List<String> groups = ConfigOptions.groups(page);
@@ -86,7 +109,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 		OptionList list = addRenderableWidget(new OptionList(top, height - top - 76));
 		for (var option : ConfigOptions.all()) {
-			if (option.page() != page || option.equals(header) || !shown(option, group)) continue;
+			if (option.page() != page || pageWide.contains(option.key()) || !shown(option, group)) continue;
 			list.append(new OptionRow(option));
 		}
 		int half = Math.min(span / 2, 180);
@@ -114,6 +137,54 @@ public final class VarioConfigScreen extends Screen {
 				.bounds(panelCenter - half, height - 26, half - 2, 20).build());
 		addRenderableWidget(Button.builder(text("cancel"), button -> onClose())
 				.bounds(panelCenter + 2, height - 26, half - 2, 20).build());
+	}
+
+	private static ConfigOptions.Option option(String key) {
+		for (var option : ConfigOptions.all()) {
+			if (option.key().equals(key)) return option;
+		}
+		throw new IllegalStateException(key);
+	}
+
+	/** The instrument this page governs as a whole, found through its visibility settings. */
+	private static VarioInstrument instrument(int page) {
+		for (var option : ConfigOptions.all()) {
+			if (option.page() != page) continue;
+			VarioInstrument found = VarioInstrument.byOptionKey(option.key());
+			if (found != null) return found;
+		}
+		return null;
+	}
+
+	/**
+	 * Binds the armed toggle, or unbinds it when the press was Escape.
+	 *
+	 * <p>Key binds are vanilla options rather than this mod's, so this writes straight through to
+	 * options.txt instead of into the draft. That is the only way the two menus can agree — the
+	 * vanilla Controls screen edits the same mapping, and a bind held in a draft would be
+	 * silently reverted by a Cancel there. The cost is that Cancel and Reset here do not undo
+	 * it, which the control's tooltip says.
+	 */
+	private void bind(InputConstants.Key key) {
+		capturing.key().setKey(key);
+		KeyMapping.resetMapping();
+		minecraft.options.save();
+		capturing = null;
+		if (keyControl != null) keyControl.refresh();
+	}
+
+	@Override
+	public boolean keyPressed(KeyEvent event) {
+		if (capturing == null) return super.keyPressed(event);
+		bind(event.key() == GLFW.GLFW_KEY_ESCAPE ? InputConstants.UNKNOWN : InputConstants.getKey(event));
+		return true;
+	}
+
+	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
+		if (capturing == null) return super.mouseClicked(event, doubled);
+		bind(InputConstants.Type.MOUSE.getOrCreate(event.button()));
+		return true;
 	}
 
 	/** A choice or toggle as a standalone dropdown, for options shown outside the list. */
@@ -253,6 +324,83 @@ public final class VarioConfigScreen extends Screen {
 		}
 		void append(OptionRow row) { addEntry(row); }
 		@Override public int getRowWidth() { return panelWidth - 24; }
+	}
+
+	/**
+	 * The instrument's toggle key, rebindable here so that the whole of a page's behavior is in
+	 * one place rather than split between this screen and the vanilla Controls list. The same
+	 * mapping is registered with the game, so it is still in that list too, and either screen
+	 * sets it.
+	 *
+	 * <p>It reads as a third switch beside the two above it, and is labeled the way they are,
+	 * because that is what it is — but <b>it is not part of the draft</b>, unlike every setting
+	 * on this screen: see {@link #bind}. It takes effect and is saved as soon as it is pressed.
+	 *
+	 * <p>A key already spoken for elsewhere is shown in red with the offending binds named,
+	 * rather than refused. Vanilla allows the clash and so does this; what a conflicting key
+	 * does is fire both actions, which is occasionally even what was wanted.
+	 */
+	private final class KeyControl {
+		private final VarioInstrument instrument;
+		private final Button button;
+
+		KeyControl(VarioInstrument instrument) {
+			this.instrument = instrument;
+			this.button = Button.builder(Component.empty(), widget -> {
+				capturing = instrument;
+				refresh();
+			}).build();
+		}
+
+		Button button(int x, int y, int buttonWidth) {
+			button.setX(x);
+			button.setY(y);
+			button.setWidth(buttonWidth);
+			refresh();
+			return button;
+		}
+
+		void refresh() {
+			KeyMapping mapping = instrument.key();
+			// Null only if the screen is somehow open before client init registered the keys.
+			button.active = mapping != null;
+			if (mapping == null) {
+				button.setMessage(text("toggleKey"));
+				return;
+			}
+			// "Name: value", the shape CycleButton gives the two switches above this one.
+			Component name = mapping.getTranslatedKeyMessage();
+			if (capturing == instrument) {
+				button.setMessage(labeled(Component.literal("> ")
+						.append(name.copy().withStyle(ChatFormatting.YELLOW))
+						.append(" <").withStyle(ChatFormatting.YELLOW)));
+				button.setTooltip(Tooltip.create(text("toggleKey.capturing")));
+				return;
+			}
+			Component conflicts = conflicts(mapping);
+			button.setMessage(labeled(conflicts == null ? name : name.copy().withStyle(ChatFormatting.RED)));
+			Component tooltip = text("toggleKey").copy().append("\n").append(text("toggleKey.tooltip"));
+			if (conflicts != null) {
+				tooltip = tooltip.copy().append("\n").append(text("toggleKey.conflict", conflicts));
+			}
+			button.setTooltip(Tooltip.create(tooltip));
+		}
+
+		private Component labeled(Component value) {
+			return text("toggleKey").copy().append(": ").append(value);
+		}
+
+		/** The names of every other bind on the same key, or null when there are none. */
+		private Component conflicts(KeyMapping mapping) {
+			if (mapping.isUnbound()) return null;
+			Component names = null;
+			for (KeyMapping other : minecraft.options.keyMappings) {
+				if (other == mapping || !other.same(mapping)) continue;
+				Component name = Component.translatable(other.getName());
+				names = names == null ? name : names.copy().append(", ").append(name);
+			}
+			return names;
+		}
 	}
 
 	private final class OptionRow extends ContainerObjectSelectionList.Entry<OptionRow> {

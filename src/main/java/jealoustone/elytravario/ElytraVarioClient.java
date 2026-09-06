@@ -33,8 +33,11 @@ public class ElytraVarioClient implements ClientModInitializer {
 				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_V,
 				category));
+		VarioInstrument.registerAll(category);
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			VarioInstrument.tickAll();
+
 			while (settingsKey.consumeClick()) {
 				if (client.screen == null) {
 					client.setScreen(new VarioConfigScreen(null));

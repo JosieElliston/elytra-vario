@@ -11,6 +11,7 @@ import static jealoustone.elytravario.hud.HudChrome.PANEL_BG;
 import static jealoustone.elytravario.hud.HudChrome.VALUE;
 
 import jealoustone.elytravario.VarioConfig;
+import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.flight.EnergyField;
 import jealoustone.elytravario.flight.FlightRecorder;
 import jealoustone.elytravario.flight.Sample;
@@ -82,8 +83,8 @@ public final class VarioHudElement implements HudElement {
 			return;
 		}
 
-		boolean stats = VarioConfig.visible(VarioConfig.statsVisibility, sample.gliding()) && panelRows() > 0;
-		boolean chart = VarioConfig.visible(VarioConfig.chartVisibility, sample.gliding());
+		boolean stats = VarioInstrument.STATS.visible(sample.gliding()) && panelRows() > 0;
+		boolean chart = VarioInstrument.CHART.visible(sample.gliding());
 		boolean attached = chart && HudPosition.attaches(VarioConfig.chartAnchor);
 		int panelHeight = (int) Math.ceil(panelHeight() * VarioConfig.panelScale);
 		int panelWidth = (int) Math.ceil(VarioConfig.panelWidth * VarioConfig.panelScale);
