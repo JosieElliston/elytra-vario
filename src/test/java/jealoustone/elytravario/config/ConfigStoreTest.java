@@ -21,6 +21,9 @@ class ConfigStoreTest {
 		var values = ConfigStore.decode("{\"chartMinVxz\":\"-20\",\"futureOption\":true}");
 		assertEquals("-20", values.get("chartMinVxz"));
 		assertEquals("true", values.get("showHoldPitch"));
+		assertEquals("true", values.get("showMaxHorizontalSpeedPitch"));
+		assertEquals("true", values.get("showMinimumFallSpeedPitch"));
+		assertEquals("true", values.get("showZeroPitch"));
 		assertFalse(values.containsKey("futureOption"));
 	}
 
