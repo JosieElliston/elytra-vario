@@ -34,6 +34,11 @@ final class ModulePositionEditor {
 		}
 	}
 
+	record Position(int x, int y) { }
+	record Guide(int coordinate, int from, int to) { }
+	record Snap(Position position, Guide verticalGuide, Guide horizontalGuide) { }
+	private record Candidate(int position, Guide guide) { }
+
 	/** Bounds in paint order; callers search backwards so the topmost overlapping module wins. */
 	static List<Bounds> bounds(int screenWidth, int screenHeight, boolean gliding) {
 		List<Bounds> result = new ArrayList<>();
@@ -70,6 +75,74 @@ final class ModulePositionEditor {
 			if (bounds.get(i).contains(x, y)) return bounds.get(i);
 		}
 		return null;
+	}
+
+	/**
+	 * Snaps a drag independently on each axis. Equal edges and centers align directly;
+	 * opposing edges keep {@code margin} pixels between the modules. Screen edges use the
+	 * same margin, while the screen center aligns directly.
+	 */
+	static Snap snap(Module moving, int x, int y, int width, int height,
+			List<Bounds> bounds, int screenWidth, int screenHeight, int margin, int distance) {
+		int maxX = Math.max(0, screenWidth - width);
+		int maxY = Math.max(0, screenHeight - height);
+		int rawX = Math.clamp(x, 0, maxX);
+		int rawY = Math.clamp(y, 0, maxY);
+		List<Candidate> xs = new ArrayList<>();
+		List<Candidate> ys = new ArrayList<>();
+		addIfVisible(xs, margin, maxX, new Guide(0, 0, screenHeight));
+		addIfVisible(xs, maxX - margin, maxX, new Guide(screenWidth, 0, screenHeight));
+		addIfVisible(xs, (screenWidth - width) / 2, maxX,
+				new Guide(screenWidth / 2, 0, screenHeight));
+		addIfVisible(ys, margin, maxY, new Guide(0, 0, screenWidth));
+		addIfVisible(ys, maxY - margin, maxY, new Guide(screenHeight, 0, screenWidth));
+		addIfVisible(ys, (screenHeight - height) / 2, maxY,
+				new Guide(screenHeight / 2, 0, screenWidth));
+		for (Bounds other : bounds) {
+			if (other.module == moving) continue;
+			Guide left = new Guide(other.x, other.y, other.y + other.height);
+			Guide centerX = new Guide(other.x + other.width / 2,
+					other.y, other.y + other.height);
+			Guide right = new Guide(other.x + other.width, other.y, other.y + other.height);
+			addIfVisible(xs, other.x, maxX, left);
+			addIfVisible(xs, other.x + other.width - width, maxX, right);
+			addIfVisible(xs, other.x + (other.width - width) / 2, maxX, centerX);
+			addIfVisible(xs, other.x + other.width + margin, maxX, right);
+			addIfVisible(xs, other.x - margin - width, maxX, left);
+			Guide top = new Guide(other.y, other.x, other.x + other.width);
+			Guide centerY = new Guide(other.y + other.height / 2,
+					other.x, other.x + other.width);
+			Guide bottom = new Guide(other.y + other.height, other.x, other.x + other.width);
+			addIfVisible(ys, other.y, maxY, top);
+			addIfVisible(ys, other.y + other.height - height, maxY, bottom);
+			addIfVisible(ys, other.y + (other.height - height) / 2, maxY, centerY);
+			addIfVisible(ys, other.y + other.height + margin, maxY, bottom);
+			addIfVisible(ys, other.y - margin - height, maxY, top);
+		}
+		Candidate snappedX = nearest(rawX, xs, distance);
+		Candidate snappedY = nearest(rawY, ys, distance);
+		return new Snap(new Position(snappedX == null ? rawX : snappedX.position,
+				snappedY == null ? rawY : snappedY.position),
+				snappedX == null ? null : snappedX.guide,
+				snappedY == null ? null : snappedY.guide);
+	}
+
+	private static void addIfVisible(List<Candidate> candidates, int value, int maximum,
+			Guide guide) {
+		if (value >= 0 && value <= maximum) candidates.add(new Candidate(value, guide));
+	}
+
+	private static Candidate nearest(int value, List<Candidate> candidates, int distance) {
+		Candidate result = null;
+		int closest = distance + 1;
+		for (Candidate candidate : candidates) {
+			int gap = Math.abs(candidate.position - value);
+			if (gap < closest) {
+				result = candidate;
+				closest = gap;
+			}
+		}
+		return result;
 	}
 
 	/** Moves the module's absolute top-left coordinates in screen space. */

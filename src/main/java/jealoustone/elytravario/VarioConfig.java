@@ -5,6 +5,10 @@ package jealoustone.elytravario;
  */
 public final class VarioConfig {
 	public static boolean enabled = true;
+	/** Gap kept between snapped modules and between a snapped module and a screen edge. */
+	public static int positionMargin = 4;
+	/** Maximum drag distance, in scaled GUI pixels, at which an alignment takes hold. */
+	public static int positionSnapDistance = 4;
 
 	/**
 	 * The delta-TE heatmap behind the chart: for every velocity the chart can show, the most

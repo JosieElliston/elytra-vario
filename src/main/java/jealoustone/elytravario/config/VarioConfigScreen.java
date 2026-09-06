@@ -8,6 +8,7 @@ import java.util.Map;
 import com.mojang.blaze3d.platform.InputConstants;
 import jealoustone.elytravario.ElytraVario;
 import jealoustone.elytravario.ElytraVarioClient;
+import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
@@ -57,8 +58,11 @@ public final class VarioConfigScreen extends Screen {
 	private int panelWidth;
 	private int panelCenter;
 	private ModulePositionEditor.Module draggingModule;
-	private double dragRemainderX;
-	private double dragRemainderY;
+	/** Pointer-driven position before snapping, retained so a snapped module can pull free. */
+	private double dragX;
+	private double dragY;
+	private ModulePositionEditor.Guide snapVerticalGuide;
+	private ModulePositionEditor.Guide snapHorizontalGuide;
 	private boolean updatingCoordinates;
 
 	public VarioConfigScreen(Screen parent) {
@@ -145,8 +149,7 @@ public final class VarioConfigScreen extends Screen {
 				rows.add(new OptionRow(option));
 			}
 		}
-		// Global lifts its one setting above the list, so on that page there is no list to draw:
-		// an empty pane would read as settings that failed to appear.
+		// Do not draw an empty pane on pages whose settings all live above the list.
 		if (!rows.isEmpty()) {
 			optionList = addRenderableWidget(new OptionList(top, height - top - 76));
 			for (ConfigRow row : rows) optionList.append(row);
@@ -269,8 +272,10 @@ public final class VarioConfigScreen extends Screen {
 				}
 				clearFocus();
 				draggingModule = target.module();
-				dragRemainderX = 0.0;
-				dragRemainderY = 0.0;
+				dragX = target.x();
+				dragY = target.y();
+				snapVerticalGuide = null;
+				snapHorizontalGuide = null;
 				return true;
 			}
 		}
@@ -280,13 +285,9 @@ public final class VarioConfigScreen extends Screen {
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
 		if (draggingModule == null) return super.mouseDragged(event, deltaX, deltaY);
-		dragRemainderX += deltaX;
-		dragRemainderY += deltaY;
-		int dx = (int) dragRemainderX;
-		int dy = (int) dragRemainderY;
-		dragRemainderX -= dx;
-		dragRemainderY -= dy;
-		if (dx != 0 || dy != 0) move(draggingModule, dx, dy);
+		dragX += deltaX;
+		dragY += deltaY;
+		drag(draggingModule, (int) Math.round(dragX), (int) Math.round(dragY));
 		return true;
 	}
 
@@ -294,8 +295,8 @@ public final class VarioConfigScreen extends Screen {
 	public boolean mouseReleased(MouseButtonEvent event) {
 		if (draggingModule == null) return super.mouseReleased(event);
 		draggingModule = null;
-		dragRemainderX = 0.0;
-		dragRemainderY = 0.0;
+		snapVerticalGuide = null;
+		snapHorizontalGuide = null;
 		return true;
 	}
 
@@ -325,6 +326,31 @@ public final class VarioConfigScreen extends Screen {
 			if (bounds.module() == module) rendered = bounds;
 		}
 		if (!ModulePositionEditor.nudge(module, dx, dy, draft, rendered, width, height)) return;
+		coordinatesChanged(module);
+	}
+
+	private void drag(ModulePositionEditor.Module module, int x, int y) {
+		ModulePositionEditor.Bounds moving = null;
+		List<ModulePositionEditor.Bounds> bounds = moduleBounds();
+		for (ModulePositionEditor.Bounds candidate : bounds) {
+			if (candidate.module() == module) moving = candidate;
+		}
+		if (moving == null) return;
+		ModulePositionEditor.Snap snap = ModulePositionEditor.snap(module, x, y,
+				moving.width(), moving.height(), bounds, width, height,
+				VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
+		snapVerticalGuide = snap.verticalGuide();
+		snapHorizontalGuide = snap.horizontalGuide();
+		ModulePositionEditor.Position snapped = snap.position();
+		String nextX = Integer.toString(snapped.x());
+		String nextY = Integer.toString(snapped.y());
+		if (nextX.equals(draft.get(module.xKey)) && nextY.equals(draft.get(module.yKey))) return;
+		draft.put(module.xKey, nextX);
+		draft.put(module.yKey, nextY);
+		coordinatesChanged(module);
+	}
+
+	private void coordinatesChanged(ModulePositionEditor.Module module) {
 		updatingCoordinates = true;
 		EditBox xBox = coordinateBoxes.get(module.xKey);
 		EditBox yBox = coordinateBoxes.get(module.yKey);
@@ -478,12 +504,38 @@ public final class VarioConfigScreen extends Screen {
 							bounds.width() + 2, bounds.height() + 2, color);
 				}
 			}
+			if (draggingModule != null) {
+				drawSnapGuides(graphics);
+				for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
+					if (bounds.module() != draggingModule) continue;
+					int ghostX = Math.clamp((int) Math.round(dragX), 0,
+							Math.max(0, width - bounds.width()));
+					int ghostY = Math.clamp((int) Math.round(dragY), 0,
+							Math.max(0, height - bounds.height()));
+					if (ghostX != bounds.x() || ghostY != bounds.y()) {
+						graphics.outline(ghostX - 1, ghostY - 1,
+								bounds.width() + 2, bounds.height() + 2, 0xA0FFFFFF);
+					}
+				}
+			}
 			graphics.disableScissor();
 			if (hovered != null) {
 				int tooltipWidth = Math.max(40, Math.min(240, width - 24));
 				graphics.setTooltipForNextFrame(font,
 						font.split(text("positionEditor.tooltip"), tooltipWidth), mouseX, mouseY);
 			}
+		}
+	}
+
+	private void drawSnapGuides(GuiGraphicsExtractor graphics) {
+		int color = 0xFFFFD866;
+		if (snapVerticalGuide != null) {
+			int x = Math.clamp(snapVerticalGuide.coordinate(), 0, Math.max(0, width - 1));
+			graphics.fill(x, snapVerticalGuide.from(), x + 1, snapVerticalGuide.to(), color);
+		}
+		if (snapHorizontalGuide != null) {
+			int y = Math.clamp(snapHorizontalGuide.coordinate(), 0, Math.max(0, height - 1));
+			graphics.fill(snapHorizontalGuide.from(), y, snapHorizontalGuide.to(), y + 1, color);
 		}
 	}
 

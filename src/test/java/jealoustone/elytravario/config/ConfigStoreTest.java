@@ -25,6 +25,8 @@ class ConfigStoreTest {
 		assertEquals("true", values.get("showMinimumFallSpeedPitch"));
 		assertEquals("true", values.get("showZeroPitch"));
 		assertEquals("144", values.get("speedoX"));
+		assertEquals("4", values.get("positionMargin"));
+		assertEquals("4", values.get("positionSnapDistance"));
 		assertFalse(values.containsKey("speedoAnchor"));
 		assertFalse(values.containsKey("futureOption"));
 	}
