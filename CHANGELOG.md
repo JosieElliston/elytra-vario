@@ -10,6 +10,12 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+### Changed
+
+- The settings key closes the settings screen as well as opening it, as Escape does. It yields
+  to a text field being typed into, so a bind on a plain letter still reaches a number or color
+  box that has focus.
+
 ## [1.1.0] - 2026-09-05
 
 ### Added

@@ -58,7 +58,7 @@ read as a speed.
 
 ## Configuration
 
-Press **V** in game to open settings, or, with [Mod Menu](https://modrinth.com/mod/modmenu) installed, open **Mods → Elytra Vario → Configure**.
+Press **V** in game to open settings — or again, like Escape, to close them — or, with [Mod Menu](https://modrinth.com/mod/modmenu) installed, open **Mods → Elytra Vario → Configure**.
 The six pages are **Global**, **Pitch Ladder**, **Markers**, **Velocity Graph**, **Flight Stats**,
 and **Speedometer**.
 Global contains the HUD master switch. Each instrument’s own switches are on its own page: one

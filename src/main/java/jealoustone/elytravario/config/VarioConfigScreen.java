@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import com.mojang.blaze3d.platform.InputConstants;
 import jealoustone.elytravario.ElytraVario;
+import jealoustone.elytravario.ElytraVarioClient;
 import jealoustone.elytravario.VarioInstrument;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
@@ -17,6 +18,7 @@ import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.layouts.LinearLayout;
@@ -175,9 +177,32 @@ public final class VarioConfigScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		if (capturing == null) return super.keyPressed(event);
-		bind(event.key() == GLFW.GLFW_KEY_ESCAPE ? InputConstants.UNKNOWN : InputConstants.getKey(event));
-		return true;
+		if (capturing != null) {
+			bind(event.key() == GLFW.GLFW_KEY_ESCAPE ? InputConstants.UNKNOWN : InputConstants.getKey(event));
+			return true;
+		}
+		if (super.keyPressed(event)) return true;
+		// The key that opened the settings closes them again, the way Escape does — a bind you
+		// press to look at the HUD settings is one you press again to get back to flying.
+		//
+		// Unlike Escape, it yields to a field being typed into. The bind is a plain letter by
+		// default, and a letter meant for a number or color box must reach the box; Escape needs
+		// no such care because nothing on this screen wants it. Offering the event to the widgets
+		// first is not enough on its own, since a text box takes its ordinary characters through
+		// charTyped and so refuses this event, hence the explicit check.
+		KeyMapping settings = ElytraVarioClient.settingsKey();
+		if (settings != null && settings.matches(event) && !typing(getFocused())) {
+			onClose();
+			return true;
+		}
+		return false;
+	}
+
+	/** Whether the focus path ends in a text box that is taking input. */
+	private static boolean typing(GuiEventListener focused) {
+		if (focused instanceof EditBox box) return box.canConsumeInput();
+		if (focused instanceof ContainerEventHandler container) return typing(container.getFocused());
+		return false;
 	}
 
 	@Override
