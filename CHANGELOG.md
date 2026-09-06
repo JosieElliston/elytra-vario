@@ -17,6 +17,10 @@ and key-registration APIs, not behavior.
   fall rate, and zero pitch / best steady glide ratio. They are independent of player state,
   use neutral ladder colors, and default to on.
 
+### Changed
+
+- The speedometer now defaults to the bottom-right corner, clear of chat.
+
 ## [1.2.0+mc1.21.11] - 2026-09-06
 
 ### Added
