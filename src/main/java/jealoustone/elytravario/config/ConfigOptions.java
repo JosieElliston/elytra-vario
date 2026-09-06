@@ -13,7 +13,7 @@ import jealoustone.elytravario.VarioConfig;
 public final class ConfigOptions {
 	private static final List<Option> OPTIONS = new ArrayList<>();
 
-	public record Option(Field field, int page, double min, double max, double factor,
+	public record Option(Field field, int page, String group, double min, double max, double factor,
 			int choices, boolean color, boolean advanced, String defaultValue) {
 		public String key() { return field.getName(); }
 		public boolean toggle() { return field.getType() == boolean.class; }
@@ -77,19 +77,26 @@ public final class ConfigOptions {
 		add("ladderFineRangeDegrees", 1, 1, 30, 1, 0, false, true);
 		add("ladderFadeFraction", 1, 0, 50, 100, 0, false, true);
 
+		// Shared by every marker, then one subpage per marker. Declaration order is the
+		// order of the subpage dropdown and of the rows within each subpage.
 		add("markerVisibility", 2, 0, 1, 1, 3, false, false);
-		add("showLookaheadPitch", 2, 0, 1, 1, 0, false, false);
-		add("lookaheadPitchColor", 2, 0, 1, 1, 0, true, false);
-		add("showHoldPitch", 2, 0, 1, 1, 0, false, false);
-		add("holdPitchColor", 2, 0, 1, 1, 0, true, false);
-		add("showOptimalPitch", 2, 0, 1, 1, 0, false, false);
-		add("optimalPitchColor", 2, 0, 1, 1, 0, true, false);
-		add("showVelocityPitch", 2, 0, 1, 1, 0, false, false);
-		add("velocityPitchColor", 2, 0, 1, 1, 0, true, false);
-		add("showFlightPath", 2, 0, 1, 1, 0, false, false);
-		add("flightPathColor", 2, 0, 1, 1, 0, true, false);
 		add("flightPathPeggedColor", 2, 0, 1, 1, 0, true, false);
-		add("lookaheadTicks", 2, 1, 60, 1, 0, false, true);
+
+		add("showLookaheadPitch", 2, "lookahead", 0, 1, 1, 0, false, false);
+		add("lookaheadPitchColor", 2, "lookahead", 0, 1, 1, 0, true, false);
+		add("lookaheadTicks", 2, "lookahead", 1, 60, 1, 0, false, true);
+
+		add("showHoldPitch", 2, "hold", 0, 1, 1, 0, false, false);
+		add("holdPitchColor", 2, "hold", 0, 1, 1, 0, true, false);
+
+		add("showOptimalPitch", 2, "optimal", 0, 1, 1, 0, false, false);
+		add("optimalPitchColor", 2, "optimal", 0, 1, 1, 0, true, false);
+
+		add("showVelocityPitch", 2, "velocity", 0, 1, 1, 0, false, false);
+		add("velocityPitchColor", 2, "velocity", 0, 1, 1, 0, true, false);
+
+		add("showFlightPath", 2, "flightPath", 0, 1, 1, 0, false, false);
+		add("flightPathColor", 2, "flightPath", 0, 1, 1, 0, true, false);
 
 		add("chartVisibility", 3, 0, 1, 1, 3, false, false);
 		add("chartAnchor", 3, 0, 1, 1, 9, false, false);
@@ -159,16 +166,32 @@ public final class ConfigOptions {
 
 	private static void add(String key, int page, double min, double max, double factor,
 			int choices, boolean color, boolean advanced) {
+		add(key, page, null, min, max, factor, choices, color, advanced);
+	}
+
+	private static void add(String key, int page, String group, double min, double max, double factor,
+			int choices, boolean color, boolean advanced) {
 		try {
 			Field field = VarioConfig.class.getField(key);
-			Option spec = new Option(field, page, min, choices > 0 ? choices - 1 : max,
+			Option spec = new Option(field, page, group, min, choices > 0 ? choices - 1 : max,
 					factor, choices, color, advanced, "");
-			OPTIONS.add(new Option(field, page, spec.min(), spec.max(), factor,
+			OPTIONS.add(new Option(field, page, group, spec.min(), spec.max(), factor,
 					choices, color, advanced, spec.current()));
 		} catch (NoSuchFieldException e) { throw new ExceptionInInitializerError(e); }
 	}
 
 	public static List<Option> all() { return List.copyOf(OPTIONS); }
+
+	/** The page's subpages, in declaration order; empty when the page is not divided. */
+	public static List<String> groups(int page) {
+		List<String> groups = new ArrayList<>();
+		for (Option option : OPTIONS) {
+			if (option.page() == page && option.group() != null && !groups.contains(option.group())) {
+				groups.add(option.group());
+			}
+		}
+		return groups;
+	}
 
 	public static Map<String, String> snapshot() {
 		Map<String, String> values = new LinkedHashMap<>();
