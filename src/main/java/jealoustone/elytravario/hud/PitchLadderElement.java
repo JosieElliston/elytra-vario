@@ -73,8 +73,7 @@ import org.joml.Vector3fc;
  * told apart by color and by height, so that a pile of agreeing bugs nests into chevrons
  * rather than merging into one mark. Which bug gets which height is a display choice tuned in
  * flight and carries no claim; what the code depends on is only that the heights are distinct
- * and that {@code drawBugs} draws them tallest first. The ranking is also what is left when
- * every color has been spent, since a pegged bug takes the same gray whichever one it is.
+ * and that {@code drawBugs} draws them tallest first.
  *
  * <p>Nothing here tells you which rule the phase you are in calls for. That switch is the
  * open part of the problem, and a display that guessed at it would be inventing the answer
@@ -129,7 +128,7 @@ public final class PitchLadderElement implements HudElement {
 	/** Cosine floor for "in front of the camera", guarding the divide by the depth term. */
 	private static final double MIN_DEPTH = 1.0e-3;
 
-	/** Kept clear of the screen edge so a pegged marker's wings stay visible. */
+	/** Kept clear of the screen edge, so the marker's wings are never half off it. */
 	private static final int MARKER_MARGIN = 12;
 
 	/**
@@ -212,26 +211,19 @@ public final class PitchLadderElement implements HudElement {
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
 		// In descending order of rise, which is what makes an overlap nest. Retuning the rises
 		// in VarioConfig means reordering these calls to match; nothing checks it.
-		//
-		// The last argument is whether the bug pegs at the edge of the band or leaves through
-		// it. Neither rule bug pegs, for the same underlying reason: each governs one phase,
-		// and each sends its answer off the ladder in the phases it does not govern. A mark
-		// held at the stop reads as a direction to keep going in, which invites following a
-		// rule exactly where it does not apply. The two bugs that do peg are both switched off
-		// by default and are not rules; see drawBug.
 		if (VarioConfig.showLookaheadPitch) {
 			OptimalPitch lookahead = recorder.optimalPitch(VarioConfig.lookaheadTicks);
 
 			if (lookahead != null) {
 				drawBug(graphics, cameraPitch, lookahead.pitch(), VarioConfig.ladderLookaheadRise,
-						VarioConfig.lookaheadPitchColor, false,
+						VarioConfig.lookaheadPitchColor,
 						centerX, centerY, scale, bandUp, bandDown);
 			}
 		}
 
 		if (VarioConfig.showHoldPitch) {
 			drawBug(graphics, cameraPitch, recorder.flightPathHold(),
-					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor, false,
+					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor,
 					centerX, centerY, scale, bandUp, bandDown);
 		}
 
@@ -240,7 +232,7 @@ public final class PitchLadderElement implements HudElement {
 
 			if (optimal != null) {
 				drawBug(graphics, cameraPitch, optimal.pitch(), VarioConfig.ladderBugRise,
-						VarioConfig.optimalPitchColor, true,
+						VarioConfig.optimalPitchColor,
 						centerX, centerY, scale, bandUp, bandDown);
 			}
 		}
@@ -251,7 +243,7 @@ public final class PitchLadderElement implements HudElement {
 		if (VarioConfig.showVelocityPitch && sample.gliding()) {
 			drawBug(graphics, cameraPitch,
 					(float) recorder.flightPathPitch(),
-					VarioConfig.ladderVelocityRise, VarioConfig.velocityPitchColor, true,
+					VarioConfig.ladderVelocityRise, VarioConfig.velocityPitchColor,
 					centerX, centerY, scale, bandUp, bandDown);
 		}
 	}
@@ -276,65 +268,44 @@ public final class PitchLadderElement implements HudElement {
 	 * rather than a defensive check — it is how they say the state they are describing has no
 	 * such pitch — so it is tested for here and not left to fall out of the arithmetic.
 	 *
-	 * <p><b>{@code peg} chooses what happens when the answer is off the ladder.</b> Pegged, the
-	 * bug is held at the edge of the band and takes the flight path marker's gray, which means
-	 * a direction to go rather than a place to be. Unpegged, it tapers out over the last of the
-	 * band and is gone, exactly as it is when its rule has no answer at all.
+	 * <p><b>An answer off the ladder is not drawn.</b> The bug tapers out over the last of the
+	 * band and is gone, exactly as it is when its rule has no answer at all — so a bug that is
+	 * not on the ladder means one thing rather than two.
 	 *
-	 * <p>The peg was the original behaviour and it is worth little either way, which is the
-	 * reason it is now a choice rather than a rule. Pitch clamps at ±90, so the stops need no
-	 * aiming and a cue there can only name a direction the situation already implies; a bug
-	 * does its real work at interior angles, where it is a target and there is nothing else
-	 * supplying one.
-	 *
-	 * <p><b>Neither rule bug pegs.</b> Each governs one phase of a cycle and each sends its
-	 * answer off the ladder during the phases it does not govern — the lookahead into a second
-	 * mode forty to fifty degrees nose-up through the dive, the hold into a steep nose-down
-	 * answer once the dive is over and the rule has stopped applying. Pegged, both would sit at
-	 * a stop for whole phases reading as "keep going that way", which is an invitation to fly a
-	 * rule exactly where it is not the rule. Leaving is also what each already does when its
-	 * search returns nothing, so a bug that is not on the ladder means one thing rather than
-	 * two.
-	 *
-	 * <p>The two bugs that still peg are both switched off by default and neither is a phase
-	 * rule. For them the off-ladder answer really is a limit being approached: the one-tick
-	 * bug's near-ninety nose-down through a slow descent, and the velocity bug's plain
-	 * direction of travel, which cannot be anything but where you are going.
+	 * <p>The alternative, holding it at the edge of the band, was the original behaviour and
+	 * it earned nothing. Pitch clamps at ±90, so the stops need no aiming and a mark there can
+	 * only name a direction the situation already implies; a bug does its real work at interior
+	 * angles, where it is a target and nothing else supplies one. Worse, each rule bug sends
+	 * its answer off the ladder during the phases it does not govern — the lookahead into a
+	 * second mode forty to fifty degrees nose-up through the dive, the hold into a steep
+	 * nose-down answer once the dive is over — so held at a stop, both would read as "keep
+	 * going that way" for whole phases, inviting you to fly a rule exactly where it is not the
+	 * rule.
 	 */
 	private void drawBug(GuiGraphicsExtractor graphics, float cameraPitch, float pitch,
-			int riseSetting, int bugColor, boolean peg, int centerX, int centerY, double scale,
+			int riseSetting, int bugColor, int centerX, int centerY, double scale,
 			int bandUp, int bandDown) {
 		if (Float.isNaN(pitch)) {
 			return;
 		}
 
 		double elevation = cameraPitch - pitch;
-		double offset;
-		boolean pegged;
 
 		// Past a quarter turn the tangent has wrapped and would place the mark on the wrong
-		// side, so the direction is taken from the elevation's sign rather than from it.
-		if (elevation >= MAX_ELEVATION) {
-			offset = bandUp;
-			pegged = true;
-		} else if (elevation <= -MAX_ELEVATION) {
-			offset = -bandDown;
-			pegged = true;
-		} else {
-			offset = Math.tan(Math.toRadians(elevation)) * scale;
-			pegged = offset > bandUp || offset < -bandDown;
-			offset = Mth.clamp(offset, -bandDown, bandUp);
-		}
-
-		// A bug that does not peg leaves through the edge of the band like a rung does,
-		// tapering out over the last of it and then simply not being there.
-		if (pegged && !peg) {
+		// side. It is off the ladder either way, so the sign is never needed.
+		if (elevation >= MAX_ELEVATION || elevation <= -MAX_ELEVATION) {
 			return;
 		}
 
-		// Pegged it is a limit rather than a reading, so it is drawn at full strength: the
-		// band taper exists to let marks leave gracefully, and this one is not leaving.
-		double edge = pegged ? 1.0 : edgeFade(offset, bandUp, bandDown);
+		double offset = Math.tan(Math.toRadians(elevation)) * scale;
+
+		// Off the band the bug leaves through the edge like a rung does, tapering out over the
+		// last of it and then simply not being there.
+		if (offset > bandUp || offset < -bandDown) {
+			return;
+		}
+
+		double edge = edgeFade(offset, bandUp, bandDown);
 
 		if (edge <= 0.0) {
 			return;
@@ -343,7 +314,7 @@ public final class PitchLadderElement implements HudElement {
 		int base = Math.max(1, VarioConfig.ladderCenterGap - VarioConfig.ladderBugGap);
 		int apex = Math.max(0, base - VarioConfig.ladderBugLength);
 		int rise = Math.max(0, riseSetting);
-		int color = fade(pegged ? VarioConfig.flightPathPeggedColor : bugColor, edge);
+		int color = fade(bugColor, edge);
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
@@ -569,20 +540,23 @@ public final class PitchLadderElement implements HudElement {
 		double offsetY = dot(direction, up) / depth * scale;
 		double offsetX = -dot(direction, left) / depth * scale;
 
-		// Vertically the marker is held inside the ladder, so it always has rungs to be read
+		// Vertically the marker stays inside the ladder, so it always has rungs to be read
 		// against. Horizontally there is no ladder to stay within, only the screen.
 		int reach = Math.max(0, centerX - MARKER_MARGIN);
 
-		// Pegged at an edge the marker is a limit rather than a reading, so it is demoted to
-		// gray: still there to say which way the flight path went, no longer claiming where.
-		boolean pegged = Math.abs(offsetX) > reach || offsetY > bandUp || offsetY < -bandDown;
-		int color = pegged ? VarioConfig.flightPathPeggedColor : VarioConfig.flightPathColor;
+		// Out of reach on either axis it is simply not drawn, like the bugs: held at an edge
+		// it would claim a place it is not, and where you are going is not a thing to aim at.
+		if (Math.abs(offsetX) > reach || offsetY > bandUp || offsetY < -bandDown) {
+			return;
+		}
+
+		int color = VarioConfig.flightPathColor;
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
 
-		int y = subpixel(pose, centerY - Mth.clamp(offsetY, -bandDown, bandUp));
-		double exactX = centerX + Mth.clamp(offsetX, -reach, reach);
+		int y = subpixel(pose, centerY - offsetY);
+		double exactX = centerX + offsetX;
 		int x = (int) Math.floor(exactX);
 		pose.translate((float) (exactX - x), 0.0f);
 
