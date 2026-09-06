@@ -24,6 +24,12 @@ public class ElytraVarioClient implements ClientModInitializer {
 
 	private static KeyMapping settingsKey;
 
+	/**
+	 * The key that opens the settings, so that the screen can also close on it.
+	 * Null until {@link #onInitializeClient} has run, which is once, during client init.
+	 */
+	public static KeyMapping settingsKey() { return settingsKey; }
+
 	@Override
 	public void onInitializeClient() {
 		jealoustone.elytravario.config.ConfigStore.load();

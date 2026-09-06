@@ -58,13 +58,14 @@ read as a speed.
 
 ## Configuration
 
-Press **V** in game to open settings, or, with [Mod Menu](https://modrinth.com/mod/modmenu) installed, open **Mods → Elytra Vario → Configure**.
+Press **V** in game to open settings — or again, like Escape, to close them — or, with [Mod Menu](https://modrinth.com/mod/modmenu) installed, open **Mods → Elytra Vario → Configure**.
 The six pages are **Global**, **Pitch Ladder**, **Markers**, **Velocity Graph**, **Flight Stats**,
 and **Speedometer**.
-Global contains the HUD master switch. Each instrument’s own switches are on its own page: one
-for whether it is shown at all, one for whether it is wanted only while gliding, and a key bind
-that flips the first of them in flight. The five toggle keys start unbound and can be set here
-or in the vanilla Controls screen.
+Global contains the HUD master switch and the settings key itself. Each instrument’s own
+switches are on its own page: one for whether it is shown at all, one for whether it is wanted
+only while gliding, and a key bind that flips the first of them in flight. The five toggle keys
+start unbound. Every one of these binds, the settings key included, can be set on its own page
+here or in the vanilla Controls screen.
 Hover over a marker control for its mathematical definition and usage notes. Advanced
 settings include lookahead duration and detailed ladder geometry.
 
