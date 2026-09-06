@@ -47,6 +47,7 @@ public final class VarioConfigScreen extends Screen {
 	private boolean advanced;
 	private String saveError;
 	private Button saveButton;
+	private OptionList optionList;
 	private boolean savedNotice;
 	private int panelLeft;
 	private int panelWidth;
@@ -66,6 +67,7 @@ public final class VarioConfigScreen extends Screen {
 		// A rebuild discards the control that armed the capture, so the capture goes with it.
 		capturing = null;
 		keyControl = null;
+		optionList = null;
 		int span = Math.min(width - 16, minecraft.level != null ? 320 : 600);
 		int left = minecraft.level != null ? width - span - 8 : (width - span) / 2;
 		panelLeft = left;
@@ -110,25 +112,35 @@ public final class VarioConfigScreen extends Screen {
 		List<String> groups = ConfigOptions.groups(page);
 		final String group = groups.isEmpty() ? null
 				: groups.get(Math.min(subpages.getOrDefault(page, 0), groups.size() - 1));
-		if (group != null) {
-			addRenderableWidget(CycleButton.<String>builder(id -> text("group." + id), group)
-					.withValues(groups)
-					.create(left + 4, top, span - 8, 20, text("page." + page + ".group"), (button, value) -> {
-						subpages.put(page, groups.indexOf(value));
-						rebuildWidgets();
-					}));
-			top += 24;
-		}
-		List<OptionRow> rows = new ArrayList<>();
+		List<ConfigRow> rows = new ArrayList<>();
+		// Shared settings precede the selector; only the selected subpage's settings follow it.
+		// Keeping all three in one list matters on pages such as the speedometer, whose shared
+		// controls are too numerous to fit in a separate fixed pane above the selector.
 		for (var option : ConfigOptions.all()) {
-			if (option.page() != page || pageWide.contains(option.key()) || !shown(option, group)) continue;
-			rows.add(new OptionRow(option));
+			if (option.page() == page && option.group() == null
+					&& !pageWide.contains(option.key()) && shown(option, group)) {
+				rows.add(new OptionRow(option));
+			}
+		}
+		if (group != null) {
+			if (rows.isEmpty()) {
+				// With nothing shared, keep the selector fixed above the list as on Markers.
+				addRenderableWidget(subpageSelector(groups, group, left + 4, top, span - 8));
+				top += 24;
+			} else {
+				rows.add(new SubpageRow(groups, group));
+			}
+		}
+		for (var option : ConfigOptions.all()) {
+			if (option.page() == page && option.group() != null && shown(option, group)) {
+				rows.add(new OptionRow(option));
+			}
 		}
 		// Global lifts its one setting above the list, so on that page there is no list to draw:
 		// an empty pane would read as settings that failed to appear.
 		if (!rows.isEmpty()) {
-			OptionList list = addRenderableWidget(new OptionList(top, height - top - 76));
-			for (OptionRow row : rows) list.append(row);
+			optionList = addRenderableWidget(new OptionList(top, height - top - 76));
+			for (ConfigRow row : rows) optionList.append(row);
 		}
 		int half = Math.min(span / 2, 180);
 		boolean hasAdvanced = ConfigOptions.all().stream()
@@ -352,7 +364,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 	}
 
-	private final class OptionList extends ContainerObjectSelectionList<OptionRow> {
+	private final class OptionList extends ContainerObjectSelectionList<ConfigRow> {
 		OptionList(int top, int listHeight) {
 			super(VarioConfigScreen.this.minecraft, panelWidth, listHeight, top, 46);
 			setX(panelLeft);
@@ -363,8 +375,43 @@ public final class VarioConfigScreen extends Screen {
 		@Override protected void extractListSeparators(GuiGraphicsExtractor graphics) {
 			if (minecraft.level == null) super.extractListSeparators(graphics);
 		}
-		void append(OptionRow row) { addEntry(row); }
+		void append(ConfigRow row) { addEntry(row); }
 		@Override public int getRowWidth() { return panelWidth - 24; }
+	}
+
+	private abstract class ConfigRow extends ContainerObjectSelectionList.Entry<ConfigRow> { }
+
+	private CycleButton<String> subpageSelector(List<String> groups, String group,
+			int x, int y, int width) {
+		return CycleButton.<String>builder(id -> text("group." + id), group)
+				.withValues(groups)
+				.create(x, y, width, 20, text("page." + page + ".group"), (button, value) -> {
+					double scroll = optionList == null ? 0.0 : optionList.scrollAmount();
+					subpages.put(page, groups.indexOf(value));
+					rebuildWidgets();
+					if (optionList != null) optionList.setScrollAmount(scroll);
+				});
+	}
+
+	/** The boundary between settings shared by the page and settings for one selected subpage. */
+	private final class SubpageRow extends ConfigRow {
+		private final CycleButton<String> control;
+
+		SubpageRow(List<String> groups, String group) {
+			control = subpageSelector(groups, group, 0, 0, 180);
+		}
+
+		@Override
+		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
+				boolean hovered, float delta) {
+			control.setX(getContentX());
+			control.setY(getContentY());
+			control.setWidth(getContentWidth());
+			control.extractRenderState(graphics, mouseX, mouseY, delta);
+		}
+
+		@Override public List<? extends GuiEventListener> children() { return List.of(control); }
+		@Override public List<? extends NarratableEntry> narratables() { return List.of(control); }
 	}
 
 	/**
@@ -445,7 +492,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 	}
 
-	private final class OptionRow extends ContainerObjectSelectionList.Entry<OptionRow> {
+	private final class OptionRow extends ConfigRow {
 		private final ConfigOptions.Option option;
 		private final AbstractWidget control;
 
