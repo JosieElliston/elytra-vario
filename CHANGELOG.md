@@ -10,11 +10,20 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **The settings key is rebindable on the Global page**, beside the HUD master switch, the way
+  each instrument's toggle key sits beside its own switches. It was already in the vanilla
+  Controls screen and still is; either screen sets it.
+
 ### Changed
 
 - The settings key closes the settings screen as well as opening it, as Escape does. It yields
   to a text field being typed into, so a bind on a plain letter still reaches a number or color
   box that has focus.
+- The Global page's master switch now sits above the list, with the settings key below it, so
+  the page has the shape every instrument page has. Nothing is left in its list, so the list is
+  no longer drawn there.
 
 ## [1.1.0] - 2026-09-05
 

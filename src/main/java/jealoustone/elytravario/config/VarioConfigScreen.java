@@ -33,14 +33,16 @@ import org.lwjgl.glfw.GLFW;
  * A page may divide into subpages, chosen by a dropdown under the switches the whole page shares. */
 public final class VarioConfigScreen extends Screen {
 	private static final int PAGE_COUNT = 6;
+	/** The page whose switch and key are the whole mod's rather than one instrument's. */
+	private static final int GLOBAL_PAGE = 0;
 	private final Screen parent;
 	private final ConfigPreview preview = new ConfigPreview();
 	private final Map<String, String> draft = preview.draft();
 	/** Remembers which subpage each divided page was last showing. */
 	private final Map<Integer, Integer> subpages = new HashMap<>();
 	private int page;
-	/** The instrument whose toggle key is waiting for the next key or mouse press, if any. */
-	private VarioInstrument capturing;
+	/** The bind waiting for the next key or mouse press, if any. */
+	private KeyMapping capturing;
 	private KeyControl keyControl;
 	private boolean advanced;
 	private String saveError;
@@ -85,15 +87,23 @@ public final class VarioConfigScreen extends Screen {
 		// that flips the first: three answers about the page as a whole, so they sit above both
 		// the subpage selector and the scrolling list rather than among the settings for how the
 		// instrument draws. On the markers page in particular they are not the selected marker's.
+		//
+		// Global has the same shape, switches then key: the master switch governs every
+		// instrument, and the key answers for the screen rather than for anything on it.
 		VarioInstrument instrument = instrument(page);
-		List<String> pageWide = instrument == null ? List.of()
-				: List.of(instrument.showKey(), instrument.glidingOnlyKey());
+		List<String> pageWide = instrument != null
+				? List.of(instrument.showKey(), instrument.glidingOnlyKey())
+				: page == GLOBAL_PAGE ? List.of("enabled") : List.of();
 		for (String key : pageWide) {
 			addRenderableWidget(valueSelector(option(key), left + 4, top, span - 8));
 			top += 24;
 		}
 		if (instrument != null) {
-			keyControl = new KeyControl(instrument);
+			keyControl = new KeyControl(instrument.key(), "toggleKey");
+		} else if (page == GLOBAL_PAGE) {
+			keyControl = new KeyControl(ElytraVarioClient.settingsKey(), "settingsKey");
+		}
+		if (keyControl != null) {
 			addRenderableWidget(keyControl.button(left + 4, top, span - 8));
 			top += 24;
 		}
@@ -109,10 +119,16 @@ public final class VarioConfigScreen extends Screen {
 					}));
 			top += 24;
 		}
-		OptionList list = addRenderableWidget(new OptionList(top, height - top - 76));
+		List<OptionRow> rows = new ArrayList<>();
 		for (var option : ConfigOptions.all()) {
 			if (option.page() != page || pageWide.contains(option.key()) || !shown(option, group)) continue;
-			list.append(new OptionRow(option));
+			rows.add(new OptionRow(option));
+		}
+		// Global lifts its one setting above the list, so on that page there is no list to draw:
+		// an empty pane would read as settings that failed to appear.
+		if (!rows.isEmpty()) {
+			OptionList list = addRenderableWidget(new OptionList(top, height - top - 76));
+			for (OptionRow row : rows) list.append(row);
 		}
 		int half = Math.min(span / 2, 180);
 		boolean hasAdvanced = ConfigOptions.all().stream()
@@ -168,7 +184,7 @@ public final class VarioConfigScreen extends Screen {
 	 * it, which the control's tooltip says.
 	 */
 	private void bind(InputConstants.Key key) {
-		capturing.key().setKey(key);
+		capturing.setKey(key);
 		KeyMapping.resetMapping();
 		minecraft.options.save();
 		capturing = null;
@@ -352,12 +368,12 @@ public final class VarioConfigScreen extends Screen {
 	}
 
 	/**
-	 * The instrument's toggle key, rebindable here so that the whole of a page's behavior is in
-	 * one place rather than split between this screen and the vanilla Controls list. The same
-	 * mapping is registered with the game, so it is still in that list too, and either screen
-	 * sets it.
+	 * The page's own key — an instrument's toggle, or on Global the one that opens this screen —
+	 * rebindable here so that the whole of a page's behavior is in one place rather than split
+	 * between this screen and the vanilla Controls list. Every one of these mappings is
+	 * registered with the game, so they are all in that list too, and either screen sets them.
 	 *
-	 * <p>It reads as a third switch beside the two above it, and is labeled the way they are,
+	 * <p>It reads as one more switch beside those above it, and is labeled the way they are,
 	 * because that is what it is — but <b>it is not part of the draft</b>, unlike every setting
 	 * on this screen: see {@link #bind}. It takes effect and is saved as soon as it is pressed.
 	 *
@@ -366,13 +382,16 @@ public final class VarioConfigScreen extends Screen {
 	 * does is fire both actions, which is occasionally even what was wanted.
 	 */
 	private final class KeyControl {
-		private final VarioInstrument instrument;
+		/** Null only if the screen is somehow open before client init registered the keys. */
+		private final KeyMapping mapping;
+		private final String labelKey;
 		private final Button button;
 
-		KeyControl(VarioInstrument instrument) {
-			this.instrument = instrument;
+		KeyControl(KeyMapping mapping, String labelKey) {
+			this.mapping = mapping;
+			this.labelKey = labelKey;
 			this.button = Button.builder(Component.empty(), widget -> {
-				capturing = instrument;
+				capturing = mapping;
 				refresh();
 			}).build();
 		}
@@ -386,33 +405,31 @@ public final class VarioConfigScreen extends Screen {
 		}
 
 		void refresh() {
-			KeyMapping mapping = instrument.key();
-			// Null only if the screen is somehow open before client init registered the keys.
 			button.active = mapping != null;
 			if (mapping == null) {
-				button.setMessage(text("toggleKey"));
+				button.setMessage(text(labelKey));
 				return;
 			}
-			// "Name: value", the shape CycleButton gives the two switches above this one.
+			// "Name: value", the shape CycleButton gives the switches above this one.
 			Component name = mapping.getTranslatedKeyMessage();
-			if (capturing == instrument) {
+			if (capturing == mapping) {
 				button.setMessage(labeled(Component.literal("> ")
 						.append(name.copy().withStyle(ChatFormatting.YELLOW))
 						.append(" <").withStyle(ChatFormatting.YELLOW)));
-				button.setTooltip(Tooltip.create(text("toggleKey.capturing")));
+				button.setTooltip(Tooltip.create(text("keyBind.capturing")));
 				return;
 			}
 			Component conflicts = conflicts(mapping);
 			button.setMessage(labeled(conflicts == null ? name : name.copy().withStyle(ChatFormatting.RED)));
-			Component tooltip = text("toggleKey").copy().append("\n").append(text("toggleKey.tooltip"));
+			Component tooltip = text(labelKey).copy().append("\n").append(text(labelKey + ".tooltip"));
 			if (conflicts != null) {
-				tooltip = tooltip.copy().append("\n").append(text("toggleKey.conflict", conflicts));
+				tooltip = tooltip.copy().append("\n").append(text("keyBind.conflict", conflicts));
 			}
 			button.setTooltip(Tooltip.create(tooltip));
 		}
 
 		private Component labeled(Component value) {
-			return text("toggleKey").copy().append(": ").append(value);
+			return text(labelKey).copy().append(": ").append(value);
 		}
 
 		/** The names of every other bind on the same key, or null when there are none. */
