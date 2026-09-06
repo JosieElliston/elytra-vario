@@ -85,30 +85,15 @@ public final class VarioHudElement implements HudElement {
 
 		boolean stats = VarioInstrument.STATS.visible(sample.gliding()) && panelRows() > 0;
 		boolean chart = VarioInstrument.CHART.visible(sample.gliding());
-		boolean attached = chart && HudPosition.attaches(VarioConfig.chartAnchor);
-		int panelHeight = (int) Math.ceil(panelHeight() * VarioConfig.panelScale);
-		int panelWidth = (int) Math.ceil(VarioConfig.panelWidth * VarioConfig.panelScale);
+		int panelHeight = statsHeight();
+		int panelWidth = statsWidth();
 		int screenWidth = graphics.guiWidth();
 		int screenHeight = graphics.guiHeight();
 
-		HudPosition panel;
-		HudPosition position;
-		if (attached) {
-			// A hidden panel becomes a zero-sized box with no gap, which leaves the chart
-			// standing exactly where the pair would have started rather than moving it.
-			HudLayout layout = HudLayout.attached(VarioConfig.statsAnchor, VarioConfig.originX,
-					VarioConfig.originY, VarioConfig.chartAnchor,
-					stats ? panelWidth : 0, stats ? panelHeight : 0, chartWidth(), chartHeight(),
-					stats ? PAD : 0, screenWidth, screenHeight);
-			panel = layout.panel();
-			position = new HudPosition(layout.chart().x() + VarioConfig.chartX,
-					layout.chart().y() + VarioConfig.chartY);
-		} else {
-			panel = HudPosition.resolve(VarioConfig.statsAnchor, VarioConfig.originX,
-					VarioConfig.originY, panelWidth, panelHeight, screenWidth, screenHeight);
-			position = HudPosition.resolve(VarioConfig.chartAnchor, VarioConfig.chartX,
-					VarioConfig.chartY, chartWidth(), chartHeight(), screenWidth, screenHeight);
-		}
+		HudPosition panel = HudPosition.clamp(VarioConfig.statsX, VarioConfig.statsY,
+				panelWidth, panelHeight, screenWidth, screenHeight);
+		HudPosition position = HudPosition.clamp(VarioConfig.chartX, VarioConfig.chartY,
+				chartWidth(), chartHeight(), screenWidth, screenHeight);
 
 		if (stats) {
 			graphics.pose().pushMatrix();
@@ -137,6 +122,16 @@ public final class VarioHudElement implements HudElement {
 
 	private static int panelHeight() {
 		return (panelRows() + (speedRows() > 0 && energyRows() > 0 ? 1 : 0)) * LINE + PAD * 2;
+	}
+
+	/** The stats panel's on-screen width, shared with the settings screen's drag target. */
+	public static int statsWidth() {
+		return (int) Math.ceil(VarioConfig.panelWidth * VarioConfig.panelScale);
+	}
+
+	/** The stats panel's on-screen height, shared with the settings screen's drag target. */
+	public static int statsHeight() {
+		return (int) Math.ceil(panelHeight() * VarioConfig.panelScale);
 	}
 
 	/** Returns the y coordinate just past the bottom of the panel. */
@@ -340,11 +335,11 @@ public final class VarioHudElement implements HudElement {
 	 * Both dimensions come from one pixels-per-block/tick factor, so a pixel is worth the
 	 * same change in speed horizontally and vertically whatever the domain is.
 	 */
-	private static int chartWidth() {
+	public static int chartWidth() {
 		return (int) Math.round((VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz) * VarioConfig.chartScale);
 	}
 
-	private static int chartHeight() {
+	public static int chartHeight() {
 		return (int) Math.round((VarioConfig.chartMaxVy - VarioConfig.chartMinVy) * VarioConfig.chartScale);
 	}
 

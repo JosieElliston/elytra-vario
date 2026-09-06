@@ -121,9 +121,9 @@ public final class VarioConfig {
 	 */
 	public static int lookaheadTicks = 20;
 
-	/** Top-left corner of the HUD, in scaled GUI pixels. */
-	public static int originX = 4;
-	public static int originY = 4;
+	/** Top-left corner of Flight Stats, in scaled GUI pixels. */
+	public static int statsX = 4;
+	public static int statsY = 4;
 
 	/**
 	 * Width of the readout panel. Values are right-aligned against this, so it has to be
@@ -388,29 +388,9 @@ public final class VarioConfig {
 	public static boolean showFineTicks = true;
 	public static double ladderOpacity = 1.0;
 	public static int flightPathColor = 0xFF55CCFF;
-	public static int statsAnchor = 0;
-
-	/**
-	 * The graph's anchor. Zero to four are the five screen anchors the stats panel also uses;
-	 * five to eight are {@code ATTACH_LEFT}, {@code ATTACH_RIGHT}, {@code ATTACH_ABOVE} and
-	 * {@link jealoustone.elytravario.hud.HudPosition#ATTACH_BELOW}, which hang the graph off
-	 * that side of the panel. Below is the default, and being attached is why {@code chartX}
-	 * and {@code chartY} are zero.
-	 *
-	 * <p>Attaching is not a ninth place to put the graph so much as a statement that the two
-	 * instruments are one block: the pair gets anchored and clamped together, so the anchor and
-	 * its offsets move both. A side facing a screen edge pushes the panel in from that edge
-	 * rather than sending the graph off it. See {@link jealoustone.elytravario.hud.HudLayout}.
-	 */
-	public static int chartAnchor = 8;
-
-	/**
-	 * The graph's offsets: measured inward from its anchor when it has one of its own, and a
-	 * nudge away from the panel when it is attached. Zero in both cases, since an attachment
-	 * that needs a hand-tuned offset to look attached is not one.
-	 */
-	public static int chartX = 0;
-	public static int chartY = 0;
+	/** Top-left corner of the velocity graph, in scaled GUI pixels. */
+	public static int chartX = 4;
+	public static int chartY = 126;
 	public static boolean showTrail = true;
 	public static int trailColor = 0xFF33CCAA;
 	public static boolean showHorizontalCursor = true;
@@ -457,8 +437,7 @@ public final class VarioConfig {
 	 */
 	public static boolean showSpeedo = true;
 	public static boolean speedoGlidingOnly = false;
-	public static int speedoAnchor = 3;
-	public static int speedoX = 4;
+	public static int speedoX = 144;
 	public static int speedoY = 4;
 
 	/**
