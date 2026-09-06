@@ -1,6 +1,7 @@
 package jealoustone.elytravario.hud;
 
 import jealoustone.elytravario.VarioConfig;
+import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.flight.FlightRecorder;
 import jealoustone.elytravario.flight.OptimalPitch;
 import jealoustone.elytravario.flight.Sample;
@@ -179,11 +180,11 @@ public final class PitchLadderElement implements HudElement {
 
 		// Fine ticks first, so a coarse rung always paints over one where the two land
 		// together at the very edge of the fine range.
-		if (VarioConfig.visible(VarioConfig.ladderVisibility, sample.gliding())) {
+		if (VarioInstrument.LADDER.visible(sample.gliding())) {
 			if (VarioConfig.showFineTicks) drawFineTicks(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 			drawRungs(graphics, minecraft.font, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 		}
-		if (!VarioConfig.visible(VarioConfig.markerVisibility, sample.gliding())) return;
+		if (!VarioInstrument.MARKERS.visible(sample.gliding())) return;
 
 		drawBugs(graphics, sample, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 

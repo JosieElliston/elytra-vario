@@ -569,6 +569,37 @@ the gap between its two cursors — and the chart is the instrument that turning
 anyway. The design notes below still describe how the marker is placed, because the code is
 still there and still correct.
 
+## Toggle keys
+
+Each of the five instruments — pitch ladder, markers, velocity graph, flight stats, speedometer
+— has a key that hides and restores it, all unbound by default. Not the individual markers:
+those are five settings behind one visibility switch on one page, and the ladder's bugs are read
+as one overlay, so five more binds would buy nothing that switching the whole set off does not.
+Unbound by default because five keys is a lot to take off a keyboard that already has `V` on it
+for an action most flights never need, and because the settings screen puts the binding control
+directly under the visibility switch it overrides, so anyone who wants one finds it there.
+
+**The key sets a runtime suppression, not the saved visibility setting.** The two are separate
+because the settings screen edits through a draft: a key that wrote into that draft would let a
+mid-flight keypress be persisted by a later Save of an unrelated color change, and it would need
+somewhere to remember whether the instrument had been *always* or *only while gliding* before it
+was hidden. The flag has neither problem. It costs one honest limitation, which the tooltip
+states: an instrument whose configured visibility is already Hidden cannot be keyed into view.
+Being runtime-only, the toggles are also forgotten on quit — which is what a momentary declutter
+key should do, and it means what comes back at launch is what the settings screen says.
+
+The binds themselves are ordinary `KeyMapping`s registered with the game, so they are in the
+vanilla Controls list like any other. Rebinding them from the mod's own screen is a convenience
+on top of that, not a second store: the row sets the same mapping and writes `options.txt`
+immediately. That is the only arrangement in which the two menus agree — a bind held in this
+screen's draft would be silently reverted by a Cancel in the vanilla one — and it is why the
+toggle key row is the one row on a page that Cancel and Reset do not touch.
+
+A key already bound elsewhere is shown in red with the conflicting binds named, and allowed.
+Vanilla allows the clash too; what it does is fire both actions, which is occasionally what was
+wanted, and refusing it here would mean this screen enforcing a rule the Controls screen does
+not.
+
 ## Minecraft 26.2 notes
 
 26.2 moved several things. Verify against the actual jars rather than recalling — `javap` the

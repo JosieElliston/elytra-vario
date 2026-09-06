@@ -5,7 +5,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.mojang.blaze3d.platform.InputConstants;
 import jealoustone.elytravario.ElytraVario;
+import jealoustone.elytravario.VarioInstrument;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
@@ -18,7 +22,10 @@ import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 /** Six scrollable pages with live HUD previews and an explicit, non-closing Save.
  * A page may divide into subpages: shared settings, a rule, then the selected subpage's own. */
@@ -30,6 +37,9 @@ public final class VarioConfigScreen extends Screen {
 	/** Remembers which subpage each divided page was last showing. */
 	private final Map<Integer, Integer> subpages = new HashMap<>();
 	private int page;
+	/** The instrument whose toggle key is waiting for the next key or mouse press, if any. */
+	private VarioInstrument capturing;
+	private KeyRow keyRow;
 	private boolean advanced;
 	private String saveError;
 	private Button saveButton;
@@ -49,6 +59,9 @@ public final class VarioConfigScreen extends Screen {
 
 	@Override
 	protected void init() {
+		// A rebuild discards the row that armed the capture, so the capture goes with it.
+		capturing = null;
+		keyRow = null;
 		int span = Math.min(width - 16, minecraft.level != null ? 320 : 600);
 		int left = minecraft.level != null ? width - span - 8 : (width - span) / 2;
 		panelLeft = left;
@@ -85,6 +98,10 @@ public final class VarioConfigScreen extends Screen {
 			top += 24;
 		}
 		OptionList list = addRenderableWidget(new OptionList(top, height - top - 76));
+		VarioInstrument instrument = instrument(page);
+		// The toggle key belongs directly under the visibility switch it overrides — which on a
+		// page whose switch is the header means at the top of the list instead.
+		if (instrument != null && header != null) list.append(keyRow = new KeyRow(instrument));
 		boolean separated = false;
 		for (var option : ConfigOptions.all()) {
 			if (option.page() != page || option.equals(header) || !shown(option, group)) continue;
@@ -94,6 +111,10 @@ public final class VarioConfigScreen extends Screen {
 				separated = true;
 			}
 			list.append(new OptionRow(option));
+			if (instrument != null && keyRow == null
+					&& VarioInstrument.byVisibilityKey(option.key()) == instrument) {
+				list.append(keyRow = new KeyRow(instrument));
+			}
 		}
 		int half = Math.min(span / 2, 180);
 		boolean hasAdvanced = ConfigOptions.all().stream()
@@ -120,6 +141,47 @@ public final class VarioConfigScreen extends Screen {
 				.bounds(panelCenter - half, height - 26, half - 2, 20).build());
 		addRenderableWidget(Button.builder(text("cancel"), button -> onClose())
 				.bounds(panelCenter + 2, height - 26, half - 2, 20).build());
+	}
+
+	/** The instrument this page governs as a whole, found through its visibility setting. */
+	private static VarioInstrument instrument(int page) {
+		for (var option : ConfigOptions.all()) {
+			if (option.page() != page) continue;
+			VarioInstrument found = VarioInstrument.byVisibilityKey(option.key());
+			if (found != null) return found;
+		}
+		return null;
+	}
+
+	/**
+	 * Binds the armed toggle, or unbinds it when the press was Escape.
+	 *
+	 * <p>Key binds are vanilla options rather than this mod's, so this writes straight through to
+	 * options.txt instead of into the draft. That is the only way the two menus can agree — the
+	 * vanilla Controls screen edits the same mapping, and a bind held in a draft would be
+	 * silently reverted by a Cancel there. The cost is that Cancel and Reset here do not undo
+	 * it, which the row's tooltip says.
+	 */
+	private void bind(InputConstants.Key key) {
+		capturing.key().setKey(key);
+		KeyMapping.resetMapping();
+		minecraft.options.save();
+		capturing = null;
+		if (keyRow != null) keyRow.refresh();
+	}
+
+	@Override
+	public boolean keyPressed(KeyEvent event) {
+		if (capturing == null) return super.keyPressed(event);
+		bind(event.key() == GLFW.GLFW_KEY_ESCAPE ? InputConstants.UNKNOWN : InputConstants.getKey(event));
+		return true;
+	}
+
+	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
+		if (capturing == null) return super.mouseClicked(event, doubled);
+		bind(InputConstants.Type.MOUSE.getOrCreate(event.button()));
+		return true;
 	}
 
 	/** A choice or toggle as a standalone dropdown, for options shown outside the list. */
@@ -274,6 +336,82 @@ public final class VarioConfigScreen extends Screen {
 
 		@Override public List<? extends GuiEventListener> children() { return List.of(); }
 		@Override public List<? extends NarratableEntry> narratables() { return List.of(); }
+	}
+
+	/**
+	 * The instrument's toggle key, rebindable here so that the whole of a page's behavior is in
+	 * one place rather than split between this screen and the vanilla Controls list. The same
+	 * mapping is registered with the game, so it is still in that list too, and either screen
+	 * sets it.
+	 *
+	 * <p><b>Not part of the draft</b>, unlike every other row: see {@link #bind}. It takes effect
+	 * and is saved as soon as it is pressed.
+	 *
+	 * <p>A key already spoken for elsewhere is shown in red with the offending binds named,
+	 * rather than refused. Vanilla allows the clash and so does this; what a conflicting key
+	 * does is fire both actions, which is occasionally even what was wanted.
+	 */
+	private final class KeyRow extends Row {
+		private final VarioInstrument instrument;
+		private final Button control;
+
+		KeyRow(VarioInstrument instrument) {
+			this.instrument = instrument;
+			this.control = Button.builder(Component.empty(), button -> {
+				capturing = instrument;
+				refresh();
+			}).bounds(0, 0, 180, 20).build();
+			refresh();
+		}
+
+		void refresh() {
+			KeyMapping mapping = instrument.key();
+			// Null only if the screen is somehow open before client init registered the keys.
+			control.active = mapping != null;
+			if (mapping == null) {
+				control.setMessage(Component.empty());
+				return;
+			}
+			Component name = mapping.getTranslatedKeyMessage();
+			if (capturing == instrument) {
+				control.setMessage(Component.literal("> ")
+						.append(name.copy().withStyle(ChatFormatting.YELLOW))
+						.append(" <").withStyle(ChatFormatting.YELLOW));
+				control.setTooltip(Tooltip.create(text("toggleKey.capturing")));
+				return;
+			}
+			Component conflicts = conflicts(mapping);
+			control.setMessage(conflicts == null ? name : name.copy().withStyle(ChatFormatting.RED));
+			Component tooltip = text("toggleKey").copy().append("\n").append(text("toggleKey.tooltip"));
+			if (conflicts != null) {
+				tooltip = tooltip.copy().append("\n").append(text("toggleKey.conflict", conflicts));
+			}
+			control.setTooltip(Tooltip.create(tooltip));
+		}
+
+		/** The names of every other bind on the same key, or null when there are none. */
+		private Component conflicts(KeyMapping mapping) {
+			if (mapping.isUnbound()) return null;
+			Component names = null;
+			for (KeyMapping other : minecraft.options.keyMappings) {
+				if (other == mapping || !other.same(mapping)) continue;
+				Component name = Component.translatable(other.getName());
+				names = names == null ? name : names.copy().append(", ").append(name);
+			}
+			return names;
+		}
+
+		@Override
+		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
+			graphics.text(font, text("toggleKey"), getContentX(), getContentY(), 0xFFFFFFFF);
+			control.setX(getContentX());
+			control.setY(getContentY() + 13);
+			control.setWidth(getContentWidth());
+			control.extractRenderState(graphics, mouseX, mouseY, delta);
+		}
+
+		@Override public List<? extends GuiEventListener> children() { return List.of(control); }
+		@Override public List<? extends NarratableEntry> narratables() { return List.of(control); }
 	}
 
 	private final class OptionRow extends Row {
