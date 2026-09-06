@@ -43,9 +43,18 @@ public final class VarioConfigScreen extends Screen {
 	private final ConfigPreview preview = new ConfigPreview();
 	private final Map<String, String> draft = preview.draft();
 	private final Map<String, EditBox> coordinateBoxes = new HashMap<>();
+	// Where you were reading is not a setting, but losing it is felt like one: the screen is
+	// opened and closed repeatedly while flying, to try one number and watch the HUD. Page,
+	// subpage and scroll therefore outlive the screen, and are remembered for the session
+	// rather than written to disk, since they say nothing about how the mod should behave.
 	/** Remembers which subpage each divided page was last showing. */
-	private final Map<Integer, Integer> subpages = new HashMap<>();
-	private int page;
+	private static final Map<Integer, Integer> subpages = new HashMap<>();
+	/** Remembers how far down each page's list was scrolled. */
+	private static final Map<Integer, Double> scrolls = new HashMap<>();
+	private static int page;
+	/** The page the current list was built for, which is not {@link #page} once a tab has been
+	 * clicked and before the rebuild that answers it. */
+	private int listPage;
 	/** The bind waiting for the next key or mouse press, if any. */
 	private KeyMapping capturing;
 	private KeyControl keyControl;
@@ -153,6 +162,9 @@ public final class VarioConfigScreen extends Screen {
 		if (!rows.isEmpty()) {
 			optionList = addRenderableWidget(new OptionList(top, height - top - 76));
 			for (ConfigRow row : rows) optionList.append(row);
+			listPage = page;
+			// After the entries, so that the list knows how far it is able to scroll.
+			optionList.setScrollAmount(scrolls.getOrDefault(page, 0.0));
 		}
 		int half = Math.min(span / 2, 180);
 		boolean hasAdvanced = ConfigOptions.all().stream()
@@ -179,6 +191,30 @@ public final class VarioConfigScreen extends Screen {
 				.bounds(panelCenter - half, height - 26, half - 2, 20).build());
 		addRenderableWidget(Button.builder(text("cancel"), button -> onClose())
 				.bounds(panelCenter + 2, height - 26, half - 2, 20).build());
+	}
+
+	/** The list is discarded by a rebuild, by a resize and by leaving the screen alike, so each
+	 * of the three records where it had got to before letting go of it. */
+	private void rememberScroll() {
+		if (optionList != null) scrolls.put(listPage, optionList.scrollAmount());
+	}
+
+	@Override
+	protected void rebuildWidgets() {
+		rememberScroll();
+		super.rebuildWidgets();
+	}
+
+	@Override
+	public void resize(int width, int height) {
+		rememberScroll();
+		super.resize(width, height);
+	}
+
+	@Override
+	public void removed() {
+		rememberScroll();
+		super.removed();
 	}
 
 	private static ConfigOptions.Option option(String key) {
@@ -579,10 +615,8 @@ public final class VarioConfigScreen extends Screen {
 		return CycleButton.<String>builder(id -> text("group." + id), group)
 				.withValues(groups)
 				.create(x, y, width, 20, text("page." + page + ".group"), (button, value) -> {
-					double scroll = optionList == null ? 0.0 : optionList.scrollAmount();
 					subpages.put(page, groups.indexOf(value));
 					rebuildWidgets();
-					if (optionList != null) optionList.setScrollAmount(scroll);
 				});
 	}
 
