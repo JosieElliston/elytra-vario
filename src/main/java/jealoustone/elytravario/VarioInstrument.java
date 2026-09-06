@@ -92,7 +92,9 @@ public enum VarioInstrument {
 		return null;
 	}
 
-	/** Where the settings screen anchors this instrument's rebinding row. */
+	/** The two settings the config screen shows above the rest of this instrument's page. */
+	public String showKey() { return showKey; }
+
 	public String glidingOnlyKey() { return glidingOnlyKey; }
 
 	/** Null until {@link #registerAll} has run, which is once, during client init. */
