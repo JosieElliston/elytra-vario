@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component;
 
 /** Five scrollable pages with live HUD previews and an explicit, non-closing Save. */
 public final class VarioConfigScreen extends Screen {
-	private static final int PAGE_COUNT = 5;
+	private static final int PAGE_COUNT = 6;
 	private final Screen parent;
 	private final ConfigPreview preview = new ConfigPreview();
 	private final Map<String, String> draft = preview.draft();
