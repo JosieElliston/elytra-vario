@@ -21,6 +21,9 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Changed
 
+- Color settings now open a picker with red, green, blue, and, where supported, opacity
+  sliders, a live swatch, and reversible live HUD preview. Opaque heatmap colors omit the
+  opacity control, and the on-disk hexadecimal format remains compatible.
 - The speedometer now defaults to the bottom-right corner, clear of chat.
 
 ## [1.2.0] - 2026-09-06
