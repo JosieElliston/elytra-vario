@@ -26,9 +26,13 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Changed
 
+- Settings now save themselves. Every edit is written as you make it, so the Save button, the
+  Saved notice, and the unsaved-changes prompt on the way out are all gone; the screen has one
+  Close button. A half-typed number is still held back from the HUD and the file until it reads
+  as a number.
 - The settings screen now reopens on the page and subpage you left, scrolled to where you left
-  it, for the rest of the game session. Closing it to watch the HUD no longer costs you your
-  place.
+  it and with Advanced as you left it, for the rest of the game session. Closing it to watch the
+  HUD no longer costs you your place.
 - Color settings now open a picker with red, green, blue, and, where supported, opacity
   sliders, a live swatch, and reversible live HUD preview. Opaque heatmap colors omit the
   opacity control, and the on-disk hexadecimal format remains compatible.

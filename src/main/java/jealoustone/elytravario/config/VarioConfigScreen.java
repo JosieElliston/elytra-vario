@@ -23,9 +23,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
-import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -33,36 +31,36 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
-/** Six scrollable pages with live HUD previews and an explicit, non-closing Save.
+/** Six scrollable pages whose edits take effect in the HUD as they are made and save themselves.
  * A page may divide into subpages, chosen by a dropdown under the switches the whole page shares. */
 public final class VarioConfigScreen extends Screen {
 	private static final int PAGE_COUNT = 6;
 	/** The page whose switch and key are the whole mod's rather than one instrument's. */
 	private static final int GLOBAL_PAGE = 0;
 	private final Screen parent;
-	private final ConfigPreview preview = new ConfigPreview();
-	private final Map<String, String> draft = preview.draft();
+	private final Map<String, String> settings = ConfigOptions.snapshot();
 	private final Map<String, EditBox> coordinateBoxes = new HashMap<>();
 	// Where you were reading is not a setting, but losing it is felt like one: the screen is
 	// opened and closed repeatedly while flying, to try one number and watch the HUD. Page,
-	// subpage and scroll therefore outlive the screen, and are remembered for the session
-	// rather than written to disk, since they say nothing about how the mod should behave.
+	// subpage, scroll and the Advanced switch therefore outlive the screen, and are remembered
+	// for the session rather than written to disk, since they say nothing about how the mod
+	// should behave.
 	/** Remembers which subpage each divided page was last showing. */
 	private static final Map<Integer, Integer> subpages = new HashMap<>();
 	/** Remembers how far down each page's list was scrolled. */
 	private static final Map<Integer, Double> scrolls = new HashMap<>();
 	private static int page;
+	private static boolean advanced;
 	/** The page the current list was built for, which is not {@link #page} once a tab has been
 	 * clicked and before the rebuild that answers it. */
 	private int listPage;
 	/** The bind waiting for the next key or mouse press, if any. */
 	private KeyMapping capturing;
 	private KeyControl keyControl;
-	private boolean advanced;
+	/** An edit the next write will persist. */
+	private boolean dirty;
 	private String saveError;
-	private Button saveButton;
 	private OptionList optionList;
-	private boolean savedNotice;
 	private int panelLeft;
 	private int panelWidth;
 	private int panelCenter;
@@ -180,17 +178,19 @@ public final class VarioConfigScreen extends Screen {
 			for (var option : ConfigOptions.all()) {
 				// Only what this subpage shows, advanced rows included.
 				if (option.page() == page && (option.group() == null || option.group().equals(group))) {
-					draft.put(option.key(), option.defaultValue());
+					settings.put(option.key(), option.defaultValue());
 				}
 			}
 			changed();
 			rebuildWidgets();
 		}).bounds(panelCenter + 2, height - 68, half - 2, 20)
 				.tooltip(Tooltip.create(text("reset.tooltip"))).build());
-		saveButton = addRenderableWidget(Button.builder(text("save"), button -> save())
-				.bounds(panelCenter - half, height - 26, half - 2, 20).build());
-		addRenderableWidget(Button.builder(text("cancel"), button -> onClose())
-				.bounds(panelCenter + 2, height - 26, half - 2, 20).build());
+		// One button where Save and Close used to be a pair: there is nothing left to decide on
+		// the way out, since everything above has already been written. It sits directly under
+		// Advanced and Reset, in the row the pair used to leave empty above it, with only the
+		// error line below.
+		addRenderableWidget(Button.builder(text("close"), button -> onClose())
+				.bounds(panelCenter - half / 2, height - 44, half - 2, 20).build());
 	}
 
 	/** The list is discarded by a rebuild, by a resize and by leaving the screen alike, so each
@@ -214,6 +214,7 @@ public final class VarioConfigScreen extends Screen {
 	@Override
 	public void removed() {
 		rememberScroll();
+		flush();
 		super.removed();
 	}
 
@@ -238,9 +239,9 @@ public final class VarioConfigScreen extends Screen {
 	 * Binds the armed toggle, or unbinds it when the press was Escape.
 	 *
 	 * <p>Key binds are vanilla options rather than this mod's, so this writes straight through to
-	 * options.txt instead of into the draft. That is the only way the two menus can agree — the
-	 * vanilla Controls screen edits the same mapping, and a bind held in a draft would be
-	 * silently reverted by a Cancel there. The cost is that Cancel and Reset here do not undo
+	 * options.txt instead of into this screen's values. That is the only way the two menus can
+	 * agree — the vanilla Controls screen edits the same mapping, and a bind held here until
+	 * later would be silently reverted by a Cancel there. The cost is that Reset does not undo
 	 * it, which the control's tooltip says.
 	 */
 	private void bind(InputConstants.Key key) {
@@ -278,8 +279,8 @@ public final class VarioConfigScreen extends Screen {
 		// no such care because nothing on this screen wants it. Offering the event to the widgets
 		// first is not enough on its own, since a text box takes its ordinary characters through
 		// charTyped and so refuses this event, hence the explicit check.
-		KeyMapping settings = ElytraVarioClient.settingsKey();
-		if (settings != null && settings.matches(event) && !typing(getFocused())) {
+		KeyMapping settingsKey = ElytraVarioClient.settingsKey();
+		if (settingsKey != null && settingsKey.matches(event) && !typing(getFocused())) {
 			onClose();
 			return true;
 		}
@@ -362,7 +363,7 @@ public final class VarioConfigScreen extends Screen {
 		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
 			if (bounds.module() == module) rendered = bounds;
 		}
-		if (!ModulePositionEditor.nudge(module, dx, dy, draft, rendered, width, height)) return;
+		if (!ModulePositionEditor.nudge(module, dx, dy, settings, rendered, width, height)) return;
 		coordinatesChanged(module);
 	}
 
@@ -381,9 +382,9 @@ public final class VarioConfigScreen extends Screen {
 		ModulePositionEditor.Position snapped = snap.position();
 		String nextX = Integer.toString(snapped.x());
 		String nextY = Integer.toString(snapped.y());
-		if (nextX.equals(draft.get(module.xKey)) && nextY.equals(draft.get(module.yKey))) return;
-		draft.put(module.xKey, nextX);
-		draft.put(module.yKey, nextY);
+		if (nextX.equals(settings.get(module.xKey)) && nextY.equals(settings.get(module.yKey))) return;
+		settings.put(module.xKey, nextX);
+		settings.put(module.yKey, nextY);
 		coordinatesChanged(module);
 	}
 
@@ -391,8 +392,8 @@ public final class VarioConfigScreen extends Screen {
 		updatingCoordinates = true;
 		EditBox xBox = coordinateBoxes.get(module.xKey);
 		EditBox yBox = coordinateBoxes.get(module.yKey);
-		if (xBox != null) xBox.setValue(draft.get(module.xKey));
-		if (yBox != null) yBox.setValue(draft.get(module.yKey));
+		if (xBox != null) xBox.setValue(settings.get(module.xKey));
+		if (yBox != null) yBox.setValue(settings.get(module.yKey));
 		updatingCoordinates = false;
 		changed();
 	}
@@ -407,9 +408,9 @@ public final class VarioConfigScreen extends Screen {
 			for (int i = 0; i < option.choices(); i++) values.add(Integer.toString(i));
 		}
 		CycleButton<String> button = CycleButton.<String>builder(value -> valueLabel(option, value),
-				draft.get(option.key())).withValues(values)
+				settings.get(option.key())).withValues(values)
 				.create(x, y, listWidth, 20, text(option.key()), (widget, value) -> {
-					draft.put(option.key(), value);
+					settings.put(option.key(), value);
 					changed();
 				});
 		button.setTooltip(Tooltip.create(tooltip(option)));
@@ -444,25 +445,39 @@ public final class VarioConfigScreen extends Screen {
 		return option.group() == null || option.group().equals(group);
 	}
 
-	private boolean save() {
-		if (ConfigOptions.error(draft) != null) return false;
+	private void changed() {
+		saveError = null;
+		dirty = true;
+		ConfigOptions.applyIfValid(settings);
+	}
+
+	@Override
+	public void tick() {
+		super.tick();
+		flush();
+	}
+
+	/**
+	 * Writes the edits made since the last write, if the screen holds nothing half-typed.
+	 *
+	 * <p>Once per tick rather than once per edit, because a dragged slider or a held arrow key
+	 * changes a value far faster than a file wants replacing; and again as the screen closes, so
+	 * that the last edit is on disk before the settings are out of sight. A set of values with a
+	 * half-typed number in it is simply not written yet — the error under Close says why —
+	 * and it becomes writable again as soon as the offending box does.
+	 *
+	 * <p>A failed write is reported and the edit kept: it still applies for this session, and
+	 * retrying every tick would only fill the log.
+	 */
+	private void flush() {
+		if (!dirty || ConfigOptions.error(settings) != null) return;
+		dirty = false;
 		try {
-			ConfigStore.save(draft);
-			preview.markSaved();
-			saveError = null;
-			savedNotice = true;
-			return true;
+			ConfigStore.save(settings);
 		} catch (IOException | RuntimeException e) {
 			ElytraVario.LOGGER.error("Could not save Elytra Vario settings", e);
 			saveError = "save_error";
-			return false;
 		}
-	}
-
-	private void changed() {
-		saveError = null;
-		savedNotice = false;
-		preview.preview();
 	}
 
 	@Override
@@ -479,56 +494,16 @@ public final class VarioConfigScreen extends Screen {
 
 	@Override
 	public void onClose() {
-		if (!preview.hasUnsavedChanges()) {
-			minecraft.gui.setScreen(parent);
-			return;
-		}
-		// Opening a child screen must preserve both the draft and its live preview.
-		// Restore runtime settings only after an explicit discard confirmation.
-		minecraft.gui.setScreen(new ConfirmScreen(discard -> {
-			if (discard) {
-				preview.restore();
-				minecraft.gui.setScreen(parent);
-			} else {
-				minecraft.gui.setScreen(this);
-			}
-		}, text("discard.title"), text("discard.message"),
-				text("discard.confirm"), text("discard.keep")) {
-			@Override
-			protected void addButtons(LinearLayout buttons) {
-				// Stack all three actions so the popup also fits narrow GUI sizes.
-				LinearLayout actions = buttons.addChild(LinearLayout.vertical().spacing(4));
-				Button saveAndExit = actions.addChild(Button.builder(text("discard.save"), button -> {
-					if (VarioConfigScreen.this.save()) minecraft.gui.setScreen(parent);
-				}).build());
-				String error = ConfigOptions.error(draft);
-				saveAndExit.active = error == null;
-				if (error != null) saveAndExit.setTooltip(Tooltip.create(text(error)));
-				super.addButtons(actions);
-			}
-
-			@Override
-			public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-				super.extractRenderState(graphics, mouseX, mouseY, delta);
-				String error = ConfigOptions.error(draft);
-				if (error != null || saveError != null) {
-					graphics.centeredText(font, text(error != null ? error : saveError),
-							width / 2, height - 20, 0xFFFF7777);
-				}
-			}
-		});
+		minecraft.gui.setScreen(parent);
 	}
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		String error = ConfigOptions.error(draft);
-		saveButton.active = error == null;
+		String error = ConfigOptions.error(settings);
 		super.extractRenderState(graphics, mouseX, mouseY, delta);
 		graphics.centeredText(font, title, panelCenter, 10, 0xFFFFFFFF);
 		if (error != null || saveError != null) {
-			graphics.centeredText(font, text(error != null ? error : saveError), panelCenter, height - 42, 0xFFFF7777);
-		} else if (savedNotice) {
-			graphics.centeredText(font, text("saved"), panelCenter, height - 42, 0xFF66DD77);
+			graphics.centeredText(font, text(error != null ? error : saveError), panelCenter, height - 18, 0xFFFF7777);
 		}
 		if (minecraft.level != null && !overControl(mouseX, mouseY)) {
 			ModulePositionEditor.Bounds hovered = moduleAt(mouseX, mouseY, draggingModule);
@@ -648,8 +623,9 @@ public final class VarioConfigScreen extends Screen {
 	 * registered with the game, so they are all in that list too, and either screen sets them.
 	 *
 	 * <p>It reads as one more switch beside those above it, and is labeled the way they are,
-	 * because that is what it is — but <b>it is not part of the draft</b>, unlike every setting
-	 * on this screen: see {@link #bind}. It takes effect and is saved as soon as it is pressed.
+	 * because that is what it is — but <b>it is not one of this mod's settings</b>, unlike
+	 * everything else on this screen: see {@link #bind}. It is written to options.txt rather
+	 * than to elytra-vario.json, and Reset leaves it alone.
 	 *
 	 * <p>A key already spoken for elsewhere is shown in red with the offending binds named,
 	 * rather than refused. Vanilla allows the clash and so does this; what a conflicting key
@@ -727,13 +703,13 @@ public final class VarioConfigScreen extends Screen {
 			this.option = option;
 			Component label = text(option.key());
 			if (option.color()) {
-				control = Button.builder(colorLabel(option, draft.get(option.key())), button ->
+				control = Button.builder(colorLabel(option, settings.get(option.key())), button ->
 						minecraft.gui.setScreen(new ColorPickerScreen(option)))
 						.bounds(0, 0, 180, 20).build();
 			} else if (option.toggle() || option.choices() > 0) {
 				control = Button.builder(valueLabel(), button -> {
-					String value = draft.get(option.key());
-					draft.put(option.key(), option.toggle() ? Boolean.toString(!Boolean.parseBoolean(value))
+					String value = settings.get(option.key());
+					settings.put(option.key(), option.toggle() ? Boolean.toString(!Boolean.parseBoolean(value))
 							: Integer.toString((Integer.parseInt(value) + 1) % option.choices()));
 					button.setMessage(valueLabel());
 					changed();
@@ -741,9 +717,9 @@ public final class VarioConfigScreen extends Screen {
 			} else {
 				EditBox box = new EditBox(font, 0, 0, 180, 20, label);
 				box.setMaxLength(32);
-				box.setValue(draft.get(option.key()));
+				box.setValue(settings.get(option.key()));
 				box.setResponder(value -> {
-					draft.put(option.key(), value);
+					settings.put(option.key(), value);
 					box.setTextColor(valid(value) ? 0xFFE0E0E0 : 0xFFFF7777);
 					if (!updatingCoordinates) changed();
 				});
@@ -760,7 +736,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 
 		private Component valueLabel() {
-			return VarioConfigScreen.this.valueLabel(option, draft.get(option.key()));
+			return VarioConfigScreen.this.valueLabel(option, settings.get(option.key()));
 		}
 
 		@Override
@@ -800,7 +776,7 @@ public final class VarioConfigScreen extends Screen {
 		ColorPickerScreen(ConfigOptions.Option option) {
 			super(text("colorPicker.title", text(option.key())));
 			this.option = option;
-			initialValue = draft.get(option.key());
+			initialValue = settings.get(option.key());
 			color = (int) option.parse(initialValue);
 		}
 
@@ -836,7 +812,7 @@ public final class VarioConfigScreen extends Screen {
 			};
 			color = color & ~(0xFF << shift) | value << shift;
 			if (option.opaque()) color |= 0xFF000000;
-			draft.put(option.key(), option.format(color));
+			settings.put(option.key(), option.format(color));
 			changed();
 		}
 
@@ -845,7 +821,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 
 		private void cancel() {
-			draft.put(option.key(), initialValue);
+			settings.put(option.key(), initialValue);
 			changed();
 			minecraft.gui.setScreen(VarioConfigScreen.this);
 		}
