@@ -1,6 +1,7 @@
 package jealoustone.elytravario.config;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import jealoustone.elytravario.ElytraVario;
@@ -8,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
+import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -17,12 +19,15 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.network.chat.Component;
 
-/** Five scrollable pages with live HUD previews and an explicit, non-closing Save. */
+/** Six scrollable pages with live HUD previews and an explicit, non-closing Save.
+ * A page may divide into subpages: shared settings, a rule, then the selected subpage's own. */
 public final class VarioConfigScreen extends Screen {
 	private static final int PAGE_COUNT = 6;
 	private final Screen parent;
 	private final ConfigPreview preview = new ConfigPreview();
 	private final Map<String, String> draft = preview.draft();
+	/** Remembers which subpage each divided page was last showing. */
+	private final Map<Integer, Integer> subpages = new HashMap<>();
 	private int page;
 	private boolean advanced;
 	private String saveError;
@@ -60,14 +65,33 @@ public final class VarioConfigScreen extends Screen {
 		}
 		int tabRows = (PAGE_COUNT + columns - 1) / columns;
 		int top = 32 + tabRows * 22;
+		List<String> groups = ConfigOptions.groups(page);
+		final String group = groups.isEmpty() ? null
+				: groups.get(Math.min(subpages.getOrDefault(page, 0), groups.size() - 1));
+		if (group != null) {
+			addRenderableWidget(CycleButton.<String>builder(id -> text("group." + id), group)
+					.withValues(groups)
+					.create(left + 4, top, span - 8, 20, text("page." + page + ".group"), (button, value) -> {
+						subpages.put(page, groups.indexOf(value));
+						rebuildWidgets();
+					}));
+			top += 24;
+		}
 		OptionList list = addRenderableWidget(new OptionList(top, height - top - 76));
+		boolean separated = false;
 		for (var option : ConfigOptions.all()) {
-			if (option.page() == page && (!option.advanced() || advanced)) {
-				list.append(new OptionRow(option));
+			if (option.page() != page || !shown(option, group)) continue;
+			if (option.group() != null && !separated) {
+				// The shared settings above always exist, so the rule never opens the list.
+				list.append(new SeparatorRow());
+				separated = true;
 			}
+			list.append(new OptionRow(option));
 		}
 		int half = Math.min(span / 2, 180);
-		boolean hasAdvanced = ConfigOptions.all().stream().anyMatch(option -> option.page() == page && option.advanced());
+		boolean hasAdvanced = ConfigOptions.all().stream()
+				.anyMatch(option -> option.page() == page && option.advanced()
+						&& (option.group() == null || option.group().equals(group)));
 		Button advancedButton = addRenderableWidget(Button.builder(text("advanced", text(hasAdvanced && advanced ? "on" : "off")), button -> {
 			advanced = !advanced;
 			rebuildWidgets();
@@ -76,7 +100,10 @@ public final class VarioConfigScreen extends Screen {
 		advancedButton.active = hasAdvanced;
 		addRenderableWidget(Button.builder(text("reset"), button -> {
 			for (var option : ConfigOptions.all()) {
-				if (option.page() == page) draft.put(option.key(), option.defaultValue());
+				// Only what this subpage shows, advanced rows included.
+				if (option.page() == page && (option.group() == null || option.group().equals(group))) {
+					draft.put(option.key(), option.defaultValue());
+				}
 			}
 			changed();
 			rebuildWidgets();
@@ -86,6 +113,12 @@ public final class VarioConfigScreen extends Screen {
 				.bounds(panelCenter - half, height - 26, half - 2, 20).build());
 		addRenderableWidget(Button.builder(text("cancel"), button -> onClose())
 				.bounds(panelCenter + 2, height - 26, half - 2, 20).build());
+	}
+
+	/** Advanced rows hide; rows belonging to another subpage are not part of this page's view. */
+	private boolean shown(ConfigOptions.Option option, String group) {
+		if (option.advanced() && !advanced) return false;
+		return option.group() == null || option.group().equals(group);
 	}
 
 	private boolean save() {
@@ -174,7 +207,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 	}
 
-	private final class OptionList extends ContainerObjectSelectionList<OptionRow> {
+	private final class OptionList extends ContainerObjectSelectionList<Row> {
 		OptionList(int top, int listHeight) {
 			super(VarioConfigScreen.this.minecraft, panelWidth, listHeight, top, 46);
 			setX(panelLeft);
@@ -185,11 +218,26 @@ public final class VarioConfigScreen extends Screen {
 		@Override protected void renderListSeparators(GuiGraphics graphics) {
 			if (minecraft.level == null) super.renderListSeparators(graphics);
 		}
-		void append(OptionRow row) { addEntry(row); }
+		void append(Row row) { addEntry(row); }
 		@Override public int getRowWidth() { return panelWidth - 24; }
 	}
 
-	private final class OptionRow extends ContainerObjectSelectionList.Entry<OptionRow> {
+	/** The list holds two kinds of row, so they share one self-typed base. */
+	private abstract class Row extends ContainerObjectSelectionList.Entry<Row> { }
+
+	/** A rule between the settings shared by every marker and the selected marker's own. */
+	private final class SeparatorRow extends Row {
+		@Override
+		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
+			int y = getContentYMiddle();
+			graphics.fill(getContentX(), y, getContentX() + getContentWidth(), y + 1, 0x30FFFFFF);
+		}
+
+		@Override public List<? extends GuiEventListener> children() { return List.of(); }
+		@Override public List<? extends NarratableEntry> narratables() { return List.of(); }
+	}
+
+	private final class OptionRow extends Row {
 		private final ConfigOptions.Option option;
 		private final AbstractWidget control;
 
