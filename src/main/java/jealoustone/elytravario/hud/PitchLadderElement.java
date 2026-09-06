@@ -52,10 +52,9 @@ import org.joml.Vector3fc;
  * <p>Reading one is a single gesture: the gap between the crosshair and the bug is the
  * correction, and when there is none the two wedges close around the crosshair.
  *
- * <p>There are four of them, because an optimised pump cycle turns out to be piecewise
+ * <p>There are three of them, because an optimised pump cycle turns out to be piecewise
  * myopic — each phase of it follows a simple rule of the state, and the hard part is knowing
- * when to switch rules rather than what each rule is. Three of the bugs are those rules, and
- * the fourth is the reference the dive's rule is read against:
+ * when to switch rules rather than what each rule is. Each bug is one of those rules:
  *
  * <ul>
  * <li>the <b>hold</b> bug, the pitch that leaves the flight path angle where it is, which is
@@ -65,9 +64,10 @@ import org.joml.Vector3fc;
  * <li>the <b>optimal pitch</b> bug, the same over one tick, which is the greedy reading the
  *     ladder shipped with — <em>off by default</em>, since it is a diagnostic rather than a
  *     rule and is wrong through both of the phases above;</li>
- * <li>the <b>velocity</b> bug, where you are actually going, which is not advice and so is
- *     the one of the four that is gray — also <em>off by default</em>.</li>
  * </ul>
+ *
+ * <p>Where you are actually going is not among them: that is the flight path marker's, and it
+ * is drawn against the crosshair on both axes rather than as a fourth mark in this band.
  *
  * <p>They share one band, since the center gap is the only place any of them can go, and are
  * told apart by color and by height, so that a pile of agreeing bugs nests into chevrons
@@ -185,7 +185,7 @@ public final class PitchLadderElement implements HudElement {
 		}
 		if (!VarioConfig.visible(VarioConfig.markerVisibility, sample.gliding())) return;
 
-		drawBugs(graphics, sample, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
+		drawBugs(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 
 		if (VarioConfig.showFlightPath) {
 			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown);
@@ -193,7 +193,7 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * The four bugs, drawn tallest first.
+	 * The three bugs, drawn tallest first.
 	 *
 	 * <p>The order is the whole trick to keeping them separable. They occupy one band and
 	 * their apexes land on the same row whenever the rules agree, so a taller wedge drawn
@@ -207,7 +207,7 @@ public final class PitchLadderElement implements HudElement {
 	 * the states where no pitch holds the flight path angle at all — so the bugs appear with
 	 * the wing and leave with it, and the dive's bug also leaves when the dive is past saving.
 	 */
-	private void drawBugs(GuiGraphicsExtractor graphics, Sample sample, float cameraPitch,
+	private void drawBugs(GuiGraphicsExtractor graphics, float cameraPitch,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
 		// In descending order of rise, which is what makes an overlap nest. Retuning the rises
 		// in VarioConfig means reordering these calls to match; nothing checks it.
@@ -236,16 +236,6 @@ public final class PitchLadderElement implements HudElement {
 						centerX, centerY, scale, bandUp, bandDown);
 			}
 		}
-
-		// Gated on gliding like the other three, even though a direction of travel exists
-		// without a wing: it is here to be read against the hold bug, and on its own it is
-		// what the flight path marker already says better.
-		if (VarioConfig.showVelocityPitch && sample.gliding()) {
-			drawBug(graphics, cameraPitch,
-					(float) recorder.flightPathPitch(),
-					VarioConfig.ladderVelocityRise, VarioConfig.velocityPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
-		}
 	}
 
 	/**
@@ -264,9 +254,9 @@ public final class PitchLadderElement implements HudElement {
 	 * that never meets a rung or a label; see {@code VarioConfig.ladderBugGap}. Drawn as a
 	 * stack of rows rather than as a polygon, since the HUD's primitives are rectangles.
 	 *
-	 * <p>A {@code NaN} pitch draws nothing. That is a real answer from two of the four rules
-	 * rather than a defensive check — it is how they say the state they are describing has no
-	 * such pitch — so it is tested for here and not left to fall out of the arithmetic.
+	 * <p>A {@code NaN} pitch draws nothing. That is a real answer from the hold rather than a
+	 * defensive check — it is how it says the state it is describing has no such pitch — so it
+	 * is tested for here and not left to fall out of the arithmetic.
 	 *
 	 * <p><b>An answer off the ladder is not drawn.</b> The bug tapers out over the last of the
 	 * band and is gone, exactly as it is when its rule has no answer at all — so a bug that is
