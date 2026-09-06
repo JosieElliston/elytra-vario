@@ -86,6 +86,6 @@ Mod Menu is optional; the settings key works without it.
 
 ## Building this backport
 
-This branch targets Minecraft 1.21.11 with Fabric API 0.141.3+1.21.11 and Fabric Loader 0.19.3 or later. Run `./gradlew build` with JDK 25; the mod targets Java 21 for Minecraft 1.21.11. The installable jar is `build/libs/elytra-vario-1.1.0+mc1.21.11.jar`.
+This branch targets Minecraft 1.21.11 with Fabric API 0.141.3+1.21.11 and Fabric Loader 0.19.3 or later. Run `./gradlew build` with JDK 25; the mod targets Java 21 for Minecraft 1.21.11. The installable jar is `build/libs/elytra-vario-1.2.0+mc1.21.11.jar`.
 
 This is a one-off backport from the 26.2 version. `ElytraPhysics.java` is retained unchanged from that version.
