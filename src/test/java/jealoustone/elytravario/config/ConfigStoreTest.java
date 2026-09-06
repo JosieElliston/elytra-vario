@@ -1,0 +1,90 @@
+package jealoustone.elytravario.config;
+
+import static org.junit.jupiter.api.Assertions.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import jealoustone.elytravario.VarioConfig;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class ConfigStoreTest {
+	@TempDir Path directory;
+
+	@Test void defaultsAreValidAndRoundTrip() {
+		var defaults = ConfigOptions.defaults();
+		assertNull(ConfigOptions.error(defaults));
+		assertEquals(defaults, ConfigStore.decode(ConfigStore.encode(defaults)));
+	}
+
+	@Test void omittedSettingsUseDefaultsAndUnknownSettingsAreIgnored() {
+		var values = ConfigStore.decode("{\"chartMinVxz\":\"-20\",\"futureOption\":true}");
+		assertEquals("-20", values.get("chartMinVxz"));
+		assertEquals("true", values.get("showHoldPitch"));
+		assertFalse(values.containsKey("futureOption"));
+	}
+
+	@Test void savingReplacesTheFileAndPreservesDisplayUnits() throws Exception {
+		var values = ConfigOptions.defaults();
+		values.put("chartMinVxz", "-20");
+		values.put("chartTrailTicks", "7.5");
+		values.put("holdPitchColor", "A0123456");
+		Path path = directory.resolve("config.json");
+		Files.writeString(path, "previous contents");
+		ConfigStore.save(path, values);
+		assertEquals(values, ConfigStore.decode(Files.readString(path)));
+		try (var files = Files.list(directory)) { assertEquals(1, files.count()); }
+	}
+
+	@Test void invalidSaveLeavesExistingFileIntact() throws Exception {
+		Path path = directory.resolve("config.json");
+		Files.writeString(path, "preserve me");
+		var values = ConfigOptions.defaults();
+		values.put("chartMaxVxz", values.get("chartMinVxz"));
+		assertThrows(IllegalArgumentException.class, () -> ConfigStore.save(path, values));
+		assertEquals("preserve me", Files.readString(path));
+	}
+
+	@Test void badNumbersAndColorsCannotReachTheRenderer() {
+		for (var bad : Map.of("chartScale", "NaN", "chartTrailTicks", "0.07",
+				"lookaheadTicks", "1.5", "ladderOpacity", "101", "statsAnchor", "5",
+				"holdPitchColor", "garbage", "chartFieldGainColor", "009E3692").entrySet()) {
+			var values = ConfigOptions.defaults();
+			values.put(bad.getKey(), bad.getValue());
+			assertEquals("invalid", ConfigOptions.error(values), bad.getKey());
+		}
+		assertThrows(RuntimeException.class, () -> ConfigStore.decode("{broken"));
+		assertThrows(RuntimeException.class, () -> ConfigStore.decode("{\"enabled\":null}"));
+	}
+
+	@Test void invertedAndOversizedDomainsAreRejected() {
+		var values = ConfigOptions.defaults();
+		values.put("chartMinVy", "80");
+		assertEquals("range", ConfigOptions.error(values));
+		values = ConfigOptions.defaults();
+		values.put("chartMaxVxz", "200");
+		values.put("chartScale", "128");
+		assertEquals("size", ConfigOptions.error(values));
+	}
+
+	@Test void applyingConvertsUnitsAndInvalidDraftCannotPartiallyApply() {
+		var original = ConfigOptions.snapshot();
+		try {
+			var values = ConfigOptions.defaults();
+			values.put("chartMinVxz", "-20");
+			values.put("chartTrailTicks", "7.5");
+			values.put("chartFieldGainColor", "123456");
+			values.put("ladderVisibility", "2");
+			ConfigOptions.apply(values);
+			assertEquals(-1, VarioConfig.chartMinVxz);
+			assertEquals(150, VarioConfig.chartTrailTicks);
+			assertEquals(0xFF123456, VarioConfig.chartFieldGainColor);
+			assertTrue(VarioConfig.visible(VarioConfig.markerVisibility, true));
+			assertFalse(VarioConfig.visible(VarioConfig.ladderVisibility, true));
+			values.put("enabled", "false");
+			values.put("chartScale", "Infinity");
+			assertThrows(IllegalArgumentException.class, () -> ConfigOptions.apply(values));
+			assertTrue(VarioConfig.enabled);
+		} finally { ConfigOptions.apply(original); }
+	}
+}

@@ -20,7 +20,7 @@ import net.minecraft.world.phys.Vec3;
  *
  * <h2>What leaks is a policy, not this reading</h2>
  *
- * <p>This holds the angle exactly. The target is the angle the smoothed velocity already has,
+ * <p>This holds the angle exactly. The target is the angle the latest velocity already has,
  * so there is nothing for the search to decay towards and no rate at which it could: the bug
  * moves when the flight moves and not otherwise. Worth saying because the rule is easy to
  * confuse with the <em>flown</em> version of itself, which does leak. A controller aiming each
@@ -74,8 +74,7 @@ import net.minecraft.world.phys.Vec3;
  * <p>The reading is low-gain: a degree of pitch moves the next tick's flight path angle by
  * something like a fifteenth of a degree. That makes it forgiving to fly and delicate to
  * <em>display</em>, since it multiplies any wobble in the measured velocity by about fifteen
- * on the way to the answer — which is why the caller passes in a velocity averaged over
- * several ticks rather than the last one.
+ * on the way to the answer — the caller uses the latest sampled velocity so the reading adds no smoothing lag.
  */
 public final class FlightPathHold {
 	/**
@@ -121,8 +120,7 @@ public final class FlightPathHold {
 	 * The nose-down pitch that holds this velocity's flight path angle, in degrees in
 	 * Minecraft's convention, or {@code NaN} when no pitch does.
 	 *
-	 * @param velocity blocks per tick; the caller is expected to pass a smoothed velocity, for
-	 *                 the reason given in the class notes on gain
+	 * @param velocity latest sampled velocity in blocks per tick
 	 */
 	public static float search(Vec3 velocity, float yaw, double gravity) {
 		if (velocity.lengthSqr() < MIN_SPEED_SQR) {

@@ -1,13 +1,10 @@
 package jealoustone.elytravario;
 
 /**
- * Mutable in-memory settings. Nothing is persisted to disk yet, so these reset each launch.
+ * Runtime settings, loaded and saved by the Mod Menu configuration screen.
  */
 public final class VarioConfig {
 	public static boolean enabled = true;
-	public static boolean onlyWhileGliding = false;
-	public static boolean showChart = true;
-	public static boolean showLadder = true;
 
 	/**
 	 * The delta-TE heatmap behind the chart: for every velocity the chart can show, the most
@@ -133,8 +130,6 @@ public final class VarioConfig {
 	 */
 	public static int panelWidth = 132;
 
-	/** Ticks to average the energy rate over. Raw per-tick deltas are far too noisy to read. */
-	public static int varioWindow = 10;
 
 	/**
 	 * Chart size, in pixels per block/tick. Both the width and the height are derived from
@@ -287,15 +282,6 @@ public final class VarioConfig {
 	 */
 	public static int ladderHorizonExtra = 10;
 
-	/**
-	 * Ticks to average velocity over for everything that reads the direction of travel: the
-	 * flight path marker, the velocity bug and the hold bug. One tick of velocity is noisy
-	 * enough to make the marker visibly jitter.
-	 *
-	 * <p>The hold bug needs it most. Its answer moves about fifteen degrees of pitch for every
-	 * degree the flight path angle moves, so it magnifies exactly what this window suppresses.
-	 */
-	public static int flightPathWindow = 4;
 
 	/**
 	 * Ladder colors, as ARGB, ordered by tier. All are deliberately translucent: the ladder
@@ -394,6 +380,64 @@ public final class VarioConfig {
 	public static int lookaheadPitchColor = 0xE0F7A900;
 	public static int holdPitchColor = 0xE000B533;
 	public static int velocityPitchColor = 0xD0B4BAC0;
+
+	// Per-instrument visibility: 0 = always, 1 = gliding, 2 = hidden.
+	public static int ladderVisibility = 0;
+	public static int markerVisibility = 0;
+	public static int chartVisibility = 0;
+	public static int statsVisibility = 0;
+	public static boolean showLadderLabels = true;
+	public static boolean showFineTicks = true;
+	public static double ladderOpacity = 1.0;
+	public static int flightPathColor = 0xFF55CCFF;
+	public static int statsAnchor = 0;
+
+	/**
+	 * The graph's anchor. Zero to four are the five screen anchors the stats panel also uses;
+	 * five to eight are {@code ATTACH_LEFT}, {@code ATTACH_RIGHT}, {@code ATTACH_ABOVE} and
+	 * {@link jealoustone.elytravario.hud.HudPosition#ATTACH_BELOW}, which hang the graph off
+	 * that side of the panel. Below is the default, and being attached is why {@code chartX}
+	 * and {@code chartY} are zero.
+	 *
+	 * <p>Attaching is not a ninth place to put the graph so much as a statement that the two
+	 * instruments are one block: the pair gets anchored and clamped together, so the anchor and
+	 * its offsets move both. A side facing a screen edge pushes the panel in from that edge
+	 * rather than sending the graph off it. See {@link jealoustone.elytravario.hud.HudLayout}.
+	 */
+	public static int chartAnchor = 8;
+
+	/**
+	 * The graph's offsets: measured inward from its anchor when it has one of its own, and a
+	 * nudge away from the panel when it is attached. Zero in both cases, since an attachment
+	 * that needs a hand-tuned offset to look attached is not one.
+	 */
+	public static int chartX = 0;
+	public static int chartY = 0;
+	public static boolean showTrail = true;
+	public static int trailColor = 0xFF33CCAA;
+	public static boolean showHorizontalCursor = true;
+	public static boolean showForwardCursor = true;
+	public static boolean showGrid = true;
+	public static boolean showAxisLabels = true;
+	public static boolean showPanelBorder = true;
+	public static double panelOpacity = 176.0 / 255.0;
+	public static double panelScale = 1.0;
+	public static int energyReference = 2;
+	public static int positiveColor = 0xFF66DD77;
+	public static int negativeColor = 0xFFE2685F;
+	public static boolean showPitch = true;
+	public static boolean showHorizontalSpeed = true;
+	public static boolean showTotalSpeed = true;
+	public static boolean showVerticalSpeed = true;
+	public static boolean showGlideRatio = true;
+	public static boolean showKineticEnergy = true;
+	public static boolean showPotentialEnergy = true;
+	public static boolean showTotalEnergy = true;
+	public static boolean showCycleGain = true;
+
+	public static boolean visible(int mode, boolean gliding) {
+		return enabled && mode != 2 && (mode != 1 || gliding);
+	}
 
 	private VarioConfig() {
 	}

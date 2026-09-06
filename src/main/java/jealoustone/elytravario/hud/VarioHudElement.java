@@ -36,12 +36,9 @@ public final class VarioHudElement implements HudElement {
 	private static final int LABEL = 0xFF9AA0A6;
 	private static final int VALUE = 0xFFFFFFFF;
 	private static final int MUTED = 0xFF6A7076;
-	private static final int RISING = 0xFF66DD77;
-	private static final int SINKING = 0xFFE2685F;
 
 	private static final int GRID = 0x26FFFFFF;
 	private static final int AXIS = 0x66FFFFFF;
-	private static final int TRAIL = 0x33CCAA;
 
 	private static final int LINE = 10;
 	private static final int PAD = 4;
@@ -59,12 +56,6 @@ public final class VarioHudElement implements HudElement {
 	 */
 	private static final String DELTA_COLUMN = "-000.0 b";
 	private static final String ABSOLUTE_COLUMN = "-0000.0";
-
-	/** The heatmap's ramp, expanded from the three configured colors; see {@link #palette()}. */
-	private static int[] palette;
-	private static int paletteZero;
-	private static int paletteGain;
-	private static int paletteLoss;
 
 	private final FlightRecorder recorder;
 
@@ -88,38 +79,83 @@ public final class VarioHudElement implements HudElement {
 
 		Sample sample = recorder.latest();
 
-		if (sample == null || (VarioConfig.onlyWhileGliding && !sample.gliding())) {
+		if (sample == null) {
 			return;
 		}
 
-		int bottom = drawPanel(graphics, minecraft.font, sample, VarioConfig.originX, VarioConfig.originY);
+		boolean stats = VarioConfig.visible(VarioConfig.statsVisibility, sample.gliding()) && panelRows() > 0;
+		boolean chart = VarioConfig.visible(VarioConfig.chartVisibility, sample.gliding());
+		boolean attached = chart && HudPosition.attaches(VarioConfig.chartAnchor);
+		int panelHeight = (int) Math.ceil(panelHeight() * VarioConfig.panelScale);
+		int panelWidth = (int) Math.ceil(VarioConfig.panelWidth * VarioConfig.panelScale);
+		int screenWidth = graphics.guiWidth();
+		int screenHeight = graphics.guiHeight();
 
-		if (VarioConfig.showChart) {
-			drawChart(graphics, minecraft.font, sample, VarioConfig.originX, bottom + PAD);
+		HudPosition panel;
+		HudPosition position;
+		if (attached) {
+			// A hidden panel becomes a zero-sized box with no gap, which leaves the chart
+			// standing exactly where the pair would have started rather than moving it.
+			HudLayout layout = HudLayout.attached(VarioConfig.statsAnchor, VarioConfig.originX,
+					VarioConfig.originY, VarioConfig.chartAnchor,
+					stats ? panelWidth : 0, stats ? panelHeight : 0, chartWidth(), chartHeight(),
+					stats ? PAD : 0, screenWidth, screenHeight);
+			panel = layout.panel();
+			position = new HudPosition(layout.chart().x() + VarioConfig.chartX,
+					layout.chart().y() + VarioConfig.chartY);
+		} else {
+			panel = HudPosition.resolve(VarioConfig.statsAnchor, VarioConfig.originX,
+					VarioConfig.originY, panelWidth, panelHeight, screenWidth, screenHeight);
+			position = HudPosition.resolve(VarioConfig.chartAnchor, VarioConfig.chartX,
+					VarioConfig.chartY, chartWidth(), chartHeight(), screenWidth, screenHeight);
 		}
+
+		if (stats) {
+			graphics.pose().pushMatrix();
+			graphics.pose().translate(panel.x(), panel.y());
+			graphics.pose().scale((float) VarioConfig.panelScale, (float) VarioConfig.panelScale);
+			drawPanel(graphics, minecraft.font, sample, 0, 0);
+			graphics.pose().popMatrix();
+		}
+		if (chart) {
+			drawChart(graphics, minecraft.font, sample, position.x(), position.y());
+		}
+	}
+
+	private static int speedRows() {
+		return (VarioConfig.showPitch ? 1 : 0) + (VarioConfig.showHorizontalSpeed ? 1 : 0)
+				+ (VarioConfig.showTotalSpeed ? 1 : 0) + (VarioConfig.showVerticalSpeed ? 1 : 0)
+				+ (VarioConfig.showGlideRatio ? 1 : 0) + (VarioConfig.showAngleOfAttack ? 1 : 0);
+	}
+
+	private static int energyRows() {
+		return (VarioConfig.showKineticEnergy ? 1 : 0) + (VarioConfig.showPotentialEnergy ? 1 : 0)
+				+ (VarioConfig.showTotalEnergy ? 1 : 0) + (VarioConfig.showCycleGain ? 1 : 0);
+	}
+
+	private static int panelRows() { return speedRows() + energyRows(); }
+
+	private static int panelHeight() {
+		return (panelRows() + (speedRows() > 0 && energyRows() > 0 ? 1 : 0)) * LINE + PAD * 2;
 	}
 
 	/** Returns the y coordinate just past the bottom of the panel. */
 	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
 		int width = VarioConfig.panelWidth;
-		// Counted rather than fixed, since the angle of attack row is optional. The extra
-		// line is the separator between the speed and energy groups.
-		int readouts = VarioConfig.showAngleOfAttack ? 11 : 10;
-		int height = (readouts + 1) * LINE + PAD * 2;
-
-		graphics.fill(x, y, x + width, y + height, PANEL_BG);
-		graphics.outline(x, y, width, height, BORDER);
+		int height = panelHeight();
+		int background = ((int) Math.round(VarioConfig.panelOpacity * 255) << 24) | (PANEL_BG & 0xFFFFFF);
+		if (VarioConfig.panelOpacity > 0) graphics.fill(x, y, x + width, y + height, background);
+		if (VarioConfig.showPanelBorder) graphics.outline(x, y, width, height, BORDER);
 
 		int row = y + PAD;
-		double energyRate = recorder.energyRate(VarioConfig.varioWindow);
 		double glide = sample.glideRatio();
 
-		row = row(graphics, font, x, row, "PITCH", fmt("%.1f°", sample.pitch()), VALUE);
-		row = row(graphics, font, x, row, "SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
-		row = row(graphics, font, x, row, "SPEED XYZ", speed(sample.speed()), VALUE);
-		// Colored on the displayed blocks/second value, so the deadband matches TE RATE's.
-		row = row(graphics, font, x, row, "SPEED Y", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
-		row = row(graphics, font, x, row, "GLIDE",
+		if (VarioConfig.showPitch) row = row(graphics, font, x, row, "PITCH", fmt("%.1f°", sample.pitch()), VALUE);
+		if (VarioConfig.showHorizontalSpeed) row = row(graphics, font, x, row, "SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
+		if (VarioConfig.showTotalSpeed) row = row(graphics, font, x, row, "SPEED XYZ", speed(sample.speed()), VALUE);
+		// Color on displayed blocks/second, with a small neutral deadband.
+		if (VarioConfig.showVerticalSpeed) row = row(graphics, font, x, row, "SPEED Y", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
+		if (VarioConfig.showGlideRatio) row = row(graphics, font, x, row, "GLIDE",
 				Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
 
 		if (VarioConfig.showAngleOfAttack) {
@@ -130,18 +166,19 @@ public final class VarioHudElement implements HudElement {
 					Double.isFinite(aoa) ? fmt("%+.1f\u00b0", aoa) : "--", VALUE);
 		}
 
-		graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);
-		row += LINE;
+		if (speedRows() > 0 && energyRows() > 0) {
+			graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);
+			row += LINE;
+		}
 
-		row = row(graphics, font, x, row, "KE", fmt("%.1f b", sample.kineticHeight()), VALUE);
-		row = sinceApexRow(graphics, font, x, row, "PE", sample.potentialHeight(),
+		if (VarioConfig.showKineticEnergy) row = row(graphics, font, x, row, "KE", fmt("%.1f b", sample.kineticHeight()), VALUE);
+		if (VarioConfig.showPotentialEnergy) row = sinceApexRow(graphics, font, x, row, "PE", sample.potentialHeight(),
 				recorder.peakPotentialHeight());
-		row = sinceApexRow(graphics, font, x, row, "TE", sample.totalHeight(),
+		if (VarioConfig.showTotalEnergy) row = sinceApexRow(graphics, font, x, row, "TE", sample.totalHeight(),
 				recorder.peakTotalHeight());
-		row = row(graphics, font, x, row, "TE RATE", fmt("%+.2f b/s", energyRate), rateColor(energyRate));
 
 		double gain = recorder.lastCycleGain();
-		row = row(graphics, font, x, row, "GAIN",
+		if (VarioConfig.showCycleGain) row = row(graphics, font, x, row, "GAIN",
 				Double.isFinite(gain) ? fmt("%+.1f b", gain) : "--", rateColor(gain));
 
 		return y + height;
@@ -171,18 +208,18 @@ public final class VarioHudElement implements HudElement {
 		// Gridlines every half block/tick, with the zero axes picked out more brightly.
 		// Drawn with fill rather than the line helpers, whose bounds are inclusive on one
 		// end and exclusive on the other and so leave the grid a pixel short.
-		for (double v = Math.ceil(VarioConfig.chartMinVxz * 2.0) / 2.0; v <= VarioConfig.chartMaxVxz; v += 0.5) {
+		if (VarioConfig.showGrid) for (double v = Math.ceil(VarioConfig.chartMinVxz * 2.0) / 2.0; v <= VarioConfig.chartMaxVxz; v += 0.5) {
 			int px = chartX(x, v);
 			graphics.fill(px, y, px + 1, y + height, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
 		}
 
-		for (double v = Math.ceil(VarioConfig.chartMinVy * 2.0) / 2.0; v <= VarioConfig.chartMaxVy; v += 0.5) {
+		if (VarioConfig.showGrid) for (double v = Math.ceil(VarioConfig.chartMinVy * 2.0) / 2.0; v <= VarioConfig.chartMaxVy; v += 0.5) {
 			int py = chartY(y, v);
 			graphics.fill(x, py, x + width, py + 1, Math.abs(v) < 1.0e-9 ? AXIS : GRID);
 		}
 
 		// Trail, oldest first so the newest samples paint over the older ones.
-		int trail = Math.min(recorder.size(), VarioConfig.chartTrailTicks);
+		int trail = VarioConfig.showTrail ? Math.min(recorder.size(), VarioConfig.chartTrailTicks) : 0;
 
 		for (int i = trail - 1; i >= 1; i--) {
 			Sample past = recorder.ago(i);
@@ -194,17 +231,17 @@ public final class VarioHudElement implements HudElement {
 			int alpha = 20 + (int) ((1.0f - (float) i / trail) * 190.0f);
 			int px = chartX(x, past.horizontalSpeed());
 			int py = chartY(y, past.vy());
-			graphics.fill(px, py, px + 1, py + 1, (alpha << 24) | TRAIL);
+			graphics.fill(px, py, px + 1, py + 1, ((alpha * (VarioConfig.trailColor >>> 24) / 255) << 24) | (VarioConfig.trailColor & 0xFFFFFF));
 		}
 
 		// Both cursors share a row, since vertical speed is the same either way; only the
 		// horizontal coordinate differs. Whichever is drawn second wins where they overlap,
 		// which is most of the time in straight flight, when the two speeds are equal.
 		int py = chartY(y, sample.vy());
-		drawCursor(graphics, chartX(x, sample.forwardSpeed()), py, VarioConfig.cursorForwardColor);
-		drawCursor(graphics, chartX(x, sample.horizontalSpeed()), py, VarioConfig.cursorXzColor);
+		if (VarioConfig.showForwardCursor) drawCursor(graphics, chartX(x, sample.forwardSpeed()), py, VarioConfig.cursorForwardColor);
+		if (VarioConfig.showHorizontalCursor) drawCursor(graphics, chartX(x, sample.horizontalSpeed()), py, VarioConfig.cursorXzColor);
 
-		drawAxisLabels(graphics, font, x, y, width, height);
+		if (VarioConfig.showAxisLabels) drawAxisLabels(graphics, font, x, y, width, height);
 	}
 
 	/**
@@ -239,6 +276,14 @@ public final class VarioHudElement implements HudElement {
 	 */
 	private int sinceApexRow(GuiGraphicsExtractor graphics, Font font, int x, int y, String label,
 			double current, double peak) {
+		if (VarioConfig.energyReference == 0) {
+			return row(graphics, font, x, y, label, fmt("%.1f b", current), VALUE);
+		}
+		if (VarioConfig.energyReference == 1) {
+			return row(graphics, font, x, y, label,
+					Double.isFinite(peak) ? fmt("%+.1f b", current - peak) : "--",
+					Double.isFinite(peak) ? rateColor(current - peak) : VALUE);
+		}
 		graphics.text(font, label, x + PAD, y, LABEL, true);
 
 		boolean known = Double.isFinite(peak);
@@ -274,11 +319,19 @@ public final class VarioHudElement implements HudElement {
 		String maxVxz = fmt("%.0f", VarioConfig.chartMaxVxz * TPS);
 		graphics.text(font, maxVxz, (x + width) * 2 - font.width(maxVxz) - 4, (y + height) * 2 - 12, MUTED, false);
 		graphics.text(font, fmt("%+.0f", VarioConfig.chartMaxVy * TPS), x * 2 + 4, y * 2 + 4, MUTED, false);
-		graphics.text(font, fmt("%+.0f", VarioConfig.chartMinVy * TPS), x * 2 + 4, (y + height) * 2 - 12, MUTED, false);
+		graphics.text(font, fmt("%+.0f", VarioConfig.chartMinVy * TPS), x * 2 + 4, (y + height) * 2 - 24, MUTED, false);
 
-		// The horizontal origin no longer sits on the chart's edge, so name it.
+		String minVxz = fmt("%.0f", VarioConfig.chartMinVxz * TPS);
+		graphics.text(font, minVxz, x * 2 + 4, (y + height) * 2 - 12, MUTED, false);
+
+		// Label zero only when it is inside the domain and clear of the endpoint labels.
 		String origin = "0";
-		graphics.text(font, origin, chartX(x, 0.0) * 2 - font.width(origin) / 2, (y + height) * 2 - 12, MUTED, false);
+		int zero = chartX(x, 0.0) * 2;
+		if (VarioConfig.chartMinVxz < 0 && VarioConfig.chartMaxVxz > 0
+				&& zero > x * 2 + font.width(minVxz) + 12
+				&& zero < (x + width) * 2 - font.width(maxVxz) - 12) {
+			graphics.text(font, origin, zero - font.width(origin) / 2, (y + height) * 2 - 12, MUTED, false);
+		}
 
 		pose.popMatrix();
 	}
@@ -307,10 +360,10 @@ public final class VarioHudElement implements HudElement {
 
 	private static int rateColor(double rate) {
 		if (rate > 0.05) {
-			return RISING;
+			return VarioConfig.positiveColor;
 		}
 
-		return rate < -0.05 ? SINKING : VALUE;
+		return rate < -0.05 ? VarioConfig.negativeColor : VALUE;
 	}
 
 	/** Always formats with {@link Locale#ROOT}, so decimal separators do not follow the system locale. */

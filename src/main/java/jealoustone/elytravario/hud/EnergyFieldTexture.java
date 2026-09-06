@@ -67,7 +67,7 @@ final class EnergyFieldTexture {
 		if (texture == null || texture.getPixels().getWidth() != field.width()
 				|| texture.getPixels().getHeight() != field.height()) {
 			// Closing frees the native buffer and the GPU texture. Only reached when the
-			// chart's size changes, which needs a recompile, so at most once a session.
+			// chart's size changes after applying configuration.
 			if (texture != null) {
 				texture.close();
 			}
