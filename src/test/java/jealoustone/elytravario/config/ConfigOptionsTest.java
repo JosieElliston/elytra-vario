@@ -10,20 +10,33 @@ import jealoustone.elytravario.VarioConfig;
 import org.junit.jupiter.api.Test;
 
 class ConfigOptionsTest {
-	@Test void speedometerHasOneSubpagePerBar() {
-		assertEquals(List.of("speedoTotal", "speedoHorizontal", "speedoVertical"),
+	@Test void eachSpeedometerHasOneSubpagePerReading() {
+		assertEquals(List.of("barSpeedoTotal", "barSpeedoHorizontal", "barSpeedoVertical"),
 				ConfigOptions.groups(5));
+		assertEquals(List.of("dialSpeedoTotal", "dialSpeedoHorizontal", "dialSpeedoVertical"),
+				ConfigOptions.groups(6));
 
 		Map<String, String> groups = ConfigOptions.all().stream()
 				.filter(option -> option.page() == 5 && option.group() != null)
 				.collect(Collectors.toMap(ConfigOptions.Option::key, ConfigOptions.Option::group));
 		assertEquals(Map.of(
-				"showSpeedoTotal", "speedoTotal",
-				"speedoTotalColor", "speedoTotal",
-				"showSpeedoHorizontal", "speedoHorizontal",
-				"speedoHorizontalColor", "speedoHorizontal",
-				"showSpeedoVertical", "speedoVertical",
-				"speedoVerticalColor", "speedoVertical"), groups);
+				"showBarSpeedoTotal", "barSpeedoTotal",
+				"barSpeedoTotalColor", "barSpeedoTotal",
+				"showBarSpeedoHorizontal", "barSpeedoHorizontal",
+				"barSpeedoHorizontalColor", "barSpeedoHorizontal",
+				"showBarSpeedoVertical", "barSpeedoVertical",
+				"barSpeedoVerticalColor", "barSpeedoVertical"), groups);
+
+		groups = ConfigOptions.all().stream()
+				.filter(option -> option.page() == 6 && option.group() != null)
+				.collect(Collectors.toMap(ConfigOptions.Option::key, ConfigOptions.Option::group));
+		assertEquals(Map.of(
+				"showDialSpeedoTotal", "dialSpeedoTotal",
+				"dialSpeedoTotalColor", "dialSpeedoTotal",
+				"showDialSpeedoHorizontal", "dialSpeedoHorizontal",
+				"dialSpeedoHorizontalColor", "dialSpeedoHorizontal",
+				"showDialSpeedoVertical", "dialSpeedoVertical",
+				"dialSpeedoVerticalColor", "dialSpeedoVertical"), groups);
 	}
 
 	/** Editing applies as it is typed, so half-typed input must leave the last good values in

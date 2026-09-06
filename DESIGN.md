@@ -202,7 +202,11 @@ heatmap would have to be rebuilt as the domain moved, which is a third of a seco
 time and 30ms after; and a map that moves under a cursor that is trying to stay still is a
 different instrument from a fixed one, quite possibly a worse one.
 
-## The speedometer
+## The speedometers
+
+Both speedometers deliberately present the same three magnitudes in different visual forms.
+
+### Bar speedometer
 
 **It says nothing new, deliberately.** Total, horizontal, and vertical speed are already three
 rows on the readout panel. The bars trade exact digits for shapes and aligned heights that can
@@ -222,6 +226,17 @@ remain legible over a filled bar without competing with it.
 **Bars peg rather than leave**, unlike ladder markers. A speed above full scale is still useful
 as a limit being exceeded, so its bar reaches the top and turns gray to say its height is no
 longer an exact reading.
+
+### Dial speedometer
+
+The semicircular dial trades aligned heights for angles that can be caught in peripheral
+vision. Total, horizontal, and vertical speed use longest, middle, and shortest needles so
+coincident readings remain distinguishable even when color does not. Vertical speed is again
+`|vy|`, and a reading beyond full scale pegs at the right stop in gray.
+
+Each needle's acceleration arrow begins at its tip and follows a concentric arc to the speed
+projected one second ahead. The three radii keep the arrows separate just as the needle lengths
+do, so they can use their matching needle colors instead of the bar chart's white overlay color.
 
 ## The pitch ladder
 
@@ -537,11 +552,12 @@ still there and still correct.
 
 ## Toggle keys
 
-Each of the five instruments — pitch ladder, markers, velocity graph, flight stats, speedometer
-— has a key that switches it off and back on, all unbound by default. Not the individual
-markers: those are five settings behind one switch on one page, and the ladder's bugs are read
-as one overlay, so five more binds would buy nothing that switching the whole set off does not.
-Unbound by default because five keys is a lot to take off a keyboard that already has `V` on it
+Each of the six instruments — pitch ladder, markers, velocity graph, flight stats, bar
+speedometer, and dial speedometer — has a key that switches it off and back on, all unbound by
+default. Not the individual
+markers: those are seven settings behind one switch on one page, and the ladder's bugs are read
+as one overlay, so seven more binds would buy nothing that switching the whole set off does not.
+Unbound by default because six keys is a lot to take off a keyboard that already has `V` on it
 for an action most flights never need, and because the settings screen puts the binding control
 directly beneath the pair of switches it flips, so anyone who wants one finds it there.
 
@@ -641,8 +657,9 @@ Needs JDK 25.
 
 `V` opens settings.
 
-Open Mod Menu's configuration button for Elytra Vario. Five pages separate Global, Pitch Ladder,
-Markers, Velocity Graph, and Flight Stats. Global holds the HUD master switch; each instrument’s
+Open Mod Menu's configuration button for Elytra Vario. Seven pages separate Global, Pitch Ladder,
+Markers, Velocity Graph, Flight Stats, Bar Speedometer, and Dial Speedometer. Global holds the
+HUD master switch; each instrument’s
 visibility control stays on its own page. Marker names identify the displayed quantities;
 tooltips define their calculations and describe possible uses. Edits take effect in the HUD as
 you make them and save themselves to `config/elytra-vario.json`, so there is nothing to confirm

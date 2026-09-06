@@ -31,10 +31,10 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
-/** Six scrollable pages whose edits take effect in the HUD as they are made and save themselves.
+/** Seven scrollable pages whose edits take effect in the HUD as they are made and save themselves.
  * A page may divide into subpages, chosen by a dropdown under the switches the whole page shares. */
 public final class VarioConfigScreen extends Screen {
-	private static final int PAGE_COUNT = 6;
+	private static final int PAGE_COUNT = 7;
 	/** The page whose switch and key are the whole mod's rather than one instrument's. */
 	private static final int GLOBAL_PAGE = 0;
 	private final Screen parent;
@@ -93,7 +93,7 @@ public final class VarioConfigScreen extends Screen {
 		panelLeft = left;
 		panelWidth = span;
 		panelCenter = left + span / 2;
-		int columns = span < 400 ? 2 : PAGE_COUNT;
+		int columns = span < 300 ? 2 : span < 400 ? 3 : PAGE_COUNT;
 		int tabWidth = span / columns;
 		for (int i = 0; i < PAGE_COUNT; i++) {
 			final int target = i;
@@ -436,7 +436,8 @@ public final class VarioConfigScreen extends Screen {
 	private static boolean isCoordinate(String key) {
 		return key.equals("chartX") || key.equals("chartY")
 				|| key.equals("statsX") || key.equals("statsY")
-				|| key.equals("speedoX") || key.equals("speedoY");
+				|| key.equals("barSpeedoX") || key.equals("barSpeedoY")
+				|| key.equals("dialSpeedoX") || key.equals("dialSpeedoY");
 	}
 
 	/** Advanced rows hide; rows belonging to another subpage are not part of this page's view. */

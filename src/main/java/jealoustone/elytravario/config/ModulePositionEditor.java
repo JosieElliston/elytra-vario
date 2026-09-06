@@ -7,7 +7,8 @@ import java.util.Map;
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.hud.HudPosition;
-import jealoustone.elytravario.hud.SpeedometerChart;
+import jealoustone.elytravario.hud.BarSpeedometerChart;
+import jealoustone.elytravario.hud.DialSpeedometer;
 import jealoustone.elytravario.hud.VarioHudElement;
 
 /** Geometry and coordinate changes for the in-world module position editor. */
@@ -15,7 +16,8 @@ final class ModulePositionEditor {
 	enum Module {
 		CHART(3, "chartX", "chartY"),
 		STATS(4, "statsX", "statsY"),
-		SPEEDOMETER(5, "speedoX", "speedoY");
+		BAR_SPEEDOMETER(5, "barSpeedoX", "barSpeedoY"),
+		DIAL_SPEEDOMETER(6, "dialSpeedoX", "dialSpeedoY");
 
 		final int page;
 		final String xKey;
@@ -60,13 +62,21 @@ final class ModulePositionEditor {
 		if (chart) result.add(new Bounds(Module.CHART, chartPosition.x(), chartPosition.y(),
 				chartWidth, chartHeight));
 
-		if (VarioInstrument.SPEEDOMETER.visible(gliding)) {
-			SpeedometerChart speedometerChart = new SpeedometerChart(VarioConfig.speedoHeight,
-					VarioConfig.speedoMaxSpeed);
-			HudPosition position = HudPosition.clamp(VarioConfig.speedoX, VarioConfig.speedoY,
+		if (VarioInstrument.BAR_SPEEDOMETER.visible(gliding)) {
+			BarSpeedometerChart speedometerChart = new BarSpeedometerChart(VarioConfig.barSpeedoHeight,
+					VarioConfig.barSpeedoMaxSpeed);
+			HudPosition position = HudPosition.clamp(VarioConfig.barSpeedoX, VarioConfig.barSpeedoY,
 					speedometerChart.width(), speedometerChart.height(), screenWidth, screenHeight);
-			result.add(new Bounds(Module.SPEEDOMETER, position.x(), position.y(),
+			result.add(new Bounds(Module.BAR_SPEEDOMETER, position.x(), position.y(),
 					speedometerChart.width(), speedometerChart.height()));
+		}
+		if (VarioInstrument.DIAL_SPEEDOMETER.visible(gliding)) {
+			DialSpeedometer dial = new DialSpeedometer(VarioConfig.dialSpeedoRadius,
+					VarioConfig.dialSpeedoMaxSpeed);
+			HudPosition position = HudPosition.clamp(VarioConfig.dialSpeedoX, VarioConfig.dialSpeedoY,
+					dial.width(), dial.height(), screenWidth, screenHeight);
+			result.add(new Bounds(Module.DIAL_SPEEDOMETER, position.x(), position.y(),
+					dial.width(), dial.height()));
 		}
 		return result;
 	}

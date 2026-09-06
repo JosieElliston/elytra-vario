@@ -424,39 +424,60 @@ public final class VarioConfig {
 	public static boolean showTotalEnergy = true;
 	public static boolean showCycleGain = true;
 
-	/** The speedometer: vertical bars for |Y|, XZ, and XYZ speed on one shared scale. */
-	public static boolean showSpeedo = true;
-	public static boolean speedoGlidingOnly = false;
-	public static int speedoX = 144;
-	public static int speedoY = 4;
+	/** The bar speedometer: vertical bars for |Y|, XZ, and XYZ speed on one shared scale. */
+	public static boolean showBarSpeedo = true;
+	public static boolean barSpeedoGlidingOnly = false;
+	public static int barSpeedoX = 144;
+	public static int barSpeedoY = 4;
 
 	/** Plot height in scaled GUI pixels and the top of its scale in blocks/tick. */
-	public static int speedoHeight = 96;
-	public static double speedoMaxSpeed = 4.0;
+	public static int barSpeedoHeight = 96;
+	public static double barSpeedoMaxSpeed = 4.0;
 
 	/**
 	 * Tick spacing in blocks/tick. Major gridlines and labels are twenty blocks/second apart by
 	 * default.
 	 */
-	public static double speedoMajorStep = 1.0;
+	public static double barSpeedoMajorStep = 1.0;
 
 	/** The three bars. Vertical speed remains a magnitude so all three share one scale. */
-	public static boolean showSpeedoTotal = true;
-	public static boolean showSpeedoHorizontal = true;
-	public static boolean showSpeedoVertical = true;
-	public static int speedoTotalColor = 0xFFE0574B;
-	public static int speedoHorizontalColor = 0xFF57C46A;
-	public static int speedoVerticalColor = 0xFF4D8CFF;
-	public static boolean showSpeedoAcceleration = true;
+	public static boolean showBarSpeedoTotal = true;
+	public static boolean showBarSpeedoHorizontal = true;
+	public static boolean showBarSpeedoVertical = true;
+	public static int barSpeedoTotalColor = 0xFFE0574B;
+	public static int barSpeedoHorizontalColor = 0xFF57C46A;
+	public static int barSpeedoVerticalColor = 0xFF4D8CFF;
+	public static boolean showBarSpeedoAcceleration = true;
 
 	/** Color of a bar whose speed is past the top of the scale. */
-	public static int speedoPeggedColor = 0xFF8C9298;
+	public static int barSpeedoPeggedColor = 0xFF8C9298;
 
-	public static boolean showSpeedoSoftMaxMarker = true;
-	public static boolean showSpeedoTerminalMarker = false;
-	public static boolean showSpeedoLabels = true;
-	public static boolean showSpeedoBorder = true;
-	public static double speedoOpacity = 0.25;
+	public static boolean showBarSpeedoMaxHorizontalSpeedMarkers = true;
+	public static boolean showBarSpeedoTerminalVelocityMarkers = false;
+	public static boolean showBarSpeedoLabels = true;
+	public static boolean showBarSpeedoBorder = true;
+	public static double barSpeedoOpacity = 0.25;
+
+	/** The dial speedometer: three needles on a shared semicircular speed scale. */
+	public static boolean showDialSpeedo = true;
+	public static boolean dialSpeedoGlidingOnly = false;
+	public static int dialSpeedoX = 240;
+	public static int dialSpeedoY = 4;
+	public static int dialSpeedoRadius = 64;
+	public static double dialSpeedoMaxSpeed = 4.0;
+	public static double dialSpeedoMajorStep = 1.0;
+	public static double dialSpeedoMinorStep = 0.25;
+	public static boolean showDialSpeedoTotal = true;
+	public static boolean showDialSpeedoHorizontal = true;
+	public static boolean showDialSpeedoVertical = true;
+	public static int dialSpeedoTotalColor = 0xFFE0574B;
+	public static int dialSpeedoHorizontalColor = 0xFF57C46A;
+	public static int dialSpeedoVerticalColor = 0xFF4D8CFF;
+	public static boolean showDialSpeedoAcceleration = true;
+	public static int dialSpeedoPeggedColor = 0xFF8C9298;
+	public static boolean showDialSpeedoLabels = true;
+	public static boolean showDialSpeedoBorder = true;
+	public static double dialSpeedoOpacity = 0.45;
 
 	public static boolean visible(boolean shown, boolean glidingOnly, boolean gliding) {
 		return enabled && shown && (!glidingOnly || gliding);

@@ -11,6 +11,21 @@ and key-registration APIs, not behavior.
 
 ## [Unreleased]
 
+### Added
+
+- Restored the semicircular three-needle dial as a separate Dial Speedometer, with its own
+  settings page, toggle key, position, scale, colors, and appearance controls.
+- Added matching-color concentric acceleration arrows at the dial needle tips. Each projects
+  its speed's measured acceleration one second forward around the dial.
+
+### Changed
+
+- Renamed the three-bar speed chart to Bar Speedometer throughout the HUD settings and code.
+- Renamed the bar speedometer's key-mapping ID as well; existing bindings to the former generic
+  speedometer ID must be reassigned.
+- Clarified the speed-bar reference-marker setting names and corrected the README's marker
+  count from five to seven.
+
 ## [1.3.0+mc1.21.11] - 2026-09-06
 
 ### Added

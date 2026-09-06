@@ -28,8 +28,7 @@ public final class ConfigStore {
 			"ladderVisibility", new Split("showLadder", "ladderGlidingOnly"),
 			"markerVisibility", new Split("showMarkers", "markersGlidingOnly"),
 			"chartVisibility", new Split("showChart", "chartGlidingOnly"),
-			"statsVisibility", new Split("showStats", "statsGlidingOnly"),
-			"speedoVisibility", new Split("showSpeedo", "speedoGlidingOnly"));
+			"statsVisibility", new Split("showStats", "statsGlidingOnly"));
 	/** Flight Stats used to call its coordinates an origin. */
 	private static final Map<String, String> RETIRED_POSITIONS = Map.of(
 			"originX", "statsX",
@@ -53,7 +52,7 @@ public final class ConfigStore {
 	public static Map<String, String> decode(String json) {
 		JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 		Map<String, String> values = ConfigOptions.defaults();
-		boolean oldSpeedometer = root.has("speedoRadius") && !root.has("speedoHeight");
+		boolean oldDial = root.has("speedoRadius") && !root.has("speedoHeight");
 		for (var entry : RETIRED.entrySet()) {
 			// A file holding both the old key and the new ones was written by a newer build, so
 			// what it says now wins over what it used to say.
@@ -62,23 +61,44 @@ public final class ConfigStore {
 			values.put(entry.getValue().show(), Boolean.toString(!mode.equals("2")));
 			values.put(entry.getValue().glidingOnly(), Boolean.toString(mode.equals("1")));
 		}
+		if (root.has("speedoVisibility")) {
+			Split speedometer = oldDial
+					? new Split("showDialSpeedo", "dialSpeedoGlidingOnly")
+					: new Split("showBarSpeedo", "barSpeedoGlidingOnly");
+			if (!root.has(speedometer.show())) {
+				String mode = root.get("speedoVisibility").getAsString();
+				values.put(speedometer.show(), Boolean.toString(!mode.equals("2")));
+				values.put(speedometer.glidingOnly(), Boolean.toString(mode.equals("1")));
+			}
+		}
 		for (var entry : RETIRED_POSITIONS.entrySet()) {
 			if (root.has(entry.getKey()) && !root.has(entry.getValue())) {
 				values.put(entry.getValue(), root.get(entry.getKey()).getAsString());
 			}
 		}
 		for (var option : ConfigOptions.all()) {
-			// The bar chart replaced the dial's radius with its own taller default. If the old
-			// dial also had its stock background, take the new lighter default with it; preserve
-			// any opacity the player actually customized.
-			if (oldSpeedometer && option.key().equals("speedoOpacity")
-					&& root.has(option.key()) && root.get(option.key()).getAsDouble() == 45.0) {
-				continue;
+			String legacy = oldDial ? legacyDialKey(option.key()) : legacyBarKey(option.key());
+			if (legacy != null && root.has(legacy)) {
+				values.put(option.key(), root.get(legacy).getAsString());
 			}
 			if (root.has(option.key())) values.put(option.key(), root.get(option.key()).getAsString());
 		}
 		if (ConfigOptions.error(values) != null) throw new IllegalArgumentException("Invalid config values");
 		return values;
+	}
+
+	private static String legacyBarKey(String key) {
+		if (key.equals("showBarSpeedoMaxHorizontalSpeedMarkers")) return "showSpeedoSoftMaxMarker";
+		if (key.equals("showBarSpeedoTerminalVelocityMarkers")) return "showSpeedoTerminalMarker";
+		if (key.startsWith("showBarSpeedo")) return "showSpeedo" + key.substring(13);
+		if (key.startsWith("barSpeedo")) return "speedo" + key.substring(9);
+		return null;
+	}
+
+	private static String legacyDialKey(String key) {
+		if (key.startsWith("showDialSpeedo")) return "showSpeedo" + key.substring(14);
+		if (key.startsWith("dialSpeedo")) return "speedo" + key.substring(10);
+		return null;
 	}
 
 	public static String encode(Map<String, String> values) {

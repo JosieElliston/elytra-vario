@@ -15,7 +15,7 @@ class ModulePositionEditorTest {
 		var stats = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS, 10, 10, 40, 40);
 		var speedometer = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.SPEEDOMETER, 20, 20, 40, 40);
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 20, 20, 40, 40);
 		var bounds = java.util.List.of(stats, speedometer);
 
 		assertEquals(speedometer, ModulePositionEditor.at(bounds, 25, 25));
@@ -82,7 +82,7 @@ class ModulePositionEditorTest {
 		var stats = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS, 4, 20, 40, 30);
 		var speedometer = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.SPEEDOMETER, 4, 80, 40, 30);
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 4, 80, 40, 30);
 		var snap = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 				6, 150, 20, 10, java.util.List.of(stats, speedometer), 320, 240, 4, 4);
 

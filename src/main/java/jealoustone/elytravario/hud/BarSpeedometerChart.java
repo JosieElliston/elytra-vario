@@ -1,7 +1,7 @@
 package jealoustone.elytravario.hud;
 
 /** The speed bar chart's geometry and linear speed scale. */
-public record SpeedometerChart(int plotHeight, double maxSpeed) {
+public record BarSpeedometerChart(int plotHeight, double maxSpeed) {
 	public static final int PAD = 4;
 	public static final int TEXT_MARGIN = 5;
 	public static final int RIGHT_PAD = 11;
@@ -12,7 +12,7 @@ public record SpeedometerChart(int plotHeight, double maxSpeed) {
 	public static final int CATEGORY_HEIGHT = 13;
 	private static final int TOP_LABEL_CLEARANCE = 4;
 
-	public SpeedometerChart {
+	public BarSpeedometerChart {
 		plotHeight = Math.max(1, plotHeight);
 	}
 

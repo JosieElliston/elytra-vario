@@ -8,7 +8,7 @@ The pitch ladder shows pitches fixed to their position in the world.
 
 ## Markers
 
-There are five markers you can show inside the pitch ladder
+There are several markers you can show inside the pitch ladder:
 
 - flight path: the current velocity
 - one-tick optimal: the pitch that maximizes your energy gain on the next tick
@@ -46,7 +46,7 @@ Some metrics are shown relative to the previous cycle's apex. Energy assumes uni
 | `TE`        | total energy                                    |
 | `GAIN`      | total energy gained between the last two apexes |
 
-## Speedometer
+## Bar Speedometer
 
 A bar chart ranging from 0 to 80 b/s:
 
@@ -60,3 +60,16 @@ Arrows for acceleration.
 
 White markers show the speeds at the steady-state max-horizontal-speed glide:
 20.191 b/s Y, 67.776 b/s XZ, and 70.719 b/s XYZ. Optional gray markers show straight-down terminal velocity: 78.400 b/s Y and XYZ, and zero XZ.
+
+## Dial Speedometer
+
+A semicircular dial ranging from 0 to 80 b/s. Its three needles use both color and length so
+coincident readings remain distinguishable:
+
+| Needle | Speed                          | Length   |
+| ------ | ------------------------------ | -------- |
+| red    | total, `sqrt(vx² + vy² + vz²)` | longest  |
+| green  | horizontal, `sqrt(vx² + vz²)`  | middle   |
+| blue   | vertical magnitude, `\|vy\|`   | shortest |
+
+Matching-color concentric arrows at the needle tips project each speed's measured acceleration one second forward.
