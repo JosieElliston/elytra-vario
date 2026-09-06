@@ -33,8 +33,9 @@ The heatmap is colored by the most total energy you can gain in one tick from th
 
 ## Speedometer
 
-A semicircular dial reading 0 b/s at its left end and 80 b/s at its right, a little past
-terminal velocity. It carries three needles, each of which can be turned off:
+A half disc in the bottom-left corner, reading 0 b/s at its left end and 80 b/s at its right,
+a little past terminal velocity. The background is the shape itself rather than a box around
+it, so the corners are left alone. It carries three needles, each of which can be turned off:
 
 | Needle | Speed | Length |
 | --- | --- | --- |
@@ -48,10 +49,9 @@ vertical speed a shape rather than a subtraction. The lengths differ because two
 coincide whenever two speeds agree, which is most of a glide, and a shorter needle on top of a
 longer one still reads as two.
 
-**The blue needle is a magnitude.** A scale starting at zero cannot carry a sign, so the
-triangle below the hub is what says which way: up climbing, down sinking, a flat dash when
-vertical speed is within the same neutral deadband the panel's `SPEED Y` row uses. Turning the
-blue needle off turns the triangle off with it.
+**The blue needle is a magnitude.** A scale starting at zero cannot carry a sign, and nothing
+on the dial says which way — which way you are going is obvious out of the window, and the
+panel's `SPEED Y` row prints the sign when a figure is wanted.
 
 A needle past 80 b/s is held at the stop and turns gray, so a position that is a limit does not
 read as a speed.

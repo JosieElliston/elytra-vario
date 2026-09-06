@@ -18,32 +18,39 @@ package jealoustone.elytravario.hud;
  *
  * <h2>The box</h2>
  *
- * <p>The arc is a half circle, so the box is a little over half as tall as it is wide: a
- * margin above the arc, the radius, and then a foot below the hub deep enough for the
- * climb-or-sink glyph.
+ * <p>The instrument is not a rectangle. It is a half disc of radius {@link #rim()} — the scale,
+ * plus a margin wide enough for the arc's own width and for nothing else. What the box is, then,
+ * is that shape's bounds, which is all the anchoring in {@link HudPosition} needs.
+ *
+ * <p>The width is odd because a half disc spans a whole rim either side of its center column as
+ * well as that column itself; an even box would leave one edge of the arc outside the bounds it
+ * was placed by. The height counts the same way and comes to one rim plus the hub's own row,
+ * which is the bottom of the shape.
  */
 public record SpeedometerDial(int radius, double maxSpeed) {
-	/** Clearance between the arc and the sides and top of the box, in GUI pixels. */
+	/** Clearance between the arc and the rim, in GUI pixels. Room for the arc's own width. */
 	public static final int PAD = 5;
 
-	/** Depth of the strip below the hub, which carries the climb-or-sink glyph. */
-	public static final int FOOT = 12;
+	/** Radius of the instrument's outer edge: the scale, plus the margin around it. */
+	public int rim() {
+		return radius + PAD;
+	}
 
 	public int width() {
-		return 2 * (radius + PAD);
+		return 2 * rim() + 1;
 	}
 
 	public int height() {
-		return radius + PAD + FOOT;
+		return rim() + 1;
 	}
 
 	/** The hub, relative to the top-left corner of the box. It is the center of the arc. */
 	public int hubX() {
-		return radius + PAD;
+		return rim();
 	}
 
 	public int hubY() {
-		return radius + PAD;
+		return rim();
 	}
 
 	/**

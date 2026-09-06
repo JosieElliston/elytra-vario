@@ -3,7 +3,7 @@ package jealoustone.elytravario.hud;
 import java.util.Locale;
 
 import static jealoustone.elytravario.hud.HudChrome.BORDER;
-import static jealoustone.elytravario.hud.HudChrome.MUTED;
+import static jealoustone.elytravario.hud.HudChrome.LABEL;
 import static jealoustone.elytravario.hud.HudChrome.PANEL_BG;
 
 import jealoustone.elytravario.VarioConfig;
@@ -34,11 +34,11 @@ import org.joml.Matrix3x2fStack;
  *
  * <h2>Vertical speed has no sign on this dial</h2>
  *
- * <p>A scale that begins at zero cannot show one. The blue needle therefore reads
- * {@code |vy|} and a triangle below the hub carries the sign — up for climbing, down for
- * sinking, and a flat dash inside the readout panel's own neutral deadband so a reading
- * sitting on zero does not flicker between the two. The glyph takes the needle's colour
- * because it is part of that needle's reading and not part of the chrome.
+ * <p>A scale that begins at zero cannot show one, so the blue needle reads {@code |vy|} and
+ * nothing here says which way. Nothing needs to: the direction of travel is the most obvious
+ * fact in the view out of the window, and the readout panel's {@code SPEED Y} row prints the
+ * sign for when a figure is wanted. A mark on the dial repeating it would be one more thing
+ * to look at for something already known.
  *
  * <h2>Drawing curves out of rectangles</h2>
  *
@@ -48,10 +48,12 @@ import org.joml.Matrix3x2fStack;
  * the x axis of a pose rotated to its own angle, which is exact at any angle and costs one
  * draw call.
  *
- * <p>The arc itself is the one thing that cannot be, since it is a curve rather than a
- * segment. It is walked at half a pixel of arc length and each distinct pixel filled once,
- * which is gapless by construction — consecutive samples can never be more than a pixel
- * apart — and costs one fill per pixel the curve actually covers rather than one per sample.
+ * <p>The two curves cannot be. An arc — the scale, and the rim around it — is walked at half a
+ * pixel of arc length with each distinct pixel filled once, which is gapless by construction,
+ * since consecutive samples can never be more than a pixel apart, and costs one fill per pixel
+ * the curve covers rather than one per sample. The half disc behind everything is filled a row
+ * at a time. Both deduplicate rather than overdraw, because both are drawn in a translucent
+ * colour and a pixel covered twice would blend twice and show as a seam.
  */
 public final class SpeedometerElement implements HudElement {
 	/** Ticks per second, the factor between internal blocks/tick and displayed blocks/second. */
@@ -97,12 +99,11 @@ public final class SpeedometerElement implements HudElement {
 	private static final double VERTICAL_LENGTH = 0.54;
 	private static final int NEEDLE_WEIGHT = 2;
 
-	/** Half-width of the hub, drawn over the needles' roots to tidy where they meet. */
+	/**
+	 * Half-width of the hub, drawn over the needles' roots to tidy where they meet. Its bottom
+	 * row is the hub's own, so the whole of it stays inside the half disc.
+	 */
 	private static final int HUB = 1;
-
-	/** The climb-or-sink glyph, in the strip below the flat side of the dial. */
-	private static final int GLYPH_TOP = 3;
-	private static final int GLYPH_RISE = 5;
 
 	/**
 	 * Guards the tick loops against a step so small it would draw for a very long time. Far
@@ -149,25 +150,49 @@ public final class SpeedometerElement implements HudElement {
 
 	private static void draw(GuiGraphics graphics, Font font, SpeedometerDial dial,
 			Sample sample, int x, int y) {
-		int background = ((int) Math.round(VarioConfig.speedoOpacity * 255) << 24) | (PANEL_BG & 0xFFFFFF);
-
-		if (VarioConfig.speedoOpacity > 0) {
-			graphics.fill(x, y, x + dial.width(), y + dial.height(), background);
-		}
-
-		if (VarioConfig.showSpeedoBorder) {
-			graphics.renderOutline(x, y, dial.width(), dial.height(), BORDER);
-		}
-
 		int hubX = x + dial.hubX();
 		int hubY = y + dial.hubY();
 
+		drawFace(graphics, dial, hubX, hubY);
 		drawScale(graphics, font, dial, hubX, hubY);
 		drawNeedles(graphics, dial, sample, hubX, hubY);
+	}
 
-		// The sign belongs to the vertical needle, so it is there exactly when that needle is.
-		if (VarioConfig.showSpeedoVertical) {
-			drawSign(graphics, sample.vy(), hubX, hubY);
+	/**
+	 * The background and the rim: a half disc, not a rectangle.
+	 *
+	 * <p>The instrument is round and its corners hold nothing, so a rectangle behind it would
+	 * be four wedges of dimmed world paying for no reading. That matters more here than on the
+	 * other panels because this one is large and because it is the only one whose content does
+	 * not fill its bounds.
+	 */
+	private static void drawFace(GuiGraphics graphics, SpeedometerDial dial,
+			int hubX, int hubY) {
+		int rim = dial.rim();
+
+		if (VarioConfig.speedoOpacity > 0) {
+			int background = ((int) Math.round(VarioConfig.speedoOpacity * 255) << 24)
+					| (PANEL_BG & 0xFFFFFF);
+			halfDisc(graphics, hubX, hubY, rim, background);
+		}
+
+		if (VarioConfig.showSpeedoBorder) {
+			arc(graphics, hubX, hubY, rim, BORDER);
+			graphics.fill(hubX - rim, hubY, hubX + rim + 1, hubY + 1, BORDER);
+		}
+	}
+
+	/**
+	 * The upper half of a disc, filled one row at a time.
+	 *
+	 * <p>A row at a time rather than a pixel at a time because the fill is translucent: a pixel
+	 * covered twice would blend twice and show as a seam, and whole rows cannot overlap.
+	 */
+	private static void halfDisc(GuiGraphics graphics, int hubX, int hubY, int radius,
+			int color) {
+		for (int dy = 0; dy <= radius; dy++) {
+			int half = (int) Math.round(Math.sqrt((double) radius * radius - (double) dy * dy));
+			graphics.fill(hubX - half, hubY - dy, hubX + half + 1, hubY - dy + 1, color);
 		}
 	}
 
@@ -180,7 +205,7 @@ public final class SpeedometerElement implements HudElement {
 	 */
 	private static void drawScale(GuiGraphics graphics, Font font, SpeedometerDial dial,
 			int hubX, int hubY) {
-		drawArc(graphics, dial, hubX, hubY);
+		arc(graphics, hubX, hubY, dial.radius(), MAJOR);
 
 		// The flat side of the half circle is deliberately not drawn. A half turn puts both
 		// stops on that diameter, so a line along it lies under every needle reading near
@@ -220,11 +245,14 @@ public final class SpeedometerElement implements HudElement {
 	}
 
 	/**
-	 * The arc, walked at half a pixel of arc length so that consecutive samples land on the
-	 * same pixel or on a touching one, and filled once per distinct pixel.
+	 * A half circle, walked at half a pixel of arc length so that consecutive samples land on
+	 * the same pixel or on a touching one, and filled once per distinct pixel.
+	 *
+	 * <p>Deduplicating is what makes this safe for a translucent colour as well as cheap: the
+	 * rim is drawn in one, and a pixel visited twice would blend twice.
 	 */
-	private static void drawArc(GuiGraphics graphics, SpeedometerDial dial, int hubX, int hubY) {
-		int radius = dial.radius();
+	private static void arc(GuiGraphics graphics, int hubX, int hubY, int radius,
+			int color) {
 		int steps = Math.max(1, (int) Math.ceil(Math.PI * radius * 2.0));
 		int lastX = Integer.MIN_VALUE;
 		int lastY = Integer.MIN_VALUE;
@@ -238,7 +266,7 @@ public final class SpeedometerElement implements HudElement {
 				continue;
 			}
 
-			graphics.fill(px, py, px + 1, py + 1, MAJOR);
+			graphics.fill(px, py, px + 1, py + 1, color);
 			lastX = px;
 			lastY = py;
 		}
@@ -286,7 +314,15 @@ public final class SpeedometerElement implements HudElement {
 		pose.popMatrix();
 	}
 
-	/** A labelled tick's value in blocks/second, set inside the arc on the tick's own radius. */
+	/**
+	 * A labelled tick's value in blocks/second, set inside the arc on the tick's own radius.
+	 *
+	 * <p>Drawn in the panel's label gray rather than in its muted one, which is what the chart
+	 * uses for the same job. The chart's axis annotations sit on an opaque heatmap; these sit
+	 * on a background thin enough to see the world through, and the muted gray disappears into
+	 * a bright sky. Faint, still — the tick pattern is what the scale is read from, and the
+	 * digits are for when one is looked at directly.
+	 */
 	private static void label(GuiGraphics graphics, Font font, SpeedometerDial dial,
 			int hubX, int hubY, double speed) {
 		double angle = dial.angle(speed);
@@ -296,16 +332,16 @@ public final class SpeedometerElement implements HudElement {
 		int y = hubY + (int) Math.round(Math.sin(angle) * inset) - LABEL_RISE;
 
 		// The ticks at either end lie along the diameter, so a label centered on one of them
-		// would hang half of itself below the arc entirely. Those two are lifted to sit on
-		// that line instead, which is the only room left inside the dial.
-		graphics.drawString(font, text, x, Math.min(y, hubY - 2 * LABEL_RISE - 1), MUTED, true);
+		// would hang half of itself outside the half disc. Those two are lifted to sit on that
+		// line instead, which is the only room left inside the dial.
+		graphics.drawString(font, text, x, Math.min(y, hubY - 2 * LABEL_RISE - 1), LABEL, true);
 	}
 
 	/**
 	 * The three needles, longest first so that a shorter one lying under a longer one stays
 	 * visible, and the hub over their roots.
 	 *
-	 * <p>Vertical speed is a magnitude here; {@link #drawSign} carries its sign.
+	 * <p>Vertical speed is a magnitude here, and nothing on the dial carries its sign.
 	 */
 	private static void drawNeedles(GuiGraphics graphics, SpeedometerDial dial, Sample sample,
 			int hubX, int hubY) {
@@ -326,34 +362,7 @@ public final class SpeedometerElement implements HudElement {
 					VarioConfig.speedoVerticalColor);
 		}
 
-		graphics.fill(hubX - HUB, hubY - HUB, hubX + HUB + 1, hubY + HUB + 1, MAJOR);
-	}
-
-	/**
-	 * Which way the vertical needle's magnitude is going: a triangle pointing the way the
-	 * player is, below the flat side and in the needle's own colour.
-	 *
-	 * <p>Flat within the readout panel's neutral deadband, and for the same reason it has one
-	 * — a vertical speed sitting on zero would otherwise alternate between climbing and
-	 * sinking on rounding noise, which is motion that says nothing.
-	 */
-	private static void drawSign(GuiGraphics graphics, double vy, int hubX, int hubY) {
-		int color = VarioConfig.speedoVerticalColor;
-		int top = hubY + GLYPH_TOP;
-		double displayed = vy * TPS;
-
-		if (Math.abs(displayed) <= 0.05) {
-			graphics.fill(hubX - GLYPH_RISE + 1, top + GLYPH_RISE / 2,
-					hubX + GLYPH_RISE, top + GLYPH_RISE / 2 + 1, color);
-			return;
-		}
-
-		boolean climbing = displayed > 0.0;
-
-		for (int row = 0; row < GLYPH_RISE; row++) {
-			int half = climbing ? row : GLYPH_RISE - 1 - row;
-			graphics.fill(hubX - half, top + row, hubX + half + 1, top + row + 1, color);
-		}
+		graphics.fill(hubX - HUB, hubY - 2 * HUB, hubX + HUB + 1, hubY + 1, MAJOR);
 	}
 
 	/** How far from the hub a label's center sits: just inside the ticks, on their own radius. */
