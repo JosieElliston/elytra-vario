@@ -1,6 +1,7 @@
 package jealoustone.elytravario.config;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,12 @@ public final class VarioConfigScreen extends Screen {
 		}
 		int tabRows = (PAGE_COUNT + columns - 1) / columns;
 		int top = 32 + tabRows * 22;
+		// The master switch stays in view while the subpage selector changes under it.
+		ConfigOptions.Option header = ConfigOptions.header(page);
+		if (header != null) {
+			addRenderableWidget(valueSelector(header, left + 4, top, span - 8));
+			top += 24;
+		}
 		List<String> groups = ConfigOptions.groups(page);
 		final String group = groups.isEmpty() ? null
 				: groups.get(Math.min(subpages.getOrDefault(page, 0), groups.size() - 1));
@@ -80,7 +87,7 @@ public final class VarioConfigScreen extends Screen {
 		OptionList list = addRenderableWidget(new OptionList(top, height - top - 76));
 		boolean separated = false;
 		for (var option : ConfigOptions.all()) {
-			if (option.page() != page || !shown(option, group)) continue;
+			if (option.page() != page || option.equals(header) || !shown(option, group)) continue;
 			if (option.group() != null && !separated) {
 				// The shared settings above always exist, so the rule never opens the list.
 				list.append(new SeparatorRow());
@@ -113,6 +120,38 @@ public final class VarioConfigScreen extends Screen {
 				.bounds(panelCenter - half, height - 26, half - 2, 20).build());
 		addRenderableWidget(Button.builder(text("cancel"), button -> onClose())
 				.bounds(panelCenter + 2, height - 26, half - 2, 20).build());
+	}
+
+	/** A choice or toggle as a standalone dropdown, for options shown outside the list. */
+	private CycleButton<String> valueSelector(ConfigOptions.Option option, int x, int y, int listWidth) {
+		List<String> values = new ArrayList<>();
+		if (option.toggle()) {
+			values.add("false");
+			values.add("true");
+		} else {
+			for (int i = 0; i < option.choices(); i++) values.add(Integer.toString(i));
+		}
+		CycleButton<String> button = CycleButton.<String>builder(value -> valueLabel(option, value),
+				draft.get(option.key())).withValues(values)
+				.create(x, y, listWidth, 20, text(option.key()), (widget, value) -> {
+					draft.put(option.key(), value);
+					changed();
+				});
+		button.setTooltip(Tooltip.create(tooltip(option)));
+		return button;
+	}
+
+	private Component valueLabel(ConfigOptions.Option option, String value) {
+		return option.toggle() ? text(Boolean.parseBoolean(value) ? "on" : "off")
+				: text(option.key() + "." + value);
+	}
+
+	private Component tooltip(ConfigOptions.Option option) {
+		Component body = text(option.key() + ".tooltip");
+		if (!option.toggle() && option.choices() == 0 && !option.color()) {
+			body = body.copy().append("\n" + option.min() + " \u2013 " + option.max());
+		}
+		return text(option.key()).copy().append("\n").append(body);
 	}
 
 	/** Advanced rows hide; rows belonging to another subpage are not part of this page's view. */
@@ -264,11 +303,7 @@ public final class VarioConfigScreen extends Screen {
 				box.setTextColor(valid(box.getValue()) ? 0xFFE0E0E0 : 0xFFFF7777);
 				control = box;
 			}
-			Component tooltip = text(option.key() + ".tooltip");
-			if (!option.toggle() && option.choices() == 0 && !option.color()) {
-				tooltip = tooltip.copy().append("\n" + option.min() + " – " + option.max());
-			}
-			control.setTooltip(Tooltip.create(label.copy().append("\n").append(tooltip)));
+			control.setTooltip(Tooltip.create(tooltip(option)));
 		}
 
 		private boolean valid(String value) {
@@ -277,9 +312,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 
 		private Component valueLabel() {
-			String value = draft.get(option.key());
-			return option.toggle() ? text(Boolean.parseBoolean(value) ? "on" : "off")
-					: text(option.key() + "." + value);
+			return VarioConfigScreen.this.valueLabel(option, draft.get(option.key()));
 		}
 
 		@Override
