@@ -70,7 +70,9 @@ final class EnergyFieldTexture {
 
 		if (texture == null || texture.getPixels().getWidth() != field.width()
 				|| texture.getPixels().getHeight() != field.height()) {
-			// Registering the replacement closes the previous texture and its native buffer.
+			// Registering the replacement closes the previous texture and its native
+			// buffer. Only reached when the chart's size changes after applying
+			// configuration.
 			texture = new DynamicTexture("elytra-vario energy field", field.width(),
 					field.height(), false);
 			Minecraft.getInstance().getTextureManager().register(TEXTURE_ID, texture);

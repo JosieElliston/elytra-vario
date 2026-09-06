@@ -3,6 +3,7 @@ package jealoustone.elytravario;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import jealoustone.elytravario.flight.FlightRecorder;
+import jealoustone.elytravario.config.VarioConfigScreen;
 import jealoustone.elytravario.hud.PitchLadderElement;
 import jealoustone.elytravario.hud.VarioHudElement;
 
@@ -20,20 +21,23 @@ import org.lwjgl.glfw.GLFW;
 public class ElytraVarioClient implements ClientModInitializer {
 	public static final FlightRecorder RECORDER = new FlightRecorder();
 
-	private static KeyMapping toggleKey;
+	private static KeyMapping settingsKey;
 
 	@Override
 	public void onInitializeClient() {
+		jealoustone.elytravario.config.ConfigStore.load();
 		KeyMapping.Category category = KeyMapping.Category.register(ElytraVario.id("general"));
-		toggleKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
-				"key.elytra-vario.toggle",
+		settingsKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+				"key.elytra-vario.settings",
 				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_V,
 				category));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			while (toggleKey.consumeClick()) {
-				VarioConfig.enabled = !VarioConfig.enabled;
+			while (settingsKey.consumeClick()) {
+				if (client.screen == null) {
+					client.setScreen(new VarioConfigScreen(null));
+				}
 			}
 
 			LocalPlayer player = client.player;

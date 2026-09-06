@@ -146,7 +146,7 @@ public final class PitchLadderElement implements HudElement {
 
 	@Override
 	public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
-		if (!VarioConfig.enabled || !VarioConfig.showLadder) {
+		if (!VarioConfig.enabled) {
 			return;
 		}
 
@@ -158,7 +158,7 @@ public final class PitchLadderElement implements HudElement {
 
 		Sample sample = recorder.latest();
 
-		if (sample == null || (VarioConfig.onlyWhileGliding && !sample.gliding())) {
+		if (sample == null) {
 			return;
 		}
 
@@ -181,8 +181,11 @@ public final class PitchLadderElement implements HudElement {
 
 		// Fine ticks first, so a coarse rung always paints over one where the two land
 		// together at the very edge of the fine range.
-		drawFineTicks(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
-		drawRungs(graphics, minecraft.font, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
+		if (VarioConfig.visible(VarioConfig.ladderVisibility, sample.gliding())) {
+			if (VarioConfig.showFineTicks) drawFineTicks(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
+			drawRungs(graphics, minecraft.font, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
+		}
+		if (!VarioConfig.visible(VarioConfig.markerVisibility, sample.gliding())) return;
 
 		drawBugs(graphics, sample, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 
@@ -228,7 +231,7 @@ public final class PitchLadderElement implements HudElement {
 		}
 
 		if (VarioConfig.showHoldPitch) {
-			drawBug(graphics, cameraPitch, recorder.flightPathHold(VarioConfig.flightPathWindow),
+			drawBug(graphics, cameraPitch, recorder.flightPathHold(),
 					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor, false,
 					centerX, centerY, scale, bandUp, bandDown);
 		}
@@ -248,7 +251,7 @@ public final class PitchLadderElement implements HudElement {
 		// what the flight path marker already says better.
 		if (VarioConfig.showVelocityPitch && sample.gliding()) {
 			drawBug(graphics, cameraPitch,
-					(float) recorder.flightPathPitch(VarioConfig.flightPathWindow),
+					(float) recorder.flightPathPitch(),
 					VarioConfig.ladderVelocityRise, VarioConfig.velocityPitchColor, true,
 					centerX, centerY, scale, bandUp, bandDown);
 		}
@@ -402,14 +405,14 @@ public final class PitchLadderElement implements HudElement {
 			pose.pushMatrix();
 			int y = subpixel(pose, centerY - offset);
 
-			rung(graphics, centerX, y, inner, outer, fade(color, edge));
+			rung(graphics, centerX, y, inner, outer, fade(color, edge * VarioConfig.ladderOpacity));
 
 			// Only the twenties are labeled. The rungs between them are unambiguous from
 			// their own tier, and a digit on every one is the clutter this ladder avoids.
-			if (major) {
+			if (major && VarioConfig.showLadderLabels) {
 				String label = Integer.toString(pitch);
 				int labelY = y - LABEL_RISE;
-				int labelColor = fade(VarioConfig.ladderLabelColor, edge);
+				int labelColor = fade(VarioConfig.ladderLabelColor, edge * VarioConfig.ladderOpacity);
 				graphics.drawString(font, label, centerX - outer - LABEL_GAP - font.width(label),
 						labelY, labelColor, true);
 				graphics.drawString(font, label, centerX + outer + LABEL_GAP,
@@ -461,7 +464,7 @@ public final class PitchLadderElement implements HudElement {
 
 			rung(graphics, centerX, y, VarioConfig.ladderCenterGap,
 					VarioConfig.ladderCenterGap + VarioConfig.ladderFineLength,
-					fade(VarioConfig.ladderFineColor, near * edge));
+					fade(VarioConfig.ladderFineColor, near * edge * VarioConfig.ladderOpacity));
 
 			pose.popMatrix();
 		}
@@ -544,7 +547,7 @@ public final class PitchLadderElement implements HudElement {
 	 */
 	private void drawFlightPath(GuiGraphics graphics, Camera camera,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
-		Vec3 velocity = recorder.smoothedVelocity(VarioConfig.flightPathWindow);
+		Vec3 velocity = recorder.velocity();
 		double speed = velocity.length();
 
 		if (speed < MIN_SPEED) {
@@ -574,7 +577,7 @@ public final class PitchLadderElement implements HudElement {
 		// Pegged at an edge the marker is a limit rather than a reading, so it is demoted to
 		// gray: still there to say which way the flight path went, no longer claiming where.
 		boolean pegged = Math.abs(offsetX) > reach || offsetY > bandUp || offsetY < -bandDown;
-		int color = pegged ? VarioConfig.flightPathPeggedColor : VarioConfig.cursorForwardColor;
+		int color = pegged ? VarioConfig.flightPathPeggedColor : VarioConfig.flightPathColor;
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();

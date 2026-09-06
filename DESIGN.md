@@ -36,11 +36,11 @@ That is checkable without the game, and it was checked: for a velocity of
 **Energies are heights.** Dividing energy by gravity turns it into the altitude that energy is
 worth. Potential energy then *is* altitude, kinetic energy is `v²/2g`, and a cycle's gain can
 be read off directly in blocks. Absolute total energy is arbitrary — altitude has an arbitrary
-origin — so differences are what matter, which is why `TE RATE` and `GAIN` exist.
+origin — so differences are what matter, which is why apex differences and `GAIN` exist.
 
 **Blocks/tick internally, blocks/second on screen.** Vanilla physics works in blocks/tick, so
-that is what is stored and what the chart domain is configured in, keeping numbers comparable
-with elytrasim. Conversion happens only at the point of display.
+that is what is stored internally, keeping numbers comparable with elytrasim. The config screen
+accepts chart bounds in blocks/second and converts them to the internal units.
 
 **Velocity is measured from position change, not `getDeltaMovement`.** The latter is the
 velocity the player is *trying* to have; gravity keeps it pointing downwards even while stood
@@ -165,7 +165,7 @@ spend the most time in as almost-nothing says nothing about it.
 **The hues are chosen against the rest of the chart, not for their own sake.** The trail is
 teal and the cursors are yellow and cyan, so the ramp keeps out of that arc entirely and every
 mark stays legible over every part of the field. Green-for-gaining would match the panel's
-`TE RATE`, and the two colors to swap in for it are in the config, but it is not the default:
+`GAIN`, and the two colors to swap in for it are in the config, but it is not the default:
 red and green are the one pair a color-blind eye cannot separate, and green sits close enough
 to the trail's teal to blur it.
 
@@ -273,8 +273,8 @@ half-height can be taken in scaled GUI pixels.
 own basis vectors are what the world was actually drawn with, so the ladder stays glued to the
 world in third person and in the mirrored front view, and it interpolates smoothly between
 ticks instead of stepping at 20 Hz. The flight path marker is the exception that proves it:
-velocity only exists per tick, so it is averaged over a few of them, since an un-smoothed
-marker visibly jitters in a way the numeric readouts do not.
+velocity only exists per tick. The flight path marker, velocity pitch, and hold pitch use
+the latest sampled velocity directly, without temporal smoothing.
 
 **Marks are drawn on a fractional pose.** Rounding each mark to a whole scaled pixel makes the
 ladder climb the screen in visible steps, worst on the labels, whose glyphs jump as a block.
@@ -482,9 +482,9 @@ two orders of magnitude finer than the ladder can draw, so nothing is done about
 
 **The reading is low-gain, which makes it forgiving to fly and delicate to display.** A degree
 of pitch moves the next tick's γ by about a fifteenth of a degree, so any wobble in the
-measured velocity arrives at the answer multiplied by fifteen. It is therefore searched against
-the same 4-tick averaged velocity the flight path marker uses, which costs it four ticks of
-lag. Flying it, the error integrates over 190 ticks, which is the other half of the same fact.
+measured velocity arrives at the answer multiplied by fifteen. It is searched against the
+latest sampled velocity, matching the flight path marker and velocity pitch without adding
+smoothing lag.
 
 **Open question.** The γ floor is non-monotonic across the family of cycles that trade climb
 for distance: it peaks at 16.7–16.8° exactly at the pure-climb cycle, where the
@@ -577,13 +577,23 @@ Needs JDK 25.
 
 ## Using it
 
-`V` toggles the whole HUD.
+`V` opens settings.
 
-Everything else is edited in `VarioConfig`, which is plain static fields with a comment on
-each — panel position and width, chart bounds and scale, ladder spacing, lengths and colors,
-and switches for the chart, the heatmap, the ladder, each of the four pitch bugs, the flight
-path marker and the angle of attack row. There is no config screen and no config file, so changes mean a recompile
-and are lost on restart.
+Open Mod Menu's configuration button for Elytra Vario. Five pages separate Global, Pitch Ladder,
+Markers, Velocity Graph, and Flight Stats. Global holds the HUD master switch; each instrument’s
+visibility control stays on its own page. Marker names identify the displayed quantities;
+tooltips define their calculations and describe possible uses. Valid edits preview immediately, and Save persists them to `config/elytra-vario.json`
+without closing the screen. Closing or Escape asks before discarding unsaved edits. Only confirming discard
+restores the last save point; dismissing the popup preserves the draft and live preview. In game, a right-side settings panel leaves the HUD visible without blur. Each page has a reset, and less common controls are under Advanced.
+
+The graph's anchor is one setting: five screen corners, or one of the four sides of the stats
+panel. Below is the default. Attaching boxes the pair and anchors that box, so both instruments
+move together and the pair as a whole is what gets clamped; a side facing a screen edge pushes
+the panel in from that edge rather than taking the graph off it. Across the attachment the two
+are flush with the edge the anchor names, and centered under the center anchor. Offsets default
+to zero and become a nudge away from the panel while attached. Both horizontal and vertical
+bounds are editable. Visibility is independent for all four instruments, and stats
+rows are selectable. Energy rate has been removed; cycle gain and apex differences remain.
 
 ## The readout panel
 
@@ -596,7 +606,6 @@ and are lost on restart.
 | `GLIDE` | Blocks forward per block down. Negative while climbing, where it reads as blocks forward per block *gained*. `--` only when level with speed, or stationary. |
 | `KE` | Kinetic energy as a height: the altitude your speed is worth. |
 | `PE` `TE` | Potential and total energy, **measured from the last apex**: how far below the top of the cycle you are, and how much of it is recoverable. Green means you are above the last apex, which for `TE` is a cycle that has already paid for itself. The dimmed figure to the left is the same height against the world's origin, which is what F3 and a map agree with. `--` until an apex has been seen. |
-| `TE RATE` | How fast total energy is changing, averaged over 10 ticks. Says whether the cycle is net gaining, independent of whether you happen to be climbing right now. |
 | `GAIN` | Total energy gained between the last two apexes: what the cycle was worth. |
 
 ## The chart
@@ -764,9 +773,7 @@ Sideslip is still readable without the marker, from the gap between the chart's 
 
 ## Known limitations
 
-- **Config does not persist**, and there is no config screen; values are edited in source.
-- The ladder follows the same `onlyWhileGliding` switch as the panel, which defaults to off,
-  so it is drawn while walking around too. It is more intrusive there than a corner panel is.
+- Positioning uses screen anchors and numeric offsets; a visual position editor is still pending.
 - At small GUI sizes — below roughly 400 scaled pixels wide — the ladder's left-hand labels
   reach into the readout panel. Nothing checks for the collision.
 - The ladder does not turn. Once yaw matters, rungs become conic sections and straight ticks
@@ -781,11 +788,10 @@ Sideslip is still readable without the marker, from the gap between the chart's 
   from here" — the latter is a dynamic program whose answer is the whole cycle.
 - The hold bug is a low-gain reading: a degree of pitch moves the next tick's flight path angle
   by about a fifteenth of a degree, so it magnifies any wobble in the measured velocity by
-  about fifteen on the way to the answer. It is searched against a 4-tick average for that
-  reason, which also makes it that many ticks late.
+  about fifteen on the way to the answer. It uses the latest sampled velocity without
+  temporal smoothing.
 - The heatmap is drawn whenever the chart is, including while walking around, where the elytra
-  physics it describes does not apply. `onlyWhileGliding` suppresses the whole HUD if that
-  matters.
+  physics it describes does not apply. Set graph visibility to Only while gliding to suppress it there.
 - Building the heatmap blocks the frame it happens on. It is one hitch of roughly a third of a
   second and then never again, and it is deliberately not spread across frames: a half-built
   map that disagreed with its own axes would be worse than a stutter.

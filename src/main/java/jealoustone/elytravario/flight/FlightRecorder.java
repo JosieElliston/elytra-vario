@@ -8,10 +8,8 @@ import net.minecraft.world.phys.Vec3;
 /**
  * Fixed-size ring buffer of per-tick {@link Sample}s.
  *
- * <p>The interesting readouts are rates of change — the variometer above all — and a
- * derivative cannot be recovered from a single render frame. Frames also run at the
- * monitor's refresh rate while physics runs at 20 Hz, so sampling on the tick and
- * differencing over a window is both correct and naturally smoothing.
+ * <p>Tick history supports the velocity trail, direction markers, and cycle
+ * measurements. Sampling at the physics tick rate keeps these independent of render FPS.
  */
 public final class FlightRecorder {
 	/** Ten seconds at 20 ticks/second. */
@@ -46,7 +44,7 @@ public final class FlightRecorder {
 	private OptimalPitch lookahead;
 	private int lookaheadHorizon;
 	private float flightPathHold = Float.NaN;
-	private int flightPathHoldWindow;
+	private boolean flightPathHoldComputed;
 
 	public void tick(LocalPlayer player) {
 		Vec3 position = player.position();
@@ -89,7 +87,7 @@ public final class FlightRecorder {
 
 		// The tick's state has moved, so last tick's answers are stale.
 		lookaheadHorizon = 0;
-		flightPathHoldWindow = 0;
+		flightPathHoldComputed = false;
 	}
 
 	/**
@@ -126,42 +124,24 @@ public final class FlightRecorder {
 	 * The pitch that would hold the current flight path angle, or {@code NaN} when no pitch
 	 * would — including whenever the player is not gliding, since the rule is about a wing.
 	 *
-	 * <p>Searched against the velocity averaged over {@code window} ticks rather than the last
-	 * one. The answer is a low-gain function of that velocity, so a single tick's wobble would
-	 * arrive at the ladder multiplied by about fifteen; see {@link FlightPathHold}.
+	 * <p>Uses the latest sampled velocity and caches the answer for the current tick.
 	 */
-	public float flightPathHold(int window) {
-		int ticks = Math.max(1, window);
-
-		if (flightPathHoldWindow != ticks) {
+	public float flightPathHold() {
+		if (!flightPathHoldComputed) {
 			Sample sample = latest();
 			flightPathHold = sample == null || !sample.gliding()
 					? Float.NaN
-					: FlightPathHold.search(smoothedVelocity(ticks), sample.yaw(),
-							sample.gravity());
-			flightPathHoldWindow = ticks;
+					: FlightPathHold.search(velocity(), sample.yaw(), sample.gravity());
+			flightPathHoldComputed = true;
 		}
 
 		return flightPathHold;
 	}
 
-	/**
-	 * The direction of travel as a pitch, positive descending, taken over the same smoothing
-	 * window — the flight path marker's vertical position, as a number.
-	 *
-	 * <p>{@code NaN} when there is no movement at all and so no direction to report. There is
-	 * no speed floor beyond that, because every caller already gates on gliding and a glide
-	 * slow enough for the reading to be noise is not a state the player can hold.
-	 */
-	public double flightPathPitch(int window) {
-		Vec3 velocity = smoothedVelocity(Math.max(1, window));
-		double horizontal = velocity.horizontalDistance();
-
-		if (velocity.lengthSqr() == 0.0) {
-			return Double.NaN;
-		}
-
-		return -Math.toDegrees(Math.atan2(velocity.y, horizontal));
+	/** Latest direction of travel as a pitch, or NaN when absent or stationary. */
+	public double flightPathPitch() {
+		Sample sample = latest();
+		return sample == null ? Double.NaN : sample.flightPathPitch();
 	}
 
 	/** Energies as they stood at the last apex; see {@link CycleTracker}. */
@@ -202,7 +182,7 @@ public final class FlightRecorder {
 		lookahead = null;
 		lookaheadHorizon = 0;
 		flightPathHold = Float.NaN;
-		flightPathHoldWindow = 0;
+		flightPathHoldComputed = false;
 	}
 
 	public int size() {
@@ -223,47 +203,9 @@ public final class FlightRecorder {
 		return buffer[Math.floorMod(head - ticksAgo, CAPACITY)];
 	}
 
-	/**
-	 * Mean velocity over the last {@code window} ticks, in blocks/tick.
-	 *
-	 * <p>Taken as the straight-line displacement over the window rather than as a mean of
-	 * the per-tick velocities, which is the same quantity but does not accumulate rounding
-	 * over the buffer.
-	 *
-	 * <p>The flight path marker needs this rather than {@link #latest()}: a single tick of
-	 * velocity is noisy enough that an un-smoothed marker jitters by several degrees, and
-	 * unlike the numeric readouts a moving symbol makes that obvious.
-	 */
-	public Vec3 smoothedVelocity(int window) {
-		Sample now = latest();
-
-		if (now == null) {
-			return Vec3.ZERO;
-		}
-
-		Sample then = ago(window);
-
-		if (then == null) {
-			return new Vec3(now.vx(), now.vy(), now.vz());
-		}
-
-		return new Vec3(now.x() - then.x(), now.y() - then.y(), now.z() - then.z())
-				.scale(1.0 / window);
-	}
-
-	/**
-	 * Total-energy variometer reading, in blocks/second: how fast energy height is changing,
-	 * averaged over {@code window} ticks. This is the reading that says whether a pump cycle
-	 * is net gaining or losing, independent of whether you happen to be climbing right now.
-	 */
-	public double energyRate(int window) {
-		Sample now = latest();
-		Sample then = ago(window);
-
-		if (now == null || then == null) {
-			return 0.0;
-		}
-
-		return (now.totalHeight() - then.totalHeight()) / window * 20.0;
+	/** Latest sampled velocity in blocks/tick, without temporal smoothing. */
+	public Vec3 velocity() {
+		Sample sample = latest();
+		return sample == null ? Vec3.ZERO : new Vec3(sample.vx(), sample.vy(), sample.vz());
 	}
 }
