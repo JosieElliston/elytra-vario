@@ -10,6 +10,12 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- Three optional constant pitch markers for the fastest steady horizontal glide, minimum steady
+  fall rate, and zero pitch / best steady glide ratio. They are independent of player state,
+  use neutral ladder colors, and default to on.
+
 ## [1.2.0] - 2026-09-06
 
 ### Added

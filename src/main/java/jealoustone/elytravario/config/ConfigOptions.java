@@ -95,6 +95,15 @@ public final class ConfigOptions {
 		add("showOptimalPitch", 2, "optimal", 0, 1, 1, 0, false, false);
 		add("optimalPitchColor", 2, "optimal", 0, 1, 1, 0, true, false);
 
+		add("showMaxHorizontalSpeedPitch", 2, "maxHorizontalSpeed", 0, 1, 1, 0, false, false);
+		add("maxHorizontalSpeedPitchColor", 2, "maxHorizontalSpeed", 0, 1, 1, 0, true, false);
+
+		add("showMinimumFallSpeedPitch", 2, "minimumFallSpeed", 0, 1, 1, 0, false, false);
+		add("minimumFallSpeedPitchColor", 2, "minimumFallSpeed", 0, 1, 1, 0, true, false);
+
+		add("showZeroPitch", 2, "zero", 0, 1, 1, 0, false, false);
+		add("zeroPitchColor", 2, "zero", 0, 1, 1, 0, true, false);
+
 		add("showFlightPath", 2, "flightPath", 0, 1, 1, 0, false, false);
 		add("flightPathColor", 2, "flightPath", 0, 1, 1, 0, true, false);
 

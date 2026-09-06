@@ -9,6 +9,17 @@ In the center of the screen is a ladder of pitch marks. It has two sliding bugs 
 - green: the pitch at which the flight path angle is preserved. follow this during the dive phase.
 - amber: the pitch that maximizes total energy gain over the next 20 ticks if you were to hold that constant angle. follow this during the gain phase.
 
+The ladder and its markers can be switched independently, so the markers can remain as a compact
+pitch reference when the ladder itself is hidden. Three thin white constant markers are shown by
+default. They are fixed properties of a steady elytra glide and do not depend on the player's
+current state:
+
+| Reference | Pitch | Steady horizontal speed | Steady vertical speed | Glide ratio |
+| --- | ---: | ---: | ---: | ---: |
+| maximum horizontal speed | +53.366° | 67.776 b/s | -20.191 b/s | 3.357 : 1 |
+| minimum fall speed | -13.233° | 8.736 b/s | -1.416 b/s | 6.170 : 1 |
+| zero pitch / maximum glide ratio | 0° | 30.203 b/s | -2.990 b/s | 10.102 : 1 |
+
 ## Readout panel
 
 We detect the apex of the previous cycle and display some metrics as a difference from that point. Energy uses unit mass and is divided by gravity, so has units of blocks (of height).

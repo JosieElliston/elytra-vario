@@ -114,6 +114,11 @@ import org.joml.Vector3fc;
  * cursor also measures.
  */
 public final class PitchLadderElement implements HudElement {
+	/** Constant-pitch landmarks from the exact 26.2 steady-state flight model. */
+	private static final float MAX_HORIZONTAL_SPEED_PITCH = 53.366F;
+	private static final float MINIMUM_FALL_SPEED_PITCH = -13.233F;
+	private static final float ZERO_PITCH = 0.0F;
+
 	/** Gap between a rung's outer end and its label. */
 	private static final int LABEL_GAP = 4;
 
@@ -210,6 +215,25 @@ public final class PitchLadderElement implements HudElement {
 	 */
 	private void drawBugs(GuiGraphicsExtractor graphics, float cameraPitch,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
+		// Fixed scale references go down first. Their zero rise makes each a single row, and
+		// lets any state-dependent wedge that happens to agree remain the dominant mark.
+		if (VarioConfig.showMaxHorizontalSpeedPitch) {
+			drawBug(graphics, cameraPitch, MAX_HORIZONTAL_SPEED_PITCH, 0,
+					VarioConfig.maxHorizontalSpeedPitchColor,
+					centerX, centerY, scale, bandUp, bandDown);
+		}
+
+		if (VarioConfig.showMinimumFallSpeedPitch) {
+			drawBug(graphics, cameraPitch, MINIMUM_FALL_SPEED_PITCH, 0,
+					VarioConfig.minimumFallSpeedPitchColor,
+					centerX, centerY, scale, bandUp, bandDown);
+		}
+
+		if (VarioConfig.showZeroPitch) {
+			drawBug(graphics, cameraPitch, ZERO_PITCH, 0, VarioConfig.zeroPitchColor,
+					centerX, centerY, scale, bandUp, bandDown);
+		}
+
 		// In descending order of rise, which is what makes an overlap nest. Retuning the rises
 		// in VarioConfig means reordering these calls to match; nothing checks it.
 		if (VarioConfig.showLookaheadPitch) {

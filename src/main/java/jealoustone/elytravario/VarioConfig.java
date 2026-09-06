@@ -92,6 +92,22 @@ public final class VarioConfig {
 	public static boolean showHoldPitch = true;
 
 	/**
+	 * Constant pitch references derived from the steady-state velocity at a pitch held
+	 * indefinitely. Unlike the rule bugs above, none depends on the player's current velocity,
+	 * orientation, or flight phase.
+	 *
+	 * <p>All three are on by default. They are scale landmarks rather than advice, and are
+	 * drawn as zero-rise lines in the ladder's center gap. Their shared neutral color keeps
+	 * them in the ladder's visual family and leaves color for the state-dependent bugs.
+	 */
+	public static boolean showMaxHorizontalSpeedPitch = true;
+	public static boolean showMinimumFallSpeedPitch = true;
+	public static boolean showZeroPitch = true;
+	public static int maxHorizontalSpeedPitchColor = 0xE0E8EAED;
+	public static int minimumFallSpeedPitchColor = 0xE0E8EAED;
+	public static int zeroPitchColor = 0xE0E8EAED;
+
+	/**
 	 * How many ticks the lookahead bug holds a candidate pitch for before scoring it.
 	 *
 	 * <p>Twenty because that is what fits the gain phase of an optimised cycle: 1.1 degrees
