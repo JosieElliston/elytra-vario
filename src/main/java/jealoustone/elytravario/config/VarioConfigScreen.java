@@ -21,7 +21,7 @@ import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.network.chat.Component;
 
 /** Six scrollable pages with live HUD previews and an explicit, non-closing Save.
- * A page may divide into subpages: shared settings, a rule, then the selected subpage's own. */
+ * A page may divide into subpages, chosen by a dropdown under its master switch. */
 public final class VarioConfigScreen extends Screen {
 	private static final int PAGE_COUNT = 6;
 	private final Screen parent;
@@ -85,14 +85,8 @@ public final class VarioConfigScreen extends Screen {
 			top += 24;
 		}
 		OptionList list = addRenderableWidget(new OptionList(top, height - top - 76));
-		boolean separated = false;
 		for (var option : ConfigOptions.all()) {
 			if (option.page() != page || option.equals(header) || !shown(option, group)) continue;
-			if (option.group() != null && !separated) {
-				// The shared settings above always exist, so the rule never opens the list.
-				list.append(new SeparatorRow());
-				separated = true;
-			}
 			list.append(new OptionRow(option));
 		}
 		int half = Math.min(span / 2, 180);
@@ -246,7 +240,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 	}
 
-	private final class OptionList extends ContainerObjectSelectionList<Row> {
+	private final class OptionList extends ContainerObjectSelectionList<OptionRow> {
 		OptionList(int top, int listHeight) {
 			super(VarioConfigScreen.this.minecraft, panelWidth, listHeight, top, 46);
 			setX(panelLeft);
@@ -257,26 +251,11 @@ public final class VarioConfigScreen extends Screen {
 		@Override protected void extractListSeparators(GuiGraphicsExtractor graphics) {
 			if (minecraft.level == null) super.extractListSeparators(graphics);
 		}
-		void append(Row row) { addEntry(row); }
+		void append(OptionRow row) { addEntry(row); }
 		@Override public int getRowWidth() { return panelWidth - 24; }
 	}
 
-	/** The list holds two kinds of row, so they share one self-typed base. */
-	private abstract class Row extends ContainerObjectSelectionList.Entry<Row> { }
-
-	/** A rule between the settings shared by every marker and the selected marker's own. */
-	private final class SeparatorRow extends Row {
-		@Override
-		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
-			int y = getContentYMiddle();
-			graphics.fill(getContentX(), y, getContentX() + getContentWidth(), y + 1, 0x30FFFFFF);
-		}
-
-		@Override public List<? extends GuiEventListener> children() { return List.of(); }
-		@Override public List<? extends NarratableEntry> narratables() { return List.of(); }
-	}
-
-	private final class OptionRow extends Row {
+	private final class OptionRow extends ContainerObjectSelectionList.Entry<OptionRow> {
 		private final ConfigOptions.Option option;
 		private final AbstractWidget control;
 
