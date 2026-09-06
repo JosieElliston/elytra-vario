@@ -11,6 +11,8 @@ and key-registration APIs, not behavior.
 
 ## [Unreleased]
 
+## [1.4.0+mc1.21.11] - 2026-09-06
+
 ### Added
 
 - Restored the semicircular three-needle dial as a separate Dial Speedometer, with its own
@@ -164,7 +166,8 @@ First 1.21.11 build, backported from the 26.2 branch. Client-side only.
 - Screen anchoring for the stats panel, graph and speedometer. The graph can instead attach to
   an edge of the stats panel, and an attached pair anchors and moves as one block.
 
-[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.3.0+mc1.21.11...mc/1.21.11
+[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.4.0+mc1.21.11...mc/1.21.11
+[1.4.0+mc1.21.11]: https://github.com/JosieElliston/elytra-vario/compare/v1.3.0+mc1.21.11...v1.4.0+mc1.21.11
 [1.3.0+mc1.21.11]: https://github.com/JosieElliston/elytra-vario/compare/v1.2.0+mc1.21.11...v1.3.0+mc1.21.11
 [1.2.0+mc1.21.11]: https://github.com/JosieElliston/elytra-vario/compare/v1.1.0+mc1.21.11...v1.2.0+mc1.21.11
 [1.1.0+mc1.21.11]: https://github.com/JosieElliston/elytra-vario/compare/v1.0.0+mc1.21.11...v1.1.0+mc1.21.11
