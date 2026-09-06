@@ -60,8 +60,8 @@ class ModulePositionEditorTest {
 		var snap = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 				10, 20, 20, 10, java.util.List.of(), 320, 240, 4, 4);
 		assertEquals(new ModulePositionEditor.Position(10, 20), snap.position());
-		assertEquals(null, snap.verticalGuide());
-		assertEquals(null, snap.horizontalGuide());
+		assertEquals(java.util.List.of(), snap.verticalGuides());
+		assertEquals(java.util.List.of(), snap.horizontalGuides());
 	}
 
 	@Test
@@ -71,8 +71,26 @@ class ModulePositionEditorTest {
 		var snap = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 				146, 106, 20, 10, java.util.List.of(other), 320, 240, 4, 4);
 
-		assertEquals(new ModulePositionEditor.Guide(140, 70, 100), snap.verticalGuide());
-		assertEquals(new ModulePositionEditor.Guide(100, 100, 140), snap.horizontalGuide());
+		assertEquals(java.util.List.of(new ModulePositionEditor.Guide(140, 70, 100)),
+				snap.verticalGuides());
+		assertEquals(java.util.List.of(new ModulePositionEditor.Guide(100, 100, 140)),
+				snap.horizontalGuides());
+	}
+
+	@Test
+	void snapReportsEveryGuideThatProducesTheWinningPosition() {
+		var stats = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS, 4, 20, 40, 30);
+		var speedometer = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.SPEEDOMETER, 4, 80, 40, 30);
+		var snap = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
+				6, 150, 20, 10, java.util.List.of(stats, speedometer), 320, 240, 4, 4);
+
+		assertEquals(new ModulePositionEditor.Position(4, 150), snap.position());
+		assertEquals(java.util.List.of(
+				new ModulePositionEditor.Guide(0, 0, 240),
+				new ModulePositionEditor.Guide(4, 20, 50),
+				new ModulePositionEditor.Guide(4, 80, 110)), snap.verticalGuides());
 	}
 
 	@Test
