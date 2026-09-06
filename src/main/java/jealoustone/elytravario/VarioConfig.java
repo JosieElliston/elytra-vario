@@ -457,7 +457,7 @@ public final class VarioConfig {
 	 */
 	public static boolean showSpeedo = true;
 	public static boolean speedoGlidingOnly = false;
-	public static int speedoAnchor = 2;
+	public static int speedoAnchor = 3;
 	public static int speedoX = 4;
 	public static int speedoY = 4;
 

@@ -1,11 +1,7 @@
 # TODO
 
-- add draw_arrow_types for the hold flight-path angle
 - should we expose rules for when to switch?
-- make green bug a better color
-- add a tick at the max horizontal speed
-- add a tick at the min fall speed
-- add a tick at the max glide ratio
+- good module position config
 
 ## myopic metrics
 
@@ -51,4 +47,3 @@ write the sweep to find the optimal pitches, i'll run it on a cluster
 num_ticks: in 100 to 500, stride 10
 distance: idk
 regularization: idk
-

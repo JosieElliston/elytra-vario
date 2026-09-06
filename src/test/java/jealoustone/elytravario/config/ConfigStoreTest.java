@@ -24,6 +24,7 @@ class ConfigStoreTest {
 		assertEquals("true", values.get("showMaxHorizontalSpeedPitch"));
 		assertEquals("true", values.get("showMinimumFallSpeedPitch"));
 		assertEquals("true", values.get("showZeroPitch"));
+		assertEquals("3", values.get("speedoAnchor"));
 		assertFalse(values.containsKey("futureOption"));
 	}
 

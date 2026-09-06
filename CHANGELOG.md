@@ -16,6 +16,10 @@ build identifier and released feature for feature; see its own changelog.
   fall rate, and zero pitch / best steady glide ratio. They are independent of player state,
   use neutral ladder colors, and default to on.
 
+### Changed
+
+- The speedometer now defaults to the bottom-right corner, clear of chat.
+
 ## [1.2.0] - 2026-09-06
 
 ### Added
