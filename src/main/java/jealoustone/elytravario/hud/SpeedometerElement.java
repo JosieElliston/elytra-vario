@@ -17,10 +17,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
-/** Three vertical bars for vertical, horizontal, and total speed. */
+/** Three vertical bars for vertical, horizontal, and total speed, with acceleration arrows. */
 public final class SpeedometerElement implements HudElement {
 	private static final double TPS = 20.0;
+	private static final double ACCELERATION_ARROW_SECONDS = 1.0;
 	private static final int MAJOR = 0xFFC6CCD2;
+	private static final int ACCELERATION_ARROW = 0xFFFFFFFF;
 	private static final int SOFT_MAX_MARKER = 0xFFFFFFFF;
 	private static final int TERMINAL_MARKER = 0xFF9AA0A6;
 	private static final int TICK_LENGTH = 3;
@@ -55,21 +57,25 @@ public final class SpeedometerElement implements HudElement {
 				VarioConfig.speedoMaxSpeed);
 		HudPosition position = HudPosition.clamp(VarioConfig.speedoX, VarioConfig.speedoY,
 				chart.width(), chart.height(), graphics.guiWidth(), graphics.guiHeight());
-		draw(graphics, minecraft.font, chart, sample, position.x(), position.y());
+		draw(graphics, minecraft.font, chart, sample, recorder.ago(1),
+				position.x(), position.y());
 	}
 
 	private static void draw(GuiGraphicsExtractor graphics, Font font, SpeedometerChart chart,
-			Sample sample, int x, int y) {
+			Sample sample, Sample previous, int x, int y) {
 		drawFace(graphics, chart, x, y);
 		drawScale(graphics, font, chart, x, y);
 
 		drawBar(graphics, font, chart, x, y, 0, "Y", Math.abs(sample.vy()),
+				previous == null ? Double.NaN : Math.abs(previous.vy()),
 				VarioConfig.showSpeedoVertical, VarioConfig.speedoVerticalColor,
 				SOFT_MAX_Y, TERMINAL_Y);
 		drawBar(graphics, font, chart, x, y, 1, "XZ", sample.horizontalSpeed(),
+				previous == null ? Double.NaN : previous.horizontalSpeed(),
 				VarioConfig.showSpeedoHorizontal, VarioConfig.speedoHorizontalColor,
 				SOFT_MAX_XZ, TERMINAL_XZ);
 		drawBar(graphics, font, chart, x, y, 2, "XYZ", sample.speed(),
+				previous == null ? Double.NaN : previous.speed(),
 				VarioConfig.showSpeedoTotal, VarioConfig.speedoTotalColor,
 				SOFT_MAX_XYZ, TERMINAL_XYZ);
 
@@ -99,8 +105,8 @@ public final class SpeedometerElement implements HudElement {
 					x + chart.plotX() + chart.plotWidth(), py + 1, MAJOR);
 			if (labels) {
 				String text = fmt("%.0f", speed * TPS);
-				int labelY = Math.clamp(py - font.lineHeight / 2, y + SpeedometerChart.TEXT_MARGIN,
-						y + chart.baselineY() - font.lineHeight);
+				int labelY = Math.max(py - font.lineHeight / 2,
+						y + SpeedometerChart.TEXT_MARGIN);
 				graphics.text(font, text, x + chart.plotX() - TICK_LENGTH - LABEL_GAP
 						- font.width(text), labelY, LABEL, true);
 			}
@@ -108,15 +114,16 @@ public final class SpeedometerElement implements HudElement {
 	}
 
 	private static void drawBar(GuiGraphicsExtractor graphics, Font font, SpeedometerChart chart,
-			int x, int y, int index, String label, double speed, boolean shown, int color,
+			int x, int y, int index, String label, double speed, double previousSpeed,
+			boolean shown, int color,
 			double softMax, double terminal) {
 		if (!shown) return;
 		int bx = x + chart.barX(index);
 		int top = y + chart.speedY(speed);
 		int bottom = y + chart.baselineY();
+		int barColor = chart.pegged(speed) ? VarioConfig.speedoPeggedColor : color;
 		if (top < bottom) {
-			graphics.fill(bx, top, bx + SpeedometerChart.BAR_WIDTH, bottom,
-					chart.pegged(speed) ? VarioConfig.speedoPeggedColor : color);
+			graphics.fill(bx, top, bx + SpeedometerChart.BAR_WIDTH, bottom, barColor);
 		}
 
 		if (VarioConfig.showSpeedoSoftMaxMarker) {
@@ -125,9 +132,58 @@ public final class SpeedometerElement implements HudElement {
 		if (VarioConfig.showSpeedoTerminalMarker) {
 			marker(graphics, chart, bx, y, terminal, TERMINAL_MARKER);
 		}
+		if (VarioConfig.showSpeedoAcceleration && Double.isFinite(previousSpeed)) {
+			accelerationArrow(graphics, chart, bx, y, speed, previousSpeed);
+		}
 
 		int labelX = bx + (SpeedometerChart.BAR_WIDTH - font.width(label)) / 2;
 		graphics.text(font, label, labelX, y + chart.baselineY() + 3, LABEL, true);
+	}
+
+	/** Projects the tick-to-tick speed change for one second on the speed scale. */
+	private static void accelerationArrow(GuiGraphicsExtractor graphics, SpeedometerChart chart,
+			int barX, int y, double speed, double previousSpeed) {
+		double projected = speed + (speed - previousSpeed) * TPS * ACCELERATION_ARROW_SECONDS;
+		int startY = y + chart.speedY(speed);
+		int endY = y + chart.speedY(projected);
+
+		int arrowX = barX + SpeedometerChart.BAR_WIDTH / 2;
+		if (startY != endY) {
+			drawLine(graphics, arrowX, startY, arrowX, endY, ACCELERATION_ARROW);
+		}
+
+		// Shrink the head's vertical depth with the visible projection. At zero acceleration
+		// this leaves a horizontal five-pixel mark instead of making the indicator disappear;
+		// on either side of zero it opens smoothly into an upward or downward arrowhead.
+		double visiblePixels = Math.abs(chart.fraction(projected) - chart.fraction(speed))
+				* chart.plotHeight();
+		double headDepth = Math.min(2.0, visiblePixels);
+		int directionY = -Double.compare(projected, speed);
+		int headBaseY = (int) Math.round(endY - directionY * headDepth);
+		drawLine(graphics, arrowX, endY, arrowX - 2, headBaseY, ACCELERATION_ARROW);
+		drawLine(graphics, arrowX, endY, arrowX + 2, headBaseY, ACCELERATION_ARROW);
+	}
+
+	private static void drawLine(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1,
+			int color) {
+		int dx = Math.abs(x1 - x0);
+		int sx = x0 < x1 ? 1 : -1;
+		int dy = -Math.abs(y1 - y0);
+		int sy = y0 < y1 ? 1 : -1;
+		int error = dx + dy;
+		while (true) {
+			graphics.fill(x0, y0, x0 + 1, y0 + 1, color);
+			if (x0 == x1 && y0 == y1) return;
+			int twiceError = error * 2;
+			if (twiceError >= dy) {
+				error += dy;
+				x0 += sx;
+			}
+			if (twiceError <= dx) {
+				error += dx;
+				y0 += sy;
+			}
+		}
 	}
 
 	/** A one-pixel reference line, extending one pixel beyond either side of its bar. */

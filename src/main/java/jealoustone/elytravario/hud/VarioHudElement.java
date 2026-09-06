@@ -42,6 +42,7 @@ public final class VarioHudElement implements HudElement {
 
 	private static final int LINE = 10;
 	private static final int PAD = 4;
+	private static final double ACCELERATION_ARROW_SECONDS = 1.0;
 
 	/**
 	 * Column templates for the rows that carry two figures. Each figure is right-aligned
@@ -108,9 +109,13 @@ public final class VarioHudElement implements HudElement {
 	}
 
 	private static int speedRows() {
-		return (VarioConfig.showPitch ? 1 : 0) + (VarioConfig.showHorizontalSpeed ? 1 : 0)
+		return (VarioConfig.showPitch ? 1 : 0) + (VarioConfig.showGlideRatio ? 1 : 0)
+				+ (VarioConfig.showHorizontalSpeed ? 1 : 0)
 				+ (VarioConfig.showTotalSpeed ? 1 : 0) + (VarioConfig.showVerticalSpeed ? 1 : 0)
-				+ (VarioConfig.showGlideRatio ? 1 : 0) + (VarioConfig.showAngleOfAttack ? 1 : 0);
+				+ (VarioConfig.showHorizontalAcceleration ? 1 : 0)
+				+ (VarioConfig.showTotalAcceleration ? 1 : 0)
+				+ (VarioConfig.showVerticalAcceleration ? 1 : 0)
+				+ (VarioConfig.showAngleOfAttack ? 1 : 0);
 	}
 
 	private static int energyRows() {
@@ -144,14 +149,22 @@ public final class VarioHudElement implements HudElement {
 
 		int row = y + PAD;
 		double glide = sample.glideRatio();
+		Sample previous = recorder.ago(1);
 
 		if (VarioConfig.showPitch) row = row(graphics, font, x, row, "PITCH", fmt("%.1f°", sample.pitch()), VALUE);
+		if (VarioConfig.showGlideRatio) row = row(graphics, font, x, row, "GLIDE",
+				Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
 		if (VarioConfig.showHorizontalSpeed) row = row(graphics, font, x, row, "SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
 		if (VarioConfig.showTotalSpeed) row = row(graphics, font, x, row, "SPEED XYZ", speed(sample.speed()), VALUE);
 		// Color on displayed blocks/second, with a small neutral deadband.
 		if (VarioConfig.showVerticalSpeed) row = row(graphics, font, x, row, "SPEED Y", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
-		if (VarioConfig.showGlideRatio) row = row(graphics, font, x, row, "GLIDE",
-				Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
+
+		if (VarioConfig.showHorizontalAcceleration) row = accelerationRow(graphics, font, x, row,
+				"ACCEL XZ", horizontalAcceleration(sample, previous));
+		if (VarioConfig.showTotalAcceleration) row = accelerationRow(graphics, font, x, row,
+				"ACCEL XYZ", totalAcceleration(sample, previous));
+		if (VarioConfig.showVerticalAcceleration) row = accelerationRow(graphics, font, x, row,
+				"ACCEL Y", verticalAcceleration(sample, previous));
 
 		if (VarioConfig.showAngleOfAttack) {
 			// How far the nose sits above the flight path, which is the vertical gap between
@@ -183,6 +196,28 @@ public final class VarioHudElement implements HudElement {
 		graphics.text(font, label, x + PAD, y, LABEL, true);
 		graphics.text(font, value, x + VarioConfig.panelWidth - PAD - font.width(value), y, color, true);
 		return y + LINE;
+	}
+
+	private int accelerationRow(GuiGraphicsExtractor graphics, Font font, int x, int y,
+			String label, double acceleration) {
+		String value = Double.isFinite(acceleration)
+				? fmt("%+.2f b/s²", acceleration) : "--";
+		return row(graphics, font, x, y, label, value,
+				Double.isFinite(acceleration) ? rateColor(acceleration) : VALUE);
+	}
+
+	private static double horizontalAcceleration(Sample sample, Sample previous) {
+		if (previous == null) return Double.NaN;
+		return (sample.horizontalSpeed() - previous.horizontalSpeed()) * TPS * TPS;
+	}
+
+	private static double totalAcceleration(Sample sample, Sample previous) {
+		if (previous == null) return Double.NaN;
+		return (sample.speed() - previous.speed()) * TPS * TPS;
+	}
+
+	private static double verticalAcceleration(Sample sample, Sample previous) {
+		return previous == null ? Double.NaN : (sample.vy() - previous.vy()) * TPS * TPS;
 	}
 
 	private void drawChart(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
@@ -227,6 +262,24 @@ public final class VarioHudElement implements HudElement {
 			int px = chartX(x, past.horizontalSpeed());
 			int py = chartY(y, past.vy());
 			graphics.fill(px, py, px + 1, py + 1, ((alpha * (VarioConfig.trailColor >>> 24) / 255) << 24) | (VarioConfig.trailColor & 0xFFFFFF));
+		}
+
+		// Acceleration is the cursor's tick-to-tick movement in velocity space. Extending that
+		// rate for one second makes it legible on axes displayed in blocks/second. Arrows go
+		// down first so the cursor remains the exact current point when they overlap.
+		Sample previous = recorder.ago(1);
+		if (previous != null) {
+			double verticalChange = sample.vy() - previous.vy();
+			if (VarioConfig.showForwardAccelerationArrow) {
+				drawAccelerationArrow(graphics, x, y, sample.forwardSpeed(), sample.vy(),
+						sample.forwardSpeed() - previous.forwardSpeed(), verticalChange,
+						VarioConfig.forwardAccelerationArrowColor);
+			}
+			if (VarioConfig.showHorizontalAccelerationArrow) {
+				drawAccelerationArrow(graphics, x, y, sample.horizontalSpeed(), sample.vy(),
+						sample.horizontalSpeed() - previous.horizontalSpeed(), verticalChange,
+						VarioConfig.horizontalAccelerationArrowColor);
+			}
 		}
 
 		// Both cursors share a row, since vertical speed is the same either way; only the
@@ -303,6 +356,70 @@ public final class VarioHudElement implements HudElement {
 	private void drawCursor(GuiGraphicsExtractor graphics, int px, int py, int color) {
 		graphics.fill(px - 2, py, px + 3, py + 1, color);
 		graphics.fill(px, py - 2, px + 1, py + 3, color);
+	}
+
+	private static void drawAccelerationArrow(GuiGraphicsExtractor graphics, int chartOriginX,
+			int chartOriginY, double vx, double vy, double deltaVx, double deltaVy, int color) {
+		int startX = chartX(chartOriginX, vx);
+		int startY = chartY(chartOriginY, vy);
+		double secondsInTicks = ACCELERATION_ARROW_SECONDS * TPS;
+		double dx = deltaVx * secondsInTicks * VarioConfig.chartScale;
+		double dy = -deltaVy * secondsInTicks * VarioConfig.chartScale;
+		double length = Math.hypot(dx, dy);
+		if (length < 1.0) return;
+
+		double fraction = clippedFraction(startX, startY, dx, dy, chartOriginX,
+				chartOriginY, chartOriginX + chartWidth() - 1, chartOriginY + chartHeight() - 1);
+		int endX = (int) Math.round(startX + dx * fraction);
+		int endY = (int) Math.round(startY + dy * fraction);
+		drawLine(graphics, startX, startY, endX, endY, color);
+
+		double ux = dx / length;
+		double uy = dy / length;
+		double head = Math.min(3.0, Math.hypot(endX - startX, endY - startY));
+		drawLine(graphics, endX, endY,
+				Math.clamp((int) Math.round(endX - ux * head - uy * head * 0.5),
+						chartOriginX, chartOriginX + chartWidth() - 1),
+				Math.clamp((int) Math.round(endY - uy * head + ux * head * 0.5),
+						chartOriginY, chartOriginY + chartHeight() - 1), color);
+		drawLine(graphics, endX, endY,
+				Math.clamp((int) Math.round(endX - ux * head + uy * head * 0.5),
+						chartOriginX, chartOriginX + chartWidth() - 1),
+				Math.clamp((int) Math.round(endY - uy * head - ux * head * 0.5),
+						chartOriginY, chartOriginY + chartHeight() - 1), color);
+	}
+
+	/** Clips a segment starting inside a rectangle and returns the visible fraction of it. */
+	static double clippedFraction(double x, double y, double dx, double dy,
+			double minX, double minY, double maxX, double maxY) {
+		double fraction = 1.0;
+		if (dx > 0.0) fraction = Math.min(fraction, (maxX - x) / dx);
+		if (dx < 0.0) fraction = Math.min(fraction, (minX - x) / dx);
+		if (dy > 0.0) fraction = Math.min(fraction, (maxY - y) / dy);
+		if (dy < 0.0) fraction = Math.min(fraction, (minY - y) / dy);
+		return Math.max(0.0, fraction);
+	}
+
+	private static void drawLine(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1,
+			int color) {
+		int dx = Math.abs(x1 - x0);
+		int sx = x0 < x1 ? 1 : -1;
+		int dy = -Math.abs(y1 - y0);
+		int sy = y0 < y1 ? 1 : -1;
+		int error = dx + dy;
+		while (true) {
+			graphics.fill(x0, y0, x0 + 1, y0 + 1, color);
+			if (x0 == x1 && y0 == y1) return;
+			int twiceError = error * 2;
+			if (twiceError >= dy) {
+				error += dy;
+				x0 += sx;
+			}
+			if (twiceError <= dx) {
+				error += dx;
+				y0 += sy;
+			}
+		}
 	}
 
 	/** Axis extremes in blocks/second, at half scale so they do not swamp the chart. */

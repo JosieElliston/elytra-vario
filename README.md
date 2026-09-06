@@ -26,7 +26,7 @@ There are five markers you can show inside the pitch ladder
 
 ## Velocity Graph
 
-Plots horizontal against vertical speed. The yellow cursor shows total horizontal speed with a 100-tick trail. The cyan cursor shows horizontal speed projected on to the look direction. They coincide in straight flight.
+Plots horizontal against vertical speed. The yellow cursor shows total horizontal speed with a 100-tick trail. The cyan cursor shows horizontal speed projected on to the look direction. They coincide in straight flight. Matching arrows project each cursor's measured acceleration one second forward.
 
 The heatmap shows the maximum one-tick total-energy gain for each velocity.
 
@@ -56,6 +56,7 @@ A bar chart ranging from 0 to 80 b/s:
 | `XZ`  | horizontal, `sqrt(vx² + vz²)`  |
 | `XYZ` | total, `sqrt(vx² + vy² + vz²)` |
 
-Optional white markers show the component speeds at the steady max-horizontal-speed glide:
-20.191 b/s Y, 67.776 b/s XZ, and 70.719 b/s XYZ. Optional gray markers show straight-down
-terminal velocity: 78.400 b/s Y and XYZ, and zero XZ.
+Arrows for acceleration.
+
+White markers show the speeds at the steady-state max-horizontal-speed glide:
+20.191 b/s Y, 67.776 b/s XZ, and 70.719 b/s XYZ. Optional gray markers show straight-down terminal velocity: 78.400 b/s Y and XYZ, and zero XZ.

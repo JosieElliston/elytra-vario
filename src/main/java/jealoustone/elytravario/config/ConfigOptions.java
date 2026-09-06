@@ -129,8 +129,12 @@ public final class ConfigOptions {
 		add("chartFieldLossColor", 3, 0, 1, 1, 0, true, false);
 		add("showHorizontalCursor", 3, 0, 1, 1, 0, false, false);
 		add("cursorXzColor", 3, 0, 1, 1, 0, true, false);
+		add("showHorizontalAccelerationArrow", 3, 0, 1, 1, 0, false, false);
+		add("horizontalAccelerationArrowColor", 3, 0, 1, 1, 0, true, false);
 		add("showForwardCursor", 3, 0, 1, 1, 0, false, false);
 		add("cursorForwardColor", 3, 0, 1, 1, 0, true, false);
+		add("showForwardAccelerationArrow", 3, 0, 1, 1, 0, false, false);
+		add("forwardAccelerationArrowColor", 3, 0, 1, 1, 0, true, false);
 		add("chartFieldScale", 3, 0.001, 10, 1, 0, false, true);
 
 		add("showStats", 4, 0, 1, 1, 0, false, false);
@@ -141,10 +145,13 @@ public final class ConfigOptions {
 		add("panelOpacity", 4, 0, 100, 100, 0, false, false);
 		add("showPanelBorder", 4, 0, 1, 1, 0, false, false);
 		add("showPitch", 4, 0, 1, 1, 0, false, false);
+		add("showGlideRatio", 4, 0, 1, 1, 0, false, false);
 		add("showHorizontalSpeed", 4, 0, 1, 1, 0, false, false);
 		add("showTotalSpeed", 4, 0, 1, 1, 0, false, false);
 		add("showVerticalSpeed", 4, 0, 1, 1, 0, false, false);
-		add("showGlideRatio", 4, 0, 1, 1, 0, false, false);
+		add("showHorizontalAcceleration", 4, 0, 1, 1, 0, false, false);
+		add("showTotalAcceleration", 4, 0, 1, 1, 0, false, false);
+		add("showVerticalAcceleration", 4, 0, 1, 1, 0, false, false);
 		add("showAngleOfAttack", 4, 0, 1, 1, 0, false, false);
 		add("showKineticEnergy", 4, 0, 1, 1, 0, false, false);
 		add("showPotentialEnergy", 4, 0, 1, 1, 0, false, false);
@@ -169,6 +176,7 @@ public final class ConfigOptions {
 		add("speedoHorizontalColor", 5, "speedoHorizontal", 0, 1, 1, 0, true, false);
 		add("showSpeedoVertical", 5, "speedoVertical", 0, 1, 1, 0, false, false);
 		add("speedoVerticalColor", 5, "speedoVertical", 0, 1, 1, 0, true, false);
+		add("showSpeedoAcceleration", 5, 0, 1, 1, 0, false, false);
 		add("showSpeedoSoftMaxMarker", 5, 0, 1, 1, 0, false, false);
 		add("showSpeedoTerminalMarker", 5, 0, 1, 1, 0, false, false);
 		add("showSpeedoLabels", 5, 0, 1, 1, 0, false, false);

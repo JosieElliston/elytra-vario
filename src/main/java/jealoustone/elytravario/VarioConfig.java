@@ -219,6 +219,10 @@ public final class VarioConfig {
 	 */
 	public static int cursorXzColor = 0xFFFFD633;
 	public static int cursorForwardColor = 0xFF55CCFF;
+	public static boolean showHorizontalAccelerationArrow = true;
+	public static int horizontalAccelerationArrowColor = 0xFFFFD633;
+	public static boolean showForwardAccelerationArrow = true;
+	public static int forwardAccelerationArrowColor = 0xFF55CCFF;
 
 	/**
 	 * Pitch ladder spacing, in degrees. The rungs are placed by projection, so their spacing
@@ -394,7 +398,7 @@ public final class VarioConfig {
 	public static int flightPathColor = 0xFF55CCFF;
 	/** Top-left corner of the velocity graph, in scaled GUI pixels. */
 	public static int chartX = 4;
-	public static int chartY = 126;
+	public static int chartY = 156;
 	public static boolean showTrail = true;
 	public static int trailColor = 0xFF33CCAA;
 	public static boolean showHorizontalCursor = true;
@@ -408,10 +412,13 @@ public final class VarioConfig {
 	public static int positiveColor = 0xFF66DD77;
 	public static int negativeColor = 0xFFE2685F;
 	public static boolean showPitch = true;
+	public static boolean showGlideRatio = true;
 	public static boolean showHorizontalSpeed = true;
 	public static boolean showTotalSpeed = true;
 	public static boolean showVerticalSpeed = true;
-	public static boolean showGlideRatio = true;
+	public static boolean showHorizontalAcceleration = true;
+	public static boolean showTotalAcceleration = true;
+	public static boolean showVerticalAcceleration = true;
 	public static boolean showKineticEnergy = true;
 	public static boolean showPotentialEnergy = true;
 	public static boolean showTotalEnergy = true;
@@ -440,6 +447,7 @@ public final class VarioConfig {
 	public static int speedoTotalColor = 0xFFE0574B;
 	public static int speedoHorizontalColor = 0xFF57C46A;
 	public static int speedoVerticalColor = 0xFF4D8CFF;
+	public static boolean showSpeedoAcceleration = true;
 
 	/** Color of a bar whose speed is past the top of the scale. */
 	public static int speedoPeggedColor = 0xFF8C9298;
