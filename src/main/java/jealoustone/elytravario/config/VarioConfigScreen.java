@@ -13,6 +13,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.CycleButton;
@@ -27,6 +28,8 @@ import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.ARGB;
+import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
 /** Six scrollable pages with live HUD previews and an explicit, non-closing Save.
@@ -499,7 +502,11 @@ public final class VarioConfigScreen extends Screen {
 		OptionRow(ConfigOptions.Option option) {
 			this.option = option;
 			Component label = text(option.key());
-			if (option.toggle() || option.choices() > 0) {
+			if (option.color()) {
+				control = Button.builder(colorLabel(option, draft.get(option.key())), button ->
+						minecraft.gui.setScreen(new ColorPickerScreen(option)))
+						.bounds(0, 0, 180, 20).build();
+			} else if (option.toggle() || option.choices() > 0) {
 				control = Button.builder(valueLabel(), button -> {
 					String value = draft.get(option.key());
 					draft.put(option.key(), option.toggle() ? Boolean.toString(!Boolean.parseBoolean(value))
@@ -542,5 +549,140 @@ public final class VarioConfigScreen extends Screen {
 
 		@Override public List<? extends GuiEventListener> children() { return List.of(control); }
 		@Override public List<? extends NarratableEntry> narratables() { return List.of(control); }
+	}
+
+	/** A compact swatch and the exact persisted value, so colors remain easy to compare. */
+	private static Component colorLabel(ConfigOptions.Option option, String value) {
+		int color = (int) option.parse(value);
+		return Component.literal("\u25a0 ").withColor(color & 0xFFFFFF).append(value);
+	}
+
+	/**
+	 * Channel-based color picker used by every color option. Changes are previewed in the HUD as
+	 * the sliders move. Done keeps them; Cancel and Escape restore the value from when the picker
+	 * opened. Heatmap colors omit opacity because their schema deliberately requires opaque RGB.
+	 */
+	private final class ColorPickerScreen extends Screen {
+		private static final int PICKER_WIDTH = 280;
+		private static final int PREVIEW_HEIGHT = 44;
+		private final ConfigOptions.Option option;
+		private final String initialValue;
+		private int color;
+		private int previewLeft;
+		private int previewTop;
+		private int previewWidth;
+
+		ColorPickerScreen(ConfigOptions.Option option) {
+			super(text("colorPicker.title", text(option.key())));
+			this.option = option;
+			initialValue = draft.get(option.key());
+			color = (int) option.parse(initialValue);
+		}
+
+		@Override
+		protected void init() {
+			int pickerWidth = Math.min(PICKER_WIDTH, width - 24);
+			int left = (width - pickerWidth) / 2;
+			int channels = option.opaque() ? 3 : 4;
+			int contentHeight = PREVIEW_HEIGHT + 12 + channels * 24 + 28;
+			previewLeft = left;
+			previewTop = Math.max(34, (height - contentHeight) / 2);
+			previewWidth = pickerWidth;
+
+			int y = previewTop + PREVIEW_HEIGHT + 12;
+			addRenderableWidget(new ColorSlider(left, y, pickerWidth, 1));
+			addRenderableWidget(new ColorSlider(left, y + 24, pickerWidth, 2));
+			addRenderableWidget(new ColorSlider(left, y + 48, pickerWidth, 3));
+			if (!option.opaque()) addRenderableWidget(new ColorSlider(left, y + 72, pickerWidth, 0));
+
+			int buttonsY = y + channels * 24 + 4;
+			addRenderableWidget(Button.builder(text("colorPicker.done"), button -> finish())
+					.bounds(left, buttonsY, pickerWidth / 2 - 2, 20).build());
+			addRenderableWidget(Button.builder(text("colorPicker.cancel"), button -> cancel())
+					.bounds(left + pickerWidth / 2 + 2, buttonsY, pickerWidth / 2 - 2, 20).build());
+		}
+
+		private void setChannel(int channel, int value) {
+			int shift = switch (channel) {
+				case 0 -> 24;
+				case 1 -> 16;
+				case 2 -> 8;
+				default -> 0;
+			};
+			color = color & ~(0xFF << shift) | value << shift;
+			if (option.opaque()) color |= 0xFF000000;
+			draft.put(option.key(), option.format(color));
+			changed();
+		}
+
+		private void finish() {
+			minecraft.gui.setScreen(VarioConfigScreen.this);
+		}
+
+		private void cancel() {
+			draft.put(option.key(), initialValue);
+			changed();
+			minecraft.gui.setScreen(VarioConfigScreen.this);
+		}
+
+		@Override public void onClose() { cancel(); }
+
+		@Override
+		public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
+				float delta) {
+			super.extractRenderState(graphics, mouseX, mouseY, delta);
+			graphics.centeredText(font, title, width / 2, previewTop - 18, 0xFFFFFFFF);
+			// A checkerboard makes partial opacity visible rather than merely making the swatch dim.
+			for (int y = 0; y < PREVIEW_HEIGHT; y += 8) {
+				for (int x = 0; x < previewWidth; x += 8) {
+					int checker = ((x / 8 + y / 8) & 1) == 0 ? 0xFFB8B8B8 : 0xFF686868;
+					graphics.fill(previewLeft + x, previewTop + y,
+							previewLeft + Math.min(x + 8, previewWidth),
+							previewTop + Math.min(y + 8, PREVIEW_HEIGHT), checker);
+				}
+			}
+			int previewRight = previewLeft + previewWidth;
+			graphics.fill(previewLeft, previewTop, previewRight, previewTop + PREVIEW_HEIGHT, color);
+			graphics.outline(previewLeft, previewTop, previewRight - previewLeft, PREVIEW_HEIGHT,
+					0xFFFFFFFF);
+			graphics.centeredText(font, Component.literal(option.format(color)), width / 2,
+					previewTop + (PREVIEW_HEIGHT - font.lineHeight) / 2, ARGB.opaque(contrast(color)));
+		}
+
+		/** Black or white text, based on the opaque RGB luminance of the selected color. */
+		private int contrast(int color) {
+			return ARGB.red(color) * 299 + ARGB.green(color) * 587 + ARGB.blue(color) * 114
+					>= 128_000 ? 0x000000 : 0xFFFFFF;
+		}
+
+		private final class ColorSlider extends AbstractSliderButton {
+			private final int channel;
+
+			ColorSlider(int x, int y, int width, int channel) {
+				super(x, y, width, 20, Component.empty(), channel(color, channel) / 255.0);
+				this.channel = channel;
+				updateMessage();
+			}
+
+			@Override
+			protected void updateMessage() {
+				int amount = Mth.clamp((int) Math.round(value * 255.0), 0, 255);
+				setMessage(text("colorPicker.channel." + channel, amount));
+			}
+
+			@Override
+			protected void applyValue() {
+				setChannel(channel, Mth.clamp((int) Math.round(value * 255.0), 0, 255));
+			}
+		}
+
+		private int channel(int color, int channel) {
+			return switch (channel) {
+				case 0 -> ARGB.alpha(color);
+				case 1 -> ARGB.red(color);
+				case 2 -> ARGB.green(color);
+				default -> ARGB.blue(color);
+			};
+		}
 	}
 }
