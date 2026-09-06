@@ -10,6 +10,8 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-06
+
 ### Added
 
 - Toggleable signed horizontal, total, and vertical acceleration readouts in Flight Stats,
@@ -149,6 +151,8 @@ First release, for Minecraft 26.2 on Fabric. Client-side only.
 - Screen anchoring for the stats panel, graph and speedometer. The graph can instead attach to
   an edge of the stats panel, and an attached pair anchors and moves as one block.
 
-[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/JosieElliston/elytra-vario/releases/tag/v1.0.0
