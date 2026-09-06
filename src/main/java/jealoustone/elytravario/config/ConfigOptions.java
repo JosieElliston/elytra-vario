@@ -12,6 +12,8 @@ import jealoustone.elytravario.VarioConfig;
 /** One schema for screen controls, disk validation, defaults, and runtime application. */
 public final class ConfigOptions {
 	private static final List<Option> OPTIONS = new ArrayList<>();
+	/** Per page, the one option that sits above the subpage selector rather than in the list. */
+	private static final Map<Integer, String> HEADERS = Map.of(2, "markerVisibility");
 
 	public record Option(Field field, int page, String group, double min, double max, double factor,
 			int choices, boolean color, boolean advanced, String defaultValue) {
@@ -181,6 +183,16 @@ public final class ConfigOptions {
 	}
 
 	public static List<Option> all() { return List.copyOf(OPTIONS); }
+
+	/** The page's master switch, shown above its subpage selector, or null when it has none. */
+	public static Option header(int page) {
+		String key = HEADERS.get(page);
+		if (key == null) return null;
+		for (Option option : OPTIONS) {
+			if (option.page() == page && option.key().equals(key)) return option;
+		}
+		throw new IllegalStateException(key);
+	}
 
 	/** The page's subpages, in declaration order; empty when the page is not divided. */
 	public static List<String> groups(int page) {
