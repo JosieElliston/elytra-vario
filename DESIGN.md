@@ -210,15 +210,23 @@ and three angles about one hub turn the split between horizontal and vertical sp
 shape — a wide fan is speed going into climb or sink, a closed one is flight that is nearly
 level. That is the whole case for it, and it is a display case rather than a measurement one.
 
-**Vertical speed is drawn as a magnitude, and the sign is a separate mark.** A scale that starts
-at zero cannot carry a sign, and vertical speed is negative through most of a dive, so the blue
-needle shows `|vy|` and a triangle below the hub says which way. The alternatives were
-considered and are worse for this instrument: mirroring the arc below its own flat side doubles
-the panel's height and asks the eye to read a reflected scale, and giving vertical speed a
-second, signed scale of its own means the blue needle no longer shares a scale with the other
-two, which is the thing the dial exists to show. The triangle is flat inside the panel's neutral
-deadband, so a reading sitting on zero does not alternate between climbing and sinking on
-rounding noise.
+**Vertical speed is drawn as a magnitude, and nothing carries the sign.** A scale that starts at
+zero cannot carry one, and vertical speed is negative through most of a dive, so the blue needle
+shows `|vy|`. The alternatives that would have kept the sign on the dial are worse for this
+instrument: mirroring the arc below its own flat side doubles the height and asks the eye to
+read a reflected scale, and giving vertical speed a second, signed scale of its own means the
+blue needle no longer shares a scale with the other two, which is the thing the dial exists to
+show. A small triangle under the hub was built and then removed — which way you are going is the
+most obvious fact in the view out of the window, and `SPEED Y` on the readout panel prints the
+sign for when a figure is wanted, so the mark was a third statement of something already known.
+
+**The background is the half disc, not a box around it.** The instrument is round and its
+corners hold nothing, so a rectangle behind it would be four wedges of dimmed world paying for
+no reading. This is the only panel where that is worth the extra drawing: it is the biggest one
+and the only one whose content does not fill its own bounds. It is filled a row at a time rather
+than a pixel at a time, because the fill is translucent and a pixel covered twice would blend
+twice and show as a seam — whole rows cannot overlap. The rim is drawn by the same walk that
+draws the arc, deduplicated for the same reason.
 
 **The needles differ in length as well as in colour.** They turn about one hub, so two speeds
 agreeing means one needle lying exactly on another — and total and horizontal speed agree

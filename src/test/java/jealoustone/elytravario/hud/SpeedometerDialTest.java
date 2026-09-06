@@ -49,15 +49,19 @@ class SpeedometerDialTest {
 		assertEquals(Math.PI, degenerate.angle(2.0));
 	}
 
-	@Test void theBoxIsTwiceTheRadiusWideAndTheHubSitsOnItsFlatSide() {
-		assertEquals(2 * (48 + SpeedometerDial.PAD), DIAL.width());
-		assertEquals(48 + SpeedometerDial.PAD + SpeedometerDial.FOOT, DIAL.height());
-		assertEquals(DIAL.width() / 2, DIAL.hubX());
+	@Test void theBoxIsExactlyTheHalfDiscsBoundsWithNothingToSpare() {
+		assertEquals(48 + SpeedometerDial.PAD, DIAL.rim());
 
-		// The arc reaches the padding at the top and both sides, and the foot is what is left
-		// below the flat side.
-		assertEquals(SpeedometerDial.PAD, DIAL.hubY() - 48);
-		assertEquals(SpeedometerDial.PAD, DIAL.hubX() - 48);
-		assertEquals(SpeedometerDial.FOOT, DIAL.height() - DIAL.hubY());
+		// Every pixel of the shape is inside the box, and the box has no row or column the
+		// shape does not reach: the extremes of the half disc are its own edges.
+		assertEquals(0, DIAL.hubX() - DIAL.rim());
+		assertEquals(DIAL.width() - 1, DIAL.hubX() + DIAL.rim());
+		assertEquals(0, DIAL.hubY() - DIAL.rim());
+		assertEquals(DIAL.height() - 1, DIAL.hubY());
+
+		// The width is odd because the hub's own column sits between two equal halves. The
+		// height has no such symmetry to keep — it is one rim plus the hub's row.
+		assertEquals(1, DIAL.width() % 2);
+		assertEquals(DIAL.rim() + 1, DIAL.height());
 	}
 }

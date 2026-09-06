@@ -448,20 +448,28 @@ public final class VarioConfig {
 	 *
 	 * <p><b>Vertical speed is drawn as a magnitude.</b> A scale that starts at zero cannot
 	 * carry a sign, and vertical speed is negative through most of a dive, so the blue needle
-	 * shows {@code |vy|} and a small triangle under the hub says which way. That is the one
-	 * reading on this instrument whose sign is not in its position, which is why the glyph is
-	 * in the needle's own colour rather than in the chrome: it belongs to that needle and to
-	 * nothing else. Within the panel's neutral deadband it is a flat dash rather than a
-	 * triangle, so a reading sitting on zero does not flicker between climbing and sinking.
+	 * shows {@code |vy|} and nothing on the dial says which way. Nothing needs to: which way
+	 * you are going is the most obvious fact in the view out of the window, and the readout
+	 * panel's {@code SPEED Y} row prints the sign for when a figure is wanted.
+	 *
+	 * <p>The background is the half disc itself rather than a box around it. The instrument is
+	 * round and its corners hold nothing, so a rectangle would be four wedges of dimmed world
+	 * paying for no reading — which matters here more than on the other panels, this being the
+	 * large one whose content does not fill its own bounds.
 	 */
 	public static int speedoVisibility = 0;
-	public static int speedoAnchor = 1;
+	public static int speedoAnchor = 2;
 	public static int speedoX = 4;
 	public static int speedoY = 4;
 
 	/**
 	 * Dial radius in scaled GUI pixels, and the speed at the right-hand end of the arc in
 	 * blocks/tick.
+	 *
+	 * <p>Sixty-four pixels because this is an instrument read out of the corner of the eye
+	 * rather than looked at, and a small dial is one whose needles have to be resolved before
+	 * their angles can be. It is the largest thing on the HUD, and it can afford to be: the
+	 * background is only the half disc, so what it costs the view is the shape and not a box.
 	 *
 	 * <p>Four blocks/tick is eighty blocks/second, which is a little past terminal velocity —
 	 * an elytra settles near 3.5 — so the whole of ordinary flight lands inside the arc and
@@ -470,7 +478,7 @@ public final class VarioConfig {
 	 * on speeds nothing passes through, which is the same argument that sets the velocity
 	 * graph's vertical bound.
 	 */
-	public static int speedoRadius = 48;
+	public static int speedoRadius = 64;
 	public static double speedoMaxSpeed = 4.0;
 
 	/**
@@ -520,7 +528,7 @@ public final class VarioConfig {
 
 	public static boolean showSpeedoLabels = true;
 	public static boolean showSpeedoBorder = true;
-	public static double speedoOpacity = 176.0 / 255.0;
+	public static double speedoOpacity = 0.45;
 
 	public static boolean visible(int mode, boolean gliding) {
 		return enabled && mode != 2 && (mode != 1 || gliding);
