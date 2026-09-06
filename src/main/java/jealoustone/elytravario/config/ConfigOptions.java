@@ -79,10 +79,9 @@ public final class ConfigOptions {
 		add("ladderFineRangeDegrees", 1, 1, 30, 1, 0, false, true);
 		add("ladderFadeFraction", 1, 0, 50, 100, 0, false, true);
 
-		// Shared by every marker, then one subpage per marker. Declaration order is the
+		// The visibility switch heads the page; the rest is one subpage per marker, in the
 		// order of the subpage dropdown and of the rows within each subpage.
 		add("markerVisibility", 2, 0, 1, 1, 3, false, false);
-		add("flightPathPeggedColor", 2, 0, 1, 1, 0, true, false);
 
 		add("showLookaheadPitch", 2, "lookahead", 0, 1, 1, 0, false, false);
 		add("lookaheadPitchColor", 2, "lookahead", 0, 1, 1, 0, true, false);

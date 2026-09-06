@@ -76,11 +76,11 @@ public final class VarioConfig {
 	 *     the gap between the two being the angle of attack the hold is asking for.</li>
 	 * </ul>
 	 *
-	 * <p><b>Neither rule bug pegs at the edge of the ladder; both leave through it.</b> Each
-	 * governs one phase and sends its answer off the ladder in the phases it does not govern,
-	 * where a mark held at the stop would read as a direction to keep going in and so invite
-	 * flying a rule where it does not apply. The two that do peg are the two switched off by
-	 * default, neither of which is a rule.
+	 * <p><b>No bug is drawn once its answer leaves the ladder; each simply goes.</b> Every one
+	 * of them sends its answer off the ladder somewhere — a rule bug through the phases it does
+	 * not govern — and a mark held at the stop would read as a direction to keep going in, so
+	 * inviting a rule to be flown where it does not apply. Gone is also what each already is
+	 * when its search returns nothing, so a bug that is not there means one thing.
 	 *
 	 * <p>The velocity bug and the flight path marker are the same quantity twice. The marker
 	 * is the honest two-dimensional version and also shows sideslip; the bug is its vertical
@@ -307,13 +307,6 @@ public final class VarioConfig {
 	public static int ladderLabelColor = 0xA0949AA0;
 
 	/**
-	 * Color of the flight path marker when it is pegged at the edge of the band, meaning
-	 * the true flight path is off the ladder and the marker's position is a floor or ceiling
-	 * rather than a reading.
-	 */
-	public static int flightPathPeggedColor = 0xFF6A7076;
-
-	/**
 	 * The optimal pitch bug's geometry, in scaled GUI pixels, and its color.
 	 *
 	 * <p>It lives entirely inside {@code ladderCenterGap}, which is the one band of the
@@ -515,14 +508,11 @@ public final class VarioConfig {
 	/**
 	 * Colour of a needle whose speed is past the end of the scale.
 	 *
-	 * <p>These needles peg rather than leave, unlike the pitch ladder's rule bugs, and for the
-	 * reason that instrument gives for the two marks that do peg there: a speed past the stop
-	 * is a limit genuinely being exceeded, not advice being followed in the wrong phase. The
-	 * grey is what says the position has stopped being a reading.
-	 *
-	 * <p>Lighter than the ladder's equivalent, which it otherwise matches. That mark sits over
-	 * the world and this one sits on a panel with a grey of its own behind it, and the same
-	 * value that reads as neutral over sky and ground disappears into this background.
+	 * <p>These needles peg rather than leave, unlike the pitch ladder's bugs, which simply go
+	 * once their answer is off the ladder. The difference is what the off-scale state means: a
+	 * speed past the stop is a limit genuinely being exceeded and the scale is the only thing
+	 * that ran out, whereas a bug off the ladder is advice that does not apply to the phase
+	 * being flown. The grey is what says the position has stopped being a reading.
 	 */
 	public static int speedoPeggedColor = 0xFF8C9298;
 

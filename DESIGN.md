@@ -232,7 +232,7 @@ draws the arc, deduplicated for the same reason.
 agreeing means one needle lying exactly on another — and total and horizontal speed agree
 whenever flight is level, which is most of a glide. Length is what makes that overlap read as a
 pile rather than as one mark of indeterminate colour, and it is the only channel left twice
-over: at the stop, where every pegged needle takes the same gray, and for the red and green
+over: at the stop, where every off-scale needle takes the same gray, and for the red and green
 pair, which is the one pair a colour-blind eye cannot separate. This is the same argument that
 ranks the ladder's bugs by height, for the same reason. Total speed takes the longest needle
 because it is the largest of the three by construction, so the tips run outwards in the same
@@ -240,15 +240,16 @@ order they run clockwise.
 
 **The flat side of the half circle is not drawn.** A half turn puts both stops on that diameter,
 so a line along it would lie under every needle reading near zero or near full scale — which is
-where vertical speed spends the apex, and where a pegged needle always is. It closes the shape
+where vertical speed spends the apex, and where an off-scale needle always is. It closes the shape
 at the cost of the two readings hardest to see. The ticks at either end already say where the
 scale stops.
 
-**Needles peg rather than leave**, unlike the ladder's rule bugs, and for the reason that
-instrument gives for the two marks that do peg: a speed past the stop is a limit genuinely being
-exceeded, not advice being followed in a phase it does not govern. The pegged gray is a lighter
-one than the ladder's, because the ladder's marks sit over the world and these sit on a panel
-with a gray of its own behind them.
+**Needles peg rather than leave**, unlike the ladder's bugs, which simply go once their
+answer is off the ladder. What the off-scale state means is what differs: a speed past the stop
+is a limit genuinely being exceeded and the scale is the only thing that ran out, whereas a bug
+off the ladder is advice that does not apply to the phase being flown. The gray is what says
+the position has stopped being a reading; it is a light one, because these marks sit on a panel
+with a gray of its own behind them rather than over the world.
 
 **Curves out of rectangles.** The HUD's only primitive is a rectangle, but it is submitted with
 the current pose and that pose may carry a rotation — `ColoredRectangleRenderState` transforms
@@ -357,27 +358,27 @@ mark of indeterminate hue. Ranking them by rise and drawing tallest first makes 
 pile reads as a set of chevrons. Which bug gets which height is a display choice tuned in
 flight and carries no claim; only two things about it matter structurally, that the heights are
 distinct and that the flat pair of stubs is the velocity bug, the one mark of the four that is
-not advice. It is also what is left when colour has been spent, since a pegged bug takes the
-same gray whichever one it is. Nothing enforces the ordering — `drawBugs` draws in a fixed
-sequence that has to be kept in step with the rises by hand.
+not advice. Nothing enforces the ordering — `drawBugs` draws in a fixed sequence that has to
+be kept in step with the rises by hand.
 
-**Neither rule bug pegs; both leave the ladder.** The original behaviour was to hold a bug at
-the edge of the band and turn it gray, which reads as a direction to keep going in. That
-reading is wrong for a rule that only governs one phase, and both of these do. The lookahead's
-off-ladder answer through the dive is not a limit being approached but the *far mode of a
-bimodal choice* — stay level against zoom now at 40–50° nose-up. The hold's is a steep
-nose-down pitch it starts reporting once the dive is over and the rule has stopped applying.
-Pegged, each would park at a stop for whole phases while inviting you to fly a rule exactly
-where it is not the rule.
+**No bug pegs; each leaves the ladder.** The original behaviour was to hold a bug at the edge
+of the band and turn it gray, which reads as a direction to keep going in. That reading is
+wrong for a rule that only governs one phase, and both rules do. The lookahead's off-ladder
+answer through the dive is not a limit being approached but the *far mode of a bimodal choice*
+— stay level against zoom now at 40–50° nose-up. The hold's is a steep nose-down pitch it
+starts reporting once the dive is over and the rule has stopped applying. Pegged, each would
+park at a stop for whole phases while inviting you to fly a rule exactly where it is not the
+rule.
 
 Leaving is also what each already does when its search returns nothing, which is the second
-half of the argument: a bug that is not on the ladder now means one thing rather than two.
+half of the argument: a bug that is not on the ladder means one thing rather than two.
 
-The peg survives as a per-bug argument to `drawBug` for the two switched-off bugs, where the
-off-ladder answer genuinely is a limit — the one-tick bug's near-90° nose-down through a slow
-descent, and the velocity bug's direction of travel, which cannot be anything but where you are
-going. That per-bug shape is the honest one for something that was always described here as a
-cheap courtesy rather than a necessity.
+The two switched-off bugs went the same way, and the peg with them. Their off-ladder answers
+are closer to genuine limits — the one-tick bug's near-90° nose-down through a slow descent,
+and the velocity bug's direction of travel, which cannot be anything but where you are going —
+but pitch clamps at ±90, so the stops need no aiming and a mark there only names a direction
+the situation already implies. One rule for every bug is worth more than a courtesy that was
+never load-bearing.
 
 **Only the two rules are on by default.** The one-tick bug and the velocity bug are both
 switched off, having been drawn and then flown. The one-tick bug is right only in phases some
@@ -441,16 +442,12 @@ hide it exactly while it is being followed; fading it when the correction is lar
 it exactly when there is a long way to go and no way to snap to it. So it carries the same
 band-edge taper the rungs do and nothing else.
 
-**It pegs rather than leaving, and earns less there than anywhere else.** A whole regime — the
-slow descent above — has its answer eighty-something degrees nose-down, far below anything the
-band reaches. Held at the limit the bug takes the flight path marker's pegged gray, which
-already means a direction to go rather than a place to be.
-
-That is worth little, though, and it is worth being straight about why. Pitch clamps at ±90,
-so the stops need no aiming: the mouse finds them on its own, and all a cue can add there is
-which way to slam, which the situation already implies. The bug does its real work at interior
-angles, where it is a mark to fly to and nothing else supplies one. The peg is kept because it
-costs nothing and stays out of the way, not because it is load-bearing.
+**It leaves rather than pegging, and loses nothing by it.** A whole regime — the slow descent
+above — has its answer eighty-something degrees nose-down, far below anything the band reaches,
+so the bug is gone for the length of it. Pitch clamps at ±90, so the stops need no aiming: the
+mouse finds them on its own, and all a cue held there can add is which way to slam, which the
+situation already implies. The bug does its real work at interior angles, where it is a mark to
+fly to and nothing else supplies one.
 
 **It lives in the center gap**, which is the only radius that never meets a rung or a label:
 rungs start at the gap's edge and labels sit beyond their outer ends. Everywhere further out
@@ -753,20 +750,19 @@ can go, so they overlap whenever two rules agree. They are ranked by height as w
 and drawn tallest first, so a pile nests into chevrons instead of merging into one mark of
 uncertain colour. Which bug gets which height is tuned by eye and means nothing in itself.
 
-**When an answer is further out than the band reaches, a rule bug leaves the ladder.** Both
-of the bugs that are on by default do this. Each governs one phase and each sends its answer
-off the ladder during the phases it does not govern — the amber one into a second mode 40–50°
-nose-up through the dive, the green one into a steep nose-down answer once the dive is over.
-Held at the edge in gray they would read as *keep going that way* for whole phases at a time,
-which is an invitation to fly a rule exactly where it is not the rule. Gone says the one true
-thing instead, and it matches what each already does when its search has no answer at all — so
-a bug that is not there means one thing rather than two.
+**When an answer is further out than the band reaches, the bug leaves the ladder.** All four
+do this, and the flight path marker with them. It matters most for the two rules: each governs
+one phase and each sends its answer off the ladder during the phases it does not govern — the
+amber one into a second mode 40–50° nose-up through the dive, the green one into a steep
+nose-down answer once the dive is over. Held at the edge in gray they would read as *keep going
+that way* for whole phases at a time, which is an invitation to fly a rule exactly where it is
+not the rule. Gone says the one true thing instead, and it matches what each already does when
+its search has no answer at all — so a bug that is not there means one thing rather than two.
 
-The two switched-off bugs still peg gray at the edge, because for them the off-ladder answer
-really is a limit being approached: near-90° nose-down through a slow descent for the magenta
-one, and the plain direction of travel for the gray one. Do not expect much of it. Pitch clamps
-at ±90, so the mouse finds the stop by itself; the bugs earn their place at interior angles,
-where they are actual targets to fly to.
+The switched-off bugs come nearer to a real limit off the ladder — near-90° nose-down through
+a slow descent for the magenta one, the plain direction of travel for the gray one — but pitch
+clamps at ±90, so the mouse finds the stop by itself. The bugs earn their place at interior
+angles, where they are actual targets to fly to.
 
 ### Reading the two energy bugs
 
@@ -777,7 +773,7 @@ version is elytrasim's *immediate optimal pitch* exactly.
 | --- | --- | --- |
 | Steady glide | Exactly level, and it stays there | Yes — a real cusp, not a rounding |
 | Zoom climb | Tens of degrees nose-up, moving as speed bleeds off | Yes — this is the regime it earns its place in |
-| Slow descent | Near ninety nose-down, usually pegged gray | Yes, but it means *dive*, not *dive to exactly there* |
+| Slow descent | Near ninety nose-down, usually off the ladder and so not drawn | Yes, but it means *dive*, not *dive to exactly there* |
 | The gain phase | Pinned to the nose-up stop, then 40° off for a while | **No** — this is what the 20-tick bug is for |
 | The dive that pays for a climb | Whatever loses least right now | **No** — and neither is the 20-tick one; use the hold bug |
 
@@ -823,7 +819,7 @@ instruments watched continuously they were clutter competing with readings actua
 | `showOptimalPitch` | The magenta one-tick bug on the ladder |
 | `showVelocityPitch` | The gray velocity bug: where you are going, as a bug rather than a marker. Its gap from the hold bug is the angle of attack the hold is asking for — about 30° by the end of a dive, which is the answer to whether holding the angle means pointing along it |
 | `showAngleOfAttack` | An `AOA` row on the panel, which resizes itself around it |
-| `showFlightPath` | The flight path marker: a winged circle on the ladder marking where you are actually going, as against the crosshair's where you are looking. Its vertical gap from the crosshair is angle of attack drawn rather than printed, and its horizontal gap is sideslip. Grays out when pegged at the edge of the ladder |
+| `showFlightPath` | The flight path marker: a winged circle on the ladder marking where you are actually going, as against the crosshair's where you are looking. Its vertical gap from the crosshair is angle of attack drawn rather than printed, and its horizontal gap is sideslip. Not drawn once it falls outside the ladder band or off the edge of the screen |
 
 Sideslip is still readable without the marker, from the gap between the chart's two cursors.
 
