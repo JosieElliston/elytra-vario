@@ -6,7 +6,7 @@ public record SpeedometerChart(int plotHeight, double maxSpeed) {
 	public static final int TEXT_MARGIN = 5;
 	public static final int RIGHT_PAD = 11;
 	public static final int SCALE_LABEL_WIDTH = 18;
-	public static final int BAR_WIDTH = 10;
+	public static final int BAR_WIDTH = 11;
 	public static final int BAR_GAP = 10;
 	public static final int BAR_COUNT = 3;
 	public static final int CATEGORY_HEIGHT = 13;

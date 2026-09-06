@@ -13,6 +13,14 @@ and key-registration APIs, not behavior.
 
 ### Added
 
+- Toggleable signed horizontal, total, and vertical acceleration readouts in Flight Stats,
+  displayed in blocks per second squared below the speed readouts.
+- Toggleable acceleration arrows for the horizontal and look-projected cursors on the velocity
+  graph. Each starts at its cursor, projects the measured acceleration for one second, and
+  defaults to its cursor's color.
+- Toggleable white acceleration arrows centered on the Y, XZ, and XYZ speedometer bars. Each
+  starts at the current speed and projects its measured acceleration for one second; its head
+  flattens into a stable horizontal mark as acceleration approaches zero.
 - Toggleable white reference markers on the speed bars for the Y, XZ, and XYZ speeds at the
   +53.366° max-horizontal-speed glide, plus toggleable gray straight-down terminal-velocity
   markers, which default to off.
@@ -30,6 +38,8 @@ and key-registration APIs, not behavior.
 
 ### Changed
 
+- The glide-ratio readout now sits directly below pitch and above the speed readouts.
+- The velocity graph's default position moves down with the taller default Flight Stats panel.
 - The semicircular three-needle speedometer is now a three-bar Y/XZ/XYZ chart for faster
   comparison at a glance. Existing speedometer position, scale, visibility, and color settings
   remain compatible; chart height replaces dial radius.
