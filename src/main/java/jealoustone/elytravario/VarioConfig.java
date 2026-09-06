@@ -30,10 +30,10 @@ public final class VarioConfig {
 	 * chart's cyan cursor still shows sideslip either way.
 	 *
 	 * <p>The open question has since closed, and these two switches did not move. The dive's
-	 * rule is read as the gap between the hold bug and the velocity bug, and that gap is angle
-	 * of attack — so the ladder does show it by default now, as a distance between two marks.
-	 * What is still off is the printed figure and the exact two-dimensional placement, neither
-	 * of which the rule needs.
+	 * rule is read as the gap between the hold bug and where the player is actually going, and
+	 * that gap is angle of attack — so turning the marker on is what shows it as a distance
+	 * between two marks. What the rule itself needs is neither the printed figure nor the exact
+	 * two-dimensional placement, which is why both stay off by default.
 	 */
 	public static boolean showAngleOfAttack = false;
 	public static boolean showFlightPath = false;
@@ -57,11 +57,11 @@ public final class VarioConfig {
 	public static boolean showOptimalPitch = false;
 
 	/**
-	 * The other three bugs, each marking a pitch some rule says to fly, all drawn in the same
+	 * The other two bugs, each marking a pitch some rule says to fly, both drawn in the same
 	 * band of the center gap and told apart by color and by height.
 	 *
-	 * <p>Together with the one above they are the four myopic rules an optimised pump cycle
-	 * turns out to obey piecewise, plus the reference they are read against:
+	 * <p>Together with the one above they are the three myopic rules an optimised pump cycle
+	 * turns out to obey piecewise:
 	 *
 	 * <ul>
 	 * <li><b>Lookahead</b> — the constant pitch gaining the most energy over the next
@@ -71,9 +71,6 @@ public final class VarioConfig {
 	 * <li><b>Hold</b> — the pitch that leaves the flight path angle where it is. This is the
 	 *     <em>dive</em> rule, and it is parameter-free. See
 	 *     {@link jealoustone.elytravario.flight.FlightPathHold}.</li>
-	 * <li><b>Velocity</b> — where the player is actually going. Not advice, which is why it
-	 *     is the one bug drawn in gray; it is there so the hold bug can be read against it,
-	 *     the gap between the two being the angle of attack the hold is asking for.</li>
 	 * </ul>
 	 *
 	 * <p><b>No bug is drawn once its answer leaves the ladder; each simply goes.</b> Every one
@@ -82,29 +79,17 @@ public final class VarioConfig {
 	 * inviting a rule to be flown where it does not apply. Gone is also what each already is
 	 * when its search returns nothing, so a bug that is not there means one thing.
 	 *
-	 * <p>The velocity bug and the flight path marker are the same quantity twice. The marker
-	 * is the honest two-dimensional version and also shows sideslip; the bug is its vertical
-	 * component alone, in the center gap where the other three are, which is where it is
-	 * wanted when the thing being read is a gap between two pitches.
+	 * <p><b>Where the player is actually going is not among them.</b> A gray bug marking it
+	 * was, added so the hold could be read against something, on the theory that the gap
+	 * between the two — the angle of attack the hold is asking for — is worth watching. In the
+	 * air it is not: the hold bug is flown by putting the nose on it, and the gap is a fact
+	 * about the answer rather than an input to flying it. It was also the same quantity the
+	 * flight path marker already draws, and draws better: two-dimensionally, with sideslip,
+	 * against the crosshair rather than against another bug. One mark for one reading, so the
+	 * bug went and {@code showFlightPath} is where that reading lives.
 	 */
 	public static boolean showLookaheadPitch = true;
 	public static boolean showHoldPitch = true;
-
-	/**
-	 * <b>Off by default</b>, unlike the two above.
-	 *
-	 * <p>It was added so the hold bug could be read against something, on the theory that the
-	 * gap between them — the angle of attack the hold is asking for — is worth watching. In
-	 * the air it is not: the hold bug is flown by putting the nose on it, and the gap is a
-	 * fact about the answer rather than an input to flying it. So this is one more mark in a
-	 * crowded band for a number nothing is done with, which is the same case that keeps
-	 * {@code showAngleOfAttack} and {@code showFlightPath} off.
-	 *
-	 * <p>Turn it on to see that gap directly; it is about thirty degrees by the end of a dive,
-	 * and it is the answer to "does holding the angle mean pointing along it", which it does
-	 * not.
-	 */
-	public static boolean showVelocityPitch = false;
 
 	/**
 	 * How many ticks the lookahead bug holds a candidate pitch for before scoring it.
@@ -332,47 +317,37 @@ public final class VarioConfig {
 	public static int optimalPitchColor = 0xE0FF5AE0;
 
 	/**
-	 * The other three bugs share that geometry and differ only in rise, which is the second
+	 * The other two bugs share that geometry and differ only in rise, which is the second
 	 * channel their identity is carried on.
 	 *
-	 * <p>Color alone would not be enough. All four bugs occupy one band — there is nowhere
+	 * <p>Color alone would not be enough. All three bugs occupy one band — there is nowhere
 	 * else on the ladder for them, the center gap being the only radius no rung or label ever
 	 * reaches — so they overlap whenever the rules agree, and agreement is common. Ranking
 	 * them by height makes an overlap nest instead of merge: the apexes coincide, the taller
 	 * shoulders still show past the shorter ones, and the pile reads as a set of chevrons
-	 * rather than as one mark of uncertain color. It also survives the peg, where all four
-	 * take the same gray and color stops saying anything at all.
+	 * rather than as one mark of uncertain color.
 	 *
 	 * <p>Which bug gets which height is a display choice tuned in flight, and it is worth being
 	 * plain that it encodes no claim — the lookahead is the tallest and the hold one step under
 	 * it because that is what reads well with both of them up, not because the ordering means
-	 * anything. Only two things about these numbers matter structurally: that they are
-	 * distinct, and that the flat pair of stubs is the velocity bug, which is the one mark of
-	 * the four that is not advice.
+	 * anything. The one thing about these numbers that matters structurally is that they are
+	 * distinct.
 	 *
 	 * <p><b>{@code drawBugs} must draw them in descending order of rise</b>, since that is what
 	 * makes an overlap nest rather than hide the taller bug. Changing the ranking here means
 	 * reordering the calls there; nothing checks it.
-	 *
-	 * <p>A rise of zero is a single row: not a wedge, deliberately, since that bug is not
-	 * advice.
 	 */
 	public static int ladderLookaheadRise = 6;
 	public static int ladderHoldRise = 4;
-	public static int ladderVelocityRise = 0;
 
 	/**
-	 * The other three bugs' colors.
+	 * The other two bugs' colors.
 	 *
 	 * <p>Amber and green are picked the way the magenta was: away from the chart's yellow and
-	 * cyan, away from each other, and readable against both sky and ground. The velocity bug
-	 * is gray on purpose — it is the one mark of the four that is a reading rather than a
-	 * target, and gray is what the rest of this ladder uses to say exactly that. It shares its
-	 * RGB with the minor rungs.
+	 * cyan, away from each other, and readable against both sky and ground.
 	 */
 	public static int lookaheadPitchColor = 0xE0F7A900;
 	public static int holdPitchColor = 0xE000B533;
-	public static int velocityPitchColor = 0xD0B4BAC0;
 
 	// Per-instrument visibility: 0 = always, 1 = gliding, 2 = hidden.
 	public static int ladderVisibility = 0;
