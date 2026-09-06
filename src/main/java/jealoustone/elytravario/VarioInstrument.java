@@ -108,7 +108,7 @@ public enum VarioInstrument {
 	 * Flips the instrument on or off and saves.
 	 *
 	 * <p>It goes through the settings schema rather than assigning the field, so that the write
-	 * is validated and the file is replaced by exactly the code the Save button uses. Reading a
+	 * is validated and the file is replaced by exactly the code the settings screen uses. Reading a
 	 * whole snapshot to change one entry is a keypress's worth of work, and it is what makes the
 	 * saved file agree with the rest of the live settings rather than with whatever was on disk.
 	 *

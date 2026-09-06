@@ -594,16 +594,16 @@ thing as its first two.
 **The key writes the setting and saves it**, rather than holding a runtime override on top of
 it. That is what makes it a toggle rather than a mode: there is one place the answer lives, the
 settings screen shows what the key did, and a HUD you switched off stays off across a restart,
-which is the honest reading of having switched it off. It goes through the same schema the Save
-button uses, so the write is validated and the file is replaced by exactly that code; a failed
-write is logged and the toggle still applies for the session.
+which is the honest reading of having switched it off. It goes through the same schema the
+settings screen writes through, so the write is validated and the file is replaced by exactly
+that code; a failed write is logged and the toggle still applies for the session.
 
 The binds themselves are ordinary `KeyMapping`s registered with the game, so they are in the
 vanilla Controls list like any other. Rebinding them from the mod's own screen is a convenience
 on top of that, not a second store: the row sets the same mapping and writes `options.txt`
-immediately. That is the only arrangement in which the two menus agree — a bind held in this
-screen's draft would be silently reverted by a Cancel in the vanilla one — and it is why the
-toggle key row is the one row on a page that Cancel and Reset do not touch.
+immediately. That is the only arrangement in which the two menus agree — a bind this screen held
+back until later would be silently reverted by a Cancel in the vanilla one — and it is why the
+toggle key row is the one row on a page that Reset does not touch.
 
 Config files written before the split still read: `ConfigStore` translates a retired
 `*Visibility` value into the pair, since the alternative is that every hidden instrument quietly
@@ -680,9 +680,13 @@ Needs JDK 25.
 Open Mod Menu's configuration button for Elytra Vario. Five pages separate Global, Pitch Ladder,
 Markers, Velocity Graph, and Flight Stats. Global holds the HUD master switch; each instrument’s
 visibility control stays on its own page. Marker names identify the displayed quantities;
-tooltips define their calculations and describe possible uses. Valid edits preview immediately, and Save persists them to `config/elytra-vario.json`
-without closing the screen. Closing or Escape asks before discarding unsaved edits. Only confirming discard
-restores the last save point; dismissing the popup preserves the draft and live preview. In game, a right-side settings panel leaves the HUD visible without blur. Each page has a reset, and less common controls are under Advanced.
+tooltips define their calculations and describe possible uses. Edits take effect in the HUD as
+you make them and save themselves to `config/elytra-vario.json`, so there is nothing to confirm
+on the way out: Close and Escape simply close. A half-typed number is held back from both the
+HUD and the file until it reads as a number, with the reason shown under the Close button. In game, a
+right-side settings panel leaves the HUD visible without blur. Each page has a reset, and less
+common controls are under Advanced. The screen reopens on the page, subpage and scroll position
+you left, with the Advanced switch as you left it, for the rest of the session.
 
 The graph's anchor is one setting: five screen corners, or one of the four sides of the stats
 panel. Below is the default. Attaching boxes the pair and anchors that box, so both instruments

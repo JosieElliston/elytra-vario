@@ -237,6 +237,15 @@ public final class ConfigOptions {
 		return ((Number) values.get(key)).doubleValue();
 	}
 
+	/**
+	 * Applies a set of values only if every one of them is complete and in range, so that a
+	 * half-typed number leaves the last good values in force rather than reverting the HUD.
+	 * This is what makes editing safe to apply as it is typed.
+	 */
+	public static void applyIfValid(Map<String, String> values) {
+		if (error(values) == null) apply(values);
+	}
+
 	public static void apply(Map<String, String> values) {
 		if (error(values) != null) throw new IllegalArgumentException("Invalid config");
 		try {
