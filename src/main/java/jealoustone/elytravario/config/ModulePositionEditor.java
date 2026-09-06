@@ -7,7 +7,7 @@ import java.util.Map;
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.hud.HudPosition;
-import jealoustone.elytravario.hud.SpeedometerDial;
+import jealoustone.elytravario.hud.SpeedometerChart;
 import jealoustone.elytravario.hud.VarioHudElement;
 
 /** Geometry and coordinate changes for the in-world module position editor. */
@@ -61,12 +61,12 @@ final class ModulePositionEditor {
 				chartWidth, chartHeight));
 
 		if (VarioInstrument.SPEEDOMETER.visible(gliding)) {
-			SpeedometerDial dial = new SpeedometerDial(VarioConfig.speedoRadius,
+			SpeedometerChart speedometerChart = new SpeedometerChart(VarioConfig.speedoHeight,
 					VarioConfig.speedoMaxSpeed);
 			HudPosition position = HudPosition.clamp(VarioConfig.speedoX, VarioConfig.speedoY,
-					dial.width(), dial.height(), screenWidth, screenHeight);
+					speedometerChart.width(), speedometerChart.height(), screenWidth, screenHeight);
 			result.add(new Bounds(Module.SPEEDOMETER, position.x(), position.y(),
-					dial.width(), dial.height()));
+					speedometerChart.width(), speedometerChart.height()));
 		}
 		return result;
 	}

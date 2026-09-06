@@ -53,6 +53,7 @@ public final class ConfigStore {
 	public static Map<String, String> decode(String json) {
 		JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 		Map<String, String> values = ConfigOptions.defaults();
+		boolean oldSpeedometer = root.has("speedoRadius") && !root.has("speedoHeight");
 		for (var entry : RETIRED.entrySet()) {
 			// A file holding both the old key and the new ones was written by a newer build, so
 			// what it says now wins over what it used to say.
@@ -67,6 +68,13 @@ public final class ConfigStore {
 			}
 		}
 		for (var option : ConfigOptions.all()) {
+			// The bar chart replaced the dial's radius with its own taller default. If the old
+			// dial also had its stock background, take the new lighter default with it; preserve
+			// any opacity the player actually customized.
+			if (oldSpeedometer && option.key().equals("speedoOpacity")
+					&& root.has(option.key()) && root.get(option.key()).getAsDouble() == 45.0) {
+				continue;
+			}
 			if (root.has(option.key())) values.put(option.key(), root.get(option.key()).getAsString());
 		}
 		if (ConfigOptions.error(values) != null) throw new IllegalArgumentException("Invalid config values");

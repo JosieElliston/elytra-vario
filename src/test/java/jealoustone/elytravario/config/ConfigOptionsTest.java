@@ -10,7 +10,7 @@ import jealoustone.elytravario.VarioConfig;
 import org.junit.jupiter.api.Test;
 
 class ConfigOptionsTest {
-	@Test void speedometerHasOneSubpagePerNeedle() {
+	@Test void speedometerHasOneSubpagePerBar() {
 		assertEquals(List.of("speedoTotal", "speedoHorizontal", "speedoVertical"),
 				ConfigOptions.groups(5));
 

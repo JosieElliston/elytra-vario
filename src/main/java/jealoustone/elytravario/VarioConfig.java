@@ -417,76 +417,23 @@ public final class VarioConfig {
 	public static boolean showTotalEnergy = true;
 	public static boolean showCycleGain = true;
 
-	/**
-	 * The speedometer: a semicircular dial reading zero at its left end and
-	 * {@code speedoMaxSpeed} at its right, with a needle for each of the three speeds the
-	 * stats panel prints.
-	 *
-	 * <p>It says nothing the panel does not already say, and that is the point of it. The
-	 * panel is a set of digits that has to be read; the dial is an angle that can be caught in
-	 * peripheral vision, and three angles side by side make the relationship between the
-	 * speeds — how much of the total is horizontal, how much is being spent going up or down —
-	 * a shape rather than three subtractions.
-	 *
-	 * <p><b>Vertical speed is drawn as a magnitude.</b> A scale that starts at zero cannot
-	 * carry a sign, and vertical speed is negative through most of a dive, so the blue needle
-	 * shows {@code |vy|} and nothing on the dial says which way. Nothing needs to: which way
-	 * you are going is the most obvious fact in the view out of the window, and the readout
-	 * panel's {@code SPEED Y} row prints the sign for when a figure is wanted.
-	 *
-	 * <p>The background is the half disc itself rather than a box around it. The instrument is
-	 * round and its corners hold nothing, so a rectangle would be four wedges of dimmed world
-	 * paying for no reading — which matters here more than on the other panels, this being the
-	 * large one whose content does not fill its own bounds.
-	 */
+	/** The speedometer: vertical bars for |Y|, XZ, and XYZ speed on one shared scale. */
 	public static boolean showSpeedo = true;
 	public static boolean speedoGlidingOnly = false;
 	public static int speedoX = 144;
 	public static int speedoY = 4;
 
-	/**
-	 * Dial radius in scaled GUI pixels, and the speed at the right-hand end of the arc in
-	 * blocks/tick.
-	 *
-	 * <p>Sixty-four pixels because this is an instrument read out of the corner of the eye
-	 * rather than looked at, and a small dial is one whose needles have to be resolved before
-	 * their angles can be. It is the largest thing on the HUD, and it can afford to be: the
-	 * background is only the half disc, so what it costs the view is the shape and not a box.
-	 *
-	 * <p>Four blocks/tick is eighty blocks/second, which is a little past terminal velocity —
-	 * an elytra settles near 3.5 — so the whole of ordinary flight lands inside the arc and
-	 * the stops are somewhere the needle only reaches under a rocket or a very long dive. A
-	 * scale chosen to fit the fastest state the physics allows would spend most of its length
-	 * on speeds nothing passes through, which is the same argument that sets the velocity
-	 * graph's vertical bound.
-	 */
-	public static int speedoRadius = 64;
+	/** Plot height in scaled GUI pixels and the top of its scale in blocks/tick. */
+	public static int speedoHeight = 96;
 	public static double speedoMaxSpeed = 4.0;
 
 	/**
-	 * Tick spacing in blocks/tick: labelled ticks every {@code speedoMajorStep}, plain ones
-	 * every {@code speedoMinorStep}. Twenty and five blocks/second by default.
+	 * Tick spacing in blocks/tick. Major gridlines and labels are twenty blocks/second apart by
+	 * default.
 	 */
 	public static double speedoMajorStep = 1.0;
-	public static double speedoMinorStep = 0.25;
 
-	/**
-	 * The three needles. Each is independent, and each is told apart by <em>two</em> channels:
-	 * a colour and a length.
-	 *
-	 * <p>The length is not decoration. All three needles turn about one hub, so whenever two
-	 * speeds agree the needles lie exactly on top of one another — and they agree often, since
-	 * total and horizontal speed are equal in level flight, which is most of a glide. Distinct
-	 * lengths make that overlap read as one needle with a longer one behind it rather than as
-	 * a single mark of uncertain colour. It is also what is left when colour has stopped
-	 * saying anything, which happens twice over: at the stop, where a pegged needle takes the
-	 * pegged grey whichever one it is, and for the red and green pair, which is the one pair a
-	 * colour-blind eye cannot separate.
-	 *
-	 * <p>Total speed gets the longest needle because it is the largest of the three by
-	 * construction, so the tips run outwards in the same order they run clockwise and the fan
-	 * never reads as crossed. The reading itself is the angle, so length costs nothing.
-	 */
+	/** The three bars. Vertical speed remains a magnitude so all three share one scale. */
 	public static boolean showSpeedoTotal = true;
 	public static boolean showSpeedoHorizontal = true;
 	public static boolean showSpeedoVertical = true;
@@ -494,20 +441,14 @@ public final class VarioConfig {
 	public static int speedoHorizontalColor = 0xFF57C46A;
 	public static int speedoVerticalColor = 0xFF4D8CFF;
 
-	/**
-	 * Colour of a needle whose speed is past the end of the scale.
-	 *
-	 * <p>These needles peg rather than leave, unlike the pitch ladder's bugs, which simply go
-	 * once their answer is off the ladder. The difference is what the off-scale state means: a
-	 * speed past the stop is a limit genuinely being exceeded and the scale is the only thing
-	 * that ran out, whereas a bug off the ladder is advice that does not apply to the phase
-	 * being flown. The grey is what says the position has stopped being a reading.
-	 */
+	/** Color of a bar whose speed is past the top of the scale. */
 	public static int speedoPeggedColor = 0xFF8C9298;
 
+	public static boolean showSpeedoSoftMaxMarker = true;
+	public static boolean showSpeedoTerminalMarker = false;
 	public static boolean showSpeedoLabels = true;
 	public static boolean showSpeedoBorder = true;
-	public static double speedoOpacity = 0.45;
+	public static double speedoOpacity = 0.25;
 
 	public static boolean visible(boolean shown, boolean glidingOnly, boolean gliding) {
 		return enabled && shown && (!glidingOnly || gliding);

@@ -13,6 +13,9 @@ and key-registration APIs, not behavior.
 
 ### Added
 
+- Toggleable white reference markers on the speed bars for the Y, XZ, and XYZ speeds at the
+  +53.366° max-horizontal-speed glide, plus toggleable gray straight-down terminal-velocity
+  markers, which default to off.
 - An in-world position editor for Flight Stats, the Velocity Graph, and the Speedometer. Click a
   module to open its settings, drag it to move it, or use the arrow keys for one-pixel changes;
   the exact absolute coordinate fields remain editable. This replaces screen anchors and
@@ -21,12 +24,17 @@ and key-registration APIs, not behavior.
 - Three optional constant pitch markers for the fastest steady horizontal glide, minimum steady
   fall rate, and zero pitch / best steady glide ratio. They are independent of player state,
   use neutral ladder colors, and default to on.
-- Speedometer needle subpages for total, horizontal, and vertical speed, keeping each needle's
-  visibility and color controls together below a selector, with shared dial settings above it.
-  Changing the selected needle preserves the list's scroll position.
+- Speedometer bar subpages for total, horizontal, and vertical speed, keeping each bar's
+  visibility and color controls together below a selector, with shared chart settings above it.
+  Changing the selected bar preserves the list's scroll position.
 
 ### Changed
 
+- The semicircular three-needle speedometer is now a three-bar Y/XZ/XYZ chart for faster
+  comparison at a glance. Existing speedometer position, scale, visibility, and color settings
+  remain compatible; chart height replaces dial radius.
+- The speed chart is narrower and taller by default, uses a lighter 25% background, and shows
+  only its major 20 b/s gridlines.
 - Settings now save themselves. Every edit is written as you make it, so the Save button, the
   Saved notice, and the unsaved-changes prompt on the way out are all gone; the screen has one
   Close button. A half-typed number is still held back from the HUD and the file until it reads

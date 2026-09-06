@@ -31,6 +31,15 @@ class ConfigStoreTest {
 		assertFalse(values.containsKey("futureOption"));
 	}
 
+	@Test void oldDialGetsTheNewChartDimensionsAndLighterStockBackground() {
+		var migrated = ConfigStore.decode("{\"speedoRadius\":64,\"speedoOpacity\":45}");
+		assertEquals("96", migrated.get("speedoHeight"));
+		assertEquals("25", migrated.get("speedoOpacity"));
+
+		var customized = ConfigStore.decode("{\"speedoRadius\":64,\"speedoOpacity\":30}");
+		assertEquals("30", customized.get("speedoOpacity"));
+	}
+
 	@Test void retiredVisibilityChoicesBecomeTheirTwoSwitches() {
 		var values = ConfigStore.decode(
 				"{\"ladderVisibility\":\"2\",\"chartVisibility\":\"1\",\"statsVisibility\":\"0\"}");
