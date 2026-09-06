@@ -27,6 +27,9 @@ and key-registration APIs, not behavior.
 
 ### Changed
 
+- The settings screen now reopens on the page and subpage you left, scrolled to where you left
+  it, for the rest of the game session. Closing it to watch the HUD no longer costs you your
+  place.
 - Color settings now open a picker with red, green, blue, and, where supported, opacity
   sliders, a live swatch, and reversible live HUD preview. Opaque heatmap colors omit the
   opacity control, and the on-disk hexadecimal format remains compatible.
