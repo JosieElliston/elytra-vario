@@ -16,7 +16,8 @@ and key-registration APIs, not behavior.
 - An in-world position editor for Flight Stats, the Velocity Graph, and the Speedometer. Click a
   module to open its settings, drag it to move it, or use the arrow keys for one-pixel changes;
   the exact absolute coordinate fields remain editable. This replaces screen anchors and
-  graph-to-stats attachment; snapping will return separately in a later version.
+  graph-to-stats attachment. Dragging snaps module edges and centers to one another and to the
+  screen, with global margin and snap-distance settings; arrow keys and exact input bypass it.
 - Three optional constant pitch markers for the fastest steady horizontal glide, minimum steady
   fall rate, and zero pitch / best steady glide ratio. They are independent of player state,
   use neutral ladder colors, and default to on.
