@@ -435,6 +435,93 @@ public final class VarioConfig {
 	public static boolean showTotalEnergy = true;
 	public static boolean showCycleGain = true;
 
+	/**
+	 * The speedometer: a semicircular dial reading zero at its left end and
+	 * {@code speedoMaxSpeed} at its right, with a needle for each of the three speeds the
+	 * stats panel prints.
+	 *
+	 * <p>It says nothing the panel does not already say, and that is the point of it. The
+	 * panel is a set of digits that has to be read; the dial is an angle that can be caught in
+	 * peripheral vision, and three angles side by side make the relationship between the
+	 * speeds — how much of the total is horizontal, how much is being spent going up or down —
+	 * a shape rather than three subtractions.
+	 *
+	 * <p><b>Vertical speed is drawn as a magnitude.</b> A scale that starts at zero cannot
+	 * carry a sign, and vertical speed is negative through most of a dive, so the blue needle
+	 * shows {@code |vy|} and a small triangle under the hub says which way. That is the one
+	 * reading on this instrument whose sign is not in its position, which is why the glyph is
+	 * in the needle's own colour rather than in the chrome: it belongs to that needle and to
+	 * nothing else. Within the panel's neutral deadband it is a flat dash rather than a
+	 * triangle, so a reading sitting on zero does not flicker between climbing and sinking.
+	 */
+	public static int speedoVisibility = 0;
+	public static int speedoAnchor = 1;
+	public static int speedoX = 4;
+	public static int speedoY = 4;
+
+	/**
+	 * Dial radius in scaled GUI pixels, and the speed at the right-hand end of the arc in
+	 * blocks/tick.
+	 *
+	 * <p>Four blocks/tick is eighty blocks/second, which is a little past terminal velocity —
+	 * an elytra settles near 3.5 — so the whole of ordinary flight lands inside the arc and
+	 * the stops are somewhere the needle only reaches under a rocket or a very long dive. A
+	 * scale chosen to fit the fastest state the physics allows would spend most of its length
+	 * on speeds nothing passes through, which is the same argument that sets the velocity
+	 * graph's vertical bound.
+	 */
+	public static int speedoRadius = 48;
+	public static double speedoMaxSpeed = 4.0;
+
+	/**
+	 * Tick spacing in blocks/tick: labelled ticks every {@code speedoMajorStep}, plain ones
+	 * every {@code speedoMinorStep}. Twenty and five blocks/second by default.
+	 */
+	public static double speedoMajorStep = 1.0;
+	public static double speedoMinorStep = 0.25;
+
+	/**
+	 * The three needles. Each is independent, and each is told apart by <em>two</em> channels:
+	 * a colour and a length.
+	 *
+	 * <p>The length is not decoration. All three needles turn about one hub, so whenever two
+	 * speeds agree the needles lie exactly on top of one another — and they agree often, since
+	 * total and horizontal speed are equal in level flight, which is most of a glide. Distinct
+	 * lengths make that overlap read as one needle with a longer one behind it rather than as
+	 * a single mark of uncertain colour. It is also what is left when colour has stopped
+	 * saying anything, which happens twice over: at the stop, where a pegged needle takes the
+	 * pegged grey whichever one it is, and for the red and green pair, which is the one pair a
+	 * colour-blind eye cannot separate.
+	 *
+	 * <p>Total speed gets the longest needle because it is the largest of the three by
+	 * construction, so the tips run outwards in the same order they run clockwise and the fan
+	 * never reads as crossed. The reading itself is the angle, so length costs nothing.
+	 */
+	public static boolean showSpeedoTotal = true;
+	public static boolean showSpeedoHorizontal = true;
+	public static boolean showSpeedoVertical = true;
+	public static int speedoTotalColor = 0xFFE0574B;
+	public static int speedoHorizontalColor = 0xFF57C46A;
+	public static int speedoVerticalColor = 0xFF4D8CFF;
+
+	/**
+	 * Colour of a needle whose speed is past the end of the scale.
+	 *
+	 * <p>These needles peg rather than leave, unlike the pitch ladder's rule bugs, and for the
+	 * reason that instrument gives for the two marks that do peg there: a speed past the stop
+	 * is a limit genuinely being exceeded, not advice being followed in the wrong phase. The
+	 * grey is what says the position has stopped being a reading.
+	 *
+	 * <p>Lighter than the ladder's equivalent, which it otherwise matches. That mark sits over
+	 * the world and this one sits on a panel with a grey of its own behind it, and the same
+	 * value that reads as neutral over sky and ground disappears into this background.
+	 */
+	public static int speedoPeggedColor = 0xFF8C9298;
+
+	public static boolean showSpeedoLabels = true;
+	public static boolean showSpeedoBorder = true;
+	public static double speedoOpacity = 176.0 / 255.0;
+
 	public static boolean visible(int mode, boolean gliding) {
 		return enabled && mode != 2 && (mode != 1 || gliding);
 	}

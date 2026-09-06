@@ -136,6 +136,25 @@ public final class ConfigOptions {
 		add("positiveColor", 4, 0, 1, 1, 0, true, false);
 		add("negativeColor", 4, 0, 1, 1, 0, true, false);
 		add("panelWidth", 4, 132, 400, 1, 0, false, true);
+
+		add("speedoVisibility", 5, 0, 1, 1, 3, false, false);
+		add("speedoAnchor", 5, 0, 1, 1, 5, false, false);
+		add("speedoX", 5, -4096, 4096, 1, 0, false, false);
+		add("speedoY", 5, -4096, 4096, 1, 0, false, false);
+		add("speedoRadius", 5, 12, 200, 1, 0, false, false);
+		add("speedoMaxSpeed", 5, 1, 400, 20, 0, false, false);
+		add("showSpeedoTotal", 5, 0, 1, 1, 0, false, false);
+		add("speedoTotalColor", 5, 0, 1, 1, 0, true, false);
+		add("showSpeedoHorizontal", 5, 0, 1, 1, 0, false, false);
+		add("speedoHorizontalColor", 5, 0, 1, 1, 0, true, false);
+		add("showSpeedoVertical", 5, 0, 1, 1, 0, false, false);
+		add("speedoVerticalColor", 5, 0, 1, 1, 0, true, false);
+		add("showSpeedoLabels", 5, 0, 1, 1, 0, false, false);
+		add("showSpeedoBorder", 5, 0, 1, 1, 0, false, false);
+		add("speedoOpacity", 5, 0, 100, 100, 0, false, false);
+		add("speedoMajorStep", 5, 1, 400, 20, 0, false, true);
+		add("speedoMinorStep", 5, 1, 400, 20, 0, false, true);
+		add("speedoPeggedColor", 5, 0, 1, 1, 0, true, true);
 	}
 
 	private static void add(String key, int page, double min, double max, double factor,

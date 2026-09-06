@@ -2,6 +2,14 @@ package jealoustone.elytravario.hud;
 
 import java.util.Locale;
 
+import static jealoustone.elytravario.hud.HudChrome.AXIS;
+import static jealoustone.elytravario.hud.HudChrome.BORDER;
+import static jealoustone.elytravario.hud.HudChrome.GRID;
+import static jealoustone.elytravario.hud.HudChrome.LABEL;
+import static jealoustone.elytravario.hud.HudChrome.MUTED;
+import static jealoustone.elytravario.hud.HudChrome.PANEL_BG;
+import static jealoustone.elytravario.hud.HudChrome.VALUE;
+
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.flight.EnergyField;
 import jealoustone.elytravario.flight.FlightRecorder;
@@ -30,15 +38,6 @@ import org.joml.Matrix3x2fStack;
 public final class VarioHudElement implements HudElement {
 	/** Ticks per second, the factor between internal blocks/tick and displayed blocks/second. */
 	private static final double TPS = 20.0;
-
-	private static final int PANEL_BG = 0xB0101014;
-	private static final int BORDER = 0xFF3A3F45;
-	private static final int LABEL = 0xFF9AA0A6;
-	private static final int VALUE = 0xFFFFFFFF;
-	private static final int MUTED = 0xFF6A7076;
-
-	private static final int GRID = 0x26FFFFFF;
-	private static final int AXIS = 0x66FFFFFF;
 
 	private static final int LINE = 10;
 	private static final int PAD = 4;

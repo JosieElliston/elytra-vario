@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import jealoustone.elytravario.flight.FlightRecorder;
 import jealoustone.elytravario.config.VarioConfigScreen;
 import jealoustone.elytravario.hud.PitchLadderElement;
+import jealoustone.elytravario.hud.SpeedometerElement;
 import jealoustone.elytravario.hud.VarioHudElement;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -76,6 +77,12 @@ public class ElytraVarioClient implements ClientModInitializer {
 				VanillaHudElements.CHAT,
 				ElytraVario.id("pitch_ladder"),
 				new PitchLadderElement(RECORDER));
+
+		// Likewise: its own corner of the screen and its own toggle.
+		HudElementRegistry.attachElementBefore(
+				VanillaHudElements.CHAT,
+				ElytraVario.id("speedometer"),
+				new SpeedometerElement(RECORDER));
 
 		ElytraVario.LOGGER.info("Elytra Vario initialized");
 	}

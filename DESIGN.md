@@ -202,6 +202,54 @@ heatmap would have to be rebuilt as the domain moved, which is a third of a seco
 time and 30ms after; and a map that moves under a cursor that is trying to stay still is a
 different instrument from a fixed one, quite possibly a worse one.
 
+## The speedometer
+
+**It says nothing new, deliberately.** Total, horizontal and vertical speed are already three
+rows on the readout panel. Digits have to be read; an angle can be caught in peripheral vision,
+and three angles about one hub turn the split between horizontal and vertical speed into a
+shape — a wide fan is speed going into climb or sink, a closed one is flight that is nearly
+level. That is the whole case for it, and it is a display case rather than a measurement one.
+
+**Vertical speed is drawn as a magnitude, and the sign is a separate mark.** A scale that starts
+at zero cannot carry a sign, and vertical speed is negative through most of a dive, so the blue
+needle shows `|vy|` and a triangle below the hub says which way. The alternatives were
+considered and are worse for this instrument: mirroring the arc below its own flat side doubles
+the panel's height and asks the eye to read a reflected scale, and giving vertical speed a
+second, signed scale of its own means the blue needle no longer shares a scale with the other
+two, which is the thing the dial exists to show. The triangle is flat inside the panel's neutral
+deadband, so a reading sitting on zero does not alternate between climbing and sinking on
+rounding noise.
+
+**The needles differ in length as well as in colour.** They turn about one hub, so two speeds
+agreeing means one needle lying exactly on another — and total and horizontal speed agree
+whenever flight is level, which is most of a glide. Length is what makes that overlap read as a
+pile rather than as one mark of indeterminate colour, and it is the only channel left twice
+over: at the stop, where every pegged needle takes the same gray, and for the red and green
+pair, which is the one pair a colour-blind eye cannot separate. This is the same argument that
+ranks the ladder's bugs by height, for the same reason. Total speed takes the longest needle
+because it is the largest of the three by construction, so the tips run outwards in the same
+order they run clockwise.
+
+**The flat side of the half circle is not drawn.** A half turn puts both stops on that diameter,
+so a line along it would lie under every needle reading near zero or near full scale — which is
+where vertical speed spends the apex, and where a pegged needle always is. It closes the shape
+at the cost of the two readings hardest to see. The ticks at either end already say where the
+scale stops.
+
+**Needles peg rather than leave**, unlike the ladder's rule bugs, and for the reason that
+instrument gives for the two marks that do peg: a speed past the stop is a limit genuinely being
+exceeded, not advice being followed in a phase it does not govern. The pegged gray is a lighter
+one than the ladder's, because the ladder's marks sit over the world and these sit on a panel
+with a gray of its own behind them.
+
+**Curves out of rectangles.** The HUD's only primitive is a rectangle, but it is submitted with
+the current pose and that pose may carry a rotation — `ColoredRectangleRenderState` transforms
+all four corners on the way to the vertex buffer. So every radial mark, needles and ticks alike,
+is one rectangle drawn along the x axis of a pose rotated to its own angle: exact at any angle,
+one draw call each. The arc is the one thing that cannot be, being a curve rather than a
+segment; it is walked at half a pixel of arc length and each distinct pixel filled once, which
+is gapless by construction and costs one fill per pixel covered rather than one per sample.
+
 ## The pitch ladder
 
 **It is conformal.** Every mark is projected through the same camera the world was drawn with,

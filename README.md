@@ -31,10 +31,36 @@ Horizontal speed against vertical speed. The yellow cursor is total horizontal s
 
 The heatmap is colored by the most total energy you can gain in one tick from that velocity.
 
+## Speedometer
+
+A semicircular dial reading 0 b/s at its left end and 80 b/s at its right, a little past
+terminal velocity. It carries three needles, each of which can be turned off:
+
+| Needle | Speed | Length |
+| --- | --- | --- |
+| red | total, `sqrt(vx² + vy² + vz²)` | longest |
+| green | horizontal, `sqrt(vx² + vz²)` | middle |
+| blue | vertical, `|vy|` | shortest |
+
+Nothing here is new — the same three figures are rows on the readout panel. The dial is for
+reading them without looking: three angles about one hub make the split between horizontal and
+vertical speed a shape rather than a subtraction. The lengths differ because two needles
+coincide whenever two speeds agree, which is most of a glide, and a shorter needle on top of a
+longer one still reads as two.
+
+**The blue needle is a magnitude.** A scale starting at zero cannot carry a sign, so the
+triangle below the hub is what says which way: up climbing, down sinking, a flat dash when
+vertical speed is within the same neutral deadband the panel's `SPEED Y` row uses. Turning the
+blue needle off turns the triangle off with it.
+
+A needle past 80 b/s is held at the stop and turns gray, so a position that is a limit does not
+read as a speed.
+
 ## Configuration
 
 Press **V** in game to open settings, or, with [Mod Menu](https://modrinth.com/mod/modmenu) installed, open **Mods → Elytra Vario → Configure**.
-The five pages are **Global**, **Pitch Ladder**, **Markers**, **Velocity Graph**, and **Flight Stats**.
+The six pages are **Global**, **Pitch Ladder**, **Markers**, **Velocity Graph**, **Flight Stats**,
+and **Speedometer**.
 Global contains the HUD master switch. Each instrument’s visibility control is on its own page.
 Hover over a marker control for its mathematical definition and usage notes. Advanced
 settings include lookahead duration and detailed ladder geometry.
@@ -43,7 +69,8 @@ Each instrument has independent visibility. The graph either takes a screen anch
 or attaches to the left, right, top or bottom of the stats panel; an attached pair is anchored
 and moved as one block. Both horizontal and vertical axis bounds are editable in blocks per
 second. Stats rows can be hidden individually, and potential/total
-energy can show absolute values, changes since the last apex, or both.
+energy can show absolute values, changes since the last apex, or both. The speedometer takes a
+screen anchor of its own, and its radius, full-scale speed and tick spacing are all editable.
 
 Valid edits preview immediately on the HUD. In game, settings sit on the right with the world
 and HUD visible behind them. **Save** writes `config/elytra-vario.json` and keeps settings open.
