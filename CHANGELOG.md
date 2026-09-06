@@ -22,6 +22,9 @@ and key-registration APIs, not behavior.
 
 ### Changed
 
+- Color settings now open a picker with red, green, blue, and, where supported, opacity
+  sliders, a live swatch, and reversible live HUD preview. Opaque heatmap colors omit the
+  opacity control, and the on-disk hexadecimal format remains compatible.
 - The speedometer now defaults to the bottom-right corner, clear of chat.
 
 ## [1.2.0+mc1.21.11] - 2026-09-06
