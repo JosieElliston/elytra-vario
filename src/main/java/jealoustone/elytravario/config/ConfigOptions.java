@@ -95,9 +95,6 @@ public final class ConfigOptions {
 		add("showOptimalPitch", 2, "optimal", 0, 1, 1, 0, false, false);
 		add("optimalPitchColor", 2, "optimal", 0, 1, 1, 0, true, false);
 
-		add("showVelocityPitch", 2, "velocity", 0, 1, 1, 0, false, false);
-		add("velocityPitchColor", 2, "velocity", 0, 1, 1, 0, true, false);
-
 		add("showFlightPath", 2, "flightPath", 0, 1, 1, 0, false, false);
 		add("flightPathColor", 2, "flightPath", 0, 1, 1, 0, true, false);
 

@@ -351,15 +351,14 @@ part of the problem, and a display that guessed would be inventing the answer ra
 showing the evidence.
 
 **They share one band and are ranked by height.** The center gap is the only radius on the
-ladder that nothing else ever draws in, so all four have to live there, and they land on the
+ladder that nothing else ever draws in, so all three have to live there, and they land on the
 same rows whenever two rules agree — which is common. Colour alone would turn that into one
 mark of indeterminate hue. Ranking them by rise and drawing tallest first makes an overlap
 *nest* instead: the apexes coincide, the taller shoulders show past the shorter ones, and the
 pile reads as a set of chevrons. Which bug gets which height is a display choice tuned in
-flight and carries no claim; only two things about it matter structurally, that the heights are
-distinct and that the flat pair of stubs is the velocity bug, the one mark of the four that is
-not advice. Nothing enforces the ordering — `drawBugs` draws in a fixed sequence that has to
-be kept in step with the rises by hand.
+flight and carries no claim; the one thing about it that matters structurally is that the
+heights are distinct. Nothing enforces the ordering — `drawBugs` draws in a fixed sequence that
+has to be kept in step with the rises by hand.
 
 **No bug pegs; each leaves the ladder.** The original behaviour was to hold a bug at the edge
 of the band and turn it gray, which reads as a direction to keep going in. That reading is
@@ -373,22 +372,23 @@ rule.
 Leaving is also what each already does when its search returns nothing, which is the second
 half of the argument: a bug that is not on the ladder means one thing rather than two.
 
-The two switched-off bugs went the same way, and the peg with them. Their off-ladder answers
-are closer to genuine limits — the one-tick bug's near-90° nose-down through a slow descent,
-and the velocity bug's direction of travel, which cannot be anything but where you are going —
-but pitch clamps at ±90, so the stops need no aiming and a mark there only names a direction
-the situation already implies. One rule for every bug is worth more than a courtesy that was
-never load-bearing.
+The one-tick bug went the same way, and the peg with it. Its off-ladder answer is closer to a
+genuine limit — near-90° nose-down through a slow descent — but pitch clamps at ±90, so the
+stops need no aiming and a mark there only names a direction the situation already implies. One
+rule for every bug is worth more than a courtesy that was never load-bearing.
 
-**Only the two rules are on by default.** The one-tick bug and the velocity bug are both
-switched off, having been drawn and then flown. The one-tick bug is right only in phases some
-other bug is also right in, and is conspicuously wrong in both phases that are actually being
-studied. The velocity bug was there so the hold could be read against something, on the theory
-that the gap between them is worth watching; it is not, because the hold is flown by putting
-the nose on it and the gap is a property of the answer rather than an input to using it. Both
-are kept behind switches rather than deleted — the one-tick reading is what elytrasim plots and
-what the heatmap colours, and the gap is the demonstration that holding an angle is not
-pointing along it.
+**Only the two rules are on by default.** The one-tick bug is switched off, having been drawn
+and then flown: it is right only in phases some other bug is also right in, and is conspicuously
+wrong in both phases that are actually being studied. It is kept behind a switch rather than
+deleted, because the one-tick reading is what elytrasim plots and what the heatmap colours.
+
+**A fourth bug, gray, marking where you are actually going, has been deleted.** It was there so
+the hold could be read against something, on the theory that the gap between them is worth
+watching; it is not, because the hold is flown by putting the nose on it and the gap is a
+property of the answer rather than an input to using it. It was also the flight path marker's
+quantity drawn a second time and drawn worse — one axis instead of two, no sideslip, read
+against another bug instead of against the crosshair. `showFlightPath` is where that reading
+lives.
 
 ### One tick of lookahead
 
@@ -510,10 +510,10 @@ is the steady glide that maximises forward speed, pitch 53.35°, v_z 3.389, γ 1
 an asymptote and not a bound: steering γ straight at 16.58 instead of holding it is a much
 weaker rule, 34° RMS, saturated against the nose-up stop for the first sixty ticks.
 
-**Holding the angle is not pointing along it**, which is the obvious misreading and the reason
-the gray velocity bug is drawn at all. By the end of a dive the nose sits about 30° *below* the
-flight path — pitch 47° against γ 17° — so the two bugs are nowhere near each other, and the
-gap between them is the angle of attack the hold is asking for.
+**Holding the angle is not pointing along it**, which is the obvious misreading and the thing
+the flight path marker is worth turning on to see. By the end of a dive the nose sits about 30°
+*below* the flight path — pitch 47° against γ 17° — so the green bug and the marker are nowhere
+near each other, and the gap between them is the angle of attack the hold is asking for.
 
 **It is bisected on the residual's sign, not minimised on its magnitude.** The natural phrasing
 — the pitch that moves γ least — is a trap: at low speed two separate pitches hold a given
@@ -556,12 +556,14 @@ question rather than a settled one.
 
 **That question has since been answered in one direction**, which is worth being honest about
 rather than quietly leaving the switches where they were. The dive's rule is read as a gap
-between the hold bug and the velocity bug, and that gap *is* angle of attack — so the ladder
-now shows it by default after all, as the distance between a green mark and a gray one. What
-the two switches still add over that is a printed figure and the exact two-dimensional
-placement with its sideslip. Neither is needed to fly the dive rule, so neither has been turned
-back on, but the rationale above no longer covers the quantity, only these two renderings of
-it.
+between the hold bug and where the player is actually going, and that gap *is* angle of attack
+— so the quantity is worth watching after all, as a distance between two marks. Reading it that
+way means turning the marker on, which is also the only thing that draws it: a gray bug marking
+the same direction on the pitch axis alone existed for a while and was deleted as a second
+drawing of one reading. What the two switches add is a printed figure and the exact
+two-dimensional placement with its sideslip; neither is needed to fly the dive rule, so neither
+is on by default, but the rationale above no longer covers the quantity, only these renderings
+of it.
 
 Turning the marker off costs the ladder its only sideslip cue, which is the one thing it
 carried that the number did not. That is affordable because the chart shows sideslip too, as
@@ -766,7 +768,7 @@ crosshair and a bug is the correction; when there is none, its two wedges close 
 crosshair. They are the only advisory marks on the ladder and the only things on it that are
 not gray, and they are drawn only while actually gliding.
 
-There are four, because an optimised pump cycle turns out to be **piecewise myopic**: each
+There are three, because an optimised pump cycle turns out to be **piecewise myopic**: each
 phase of it follows a simple rule of the current state, and the hard part is knowing when to
 switch rules rather than what any rule is.
 
@@ -775,14 +777,13 @@ switch rules rather than what any rule is.
 | Lookahead | Amber | The constant pitch gaining the most energy over the next 20 ticks | **The gain phase** — the climb out of the flick, where most of a cycle's energy is made |
 | Hold | Green | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree. Gone once the dive is over |
 | Optimal pitch | Magenta | The same over one tick | *Off by default.* A gradient rather than a plan, and wrong through both phases above |
-| Velocity | Gray | Where you are actually going | *Off by default.* A reference, not advice, which is why it is the gray one |
 
 Two are on. The one-tick bug parks on the horizon through the whole dive and pins to the
 nose-up stop entering the climb, so in the phases being flown it is two more marks saying
-nothing; it is kept because it is the reading elytrasim plots and the heatmap colours. The
-velocity bug was added so the hold could be read against something, but the hold is flown by
-putting the nose on it and the gap is a fact about the answer rather than an input to using
-it.
+nothing; it is kept because it is the reading elytrasim plots and the heatmap colours.
+
+Where you are actually going is the flight path marker's job and is not repeated here. A gray
+bug for it was, until it turned out to be one reading drawn twice.
 
 **Nothing tells you which rule the phase you are in calls for.** That switch is the open part
 of the problem; a display that guessed at it would be inventing the answer rather than showing
@@ -793,7 +794,7 @@ can go, so they overlap whenever two rules agree. They are ranked by height as w
 and drawn tallest first, so a pile nests into chevrons instead of merging into one mark of
 uncertain colour. Which bug gets which height is tuned by eye and means nothing in itself.
 
-**When an answer is further out than the band reaches, the bug leaves the ladder.** All four
+**When an answer is further out than the band reaches, the bug leaves the ladder.** All three
 do this, and the flight path marker with them. It matters most for the two rules: each governs
 one phase and each sends its answer off the ladder during the phases it does not govern — the
 amber one into a second mode 40–50° nose-up through the dive, the green one into a steep
@@ -802,10 +803,9 @@ that way* for whole phases at a time, which is an invitation to fly a rule exact
 not the rule. Gone says the one true thing instead, and it matches what each already does when
 its search has no answer at all — so a bug that is not there means one thing rather than two.
 
-The switched-off bugs come nearer to a real limit off the ladder — near-90° nose-down through
-a slow descent for the magenta one, the plain direction of travel for the gray one — but pitch
-clamps at ±90, so the mouse finds the stop by itself. The bugs earn their place at interior
-angles, where they are actual targets to fly to.
+The magenta one comes nearer to a real limit off the ladder — near-90° nose-down through a
+slow descent — but pitch clamps at ±90, so the mouse finds the stop by itself. The bugs earn
+their place at interior angles, where they are actual targets to fly to.
 
 ### Reading the two energy bugs
 
@@ -844,9 +844,9 @@ forever and bleeds height. The floor it decays towards is the flight path angle 
 glide that maximises forward speed, which vanilla puts at 53° nose-down doing 3.39 blocks/tick.
 
 **Holding the angle is not pointing along it.** By the end of a dive the nose sits about 30°
-*below* the flight path, so the green bug and the gray one are nowhere near each other, and
-the gap between them is the angle of attack the hold is asking for. That gap is the reason the
-gray bug exists.
+*below* the flight path, so the green bug and the flight path marker are nowhere near each
+other, and the gap between them is the angle of attack the hold is asking for. Turning the
+marker on is what makes that gap visible.
 
 The bug disappears when no pitch holds the current angle at all — a near-vertical fall cannot
 be sustained by any attitude — rather than picking the least bad degree.
@@ -860,7 +860,6 @@ instruments watched continuously they were clutter competing with readings actua
 | Switch | Brings back |
 | --- | --- |
 | `showOptimalPitch` | The magenta one-tick bug on the ladder |
-| `showVelocityPitch` | The gray velocity bug: where you are going, as a bug rather than a marker. Its gap from the hold bug is the angle of attack the hold is asking for — about 30° by the end of a dive, which is the answer to whether holding the angle means pointing along it |
 | `showAngleOfAttack` | An `AOA` row on the panel, which resizes itself around it |
 | `showFlightPath` | The flight path marker: a winged circle on the ladder marking where you are actually going, as against the crosshair's where you are looking. Its vertical gap from the crosshair is angle of attack drawn rather than printed, and its horizontal gap is sideslip. Not drawn once it falls outside the ladder band or off the edge of the screen |
 

@@ -138,12 +138,6 @@ public final class FlightRecorder {
 		return flightPathHold;
 	}
 
-	/** Latest direction of travel as a pitch, or NaN when absent or stationary. */
-	public double flightPathPitch() {
-		Sample sample = latest();
-		return sample == null ? Double.NaN : sample.flightPathPitch();
-	}
-
 	/** Energies as they stood at the last apex; see {@link CycleTracker}. */
 	public double peakPotentialHeight() {
 		return cycles.peakPotentialHeight();

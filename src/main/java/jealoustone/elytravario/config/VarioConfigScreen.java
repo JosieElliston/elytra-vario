@@ -28,7 +28,7 @@ import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 /** Six scrollable pages with live HUD previews and an explicit, non-closing Save.
- * A page may divide into subpages: shared settings, a rule, then the selected subpage's own. */
+ * A page may divide into subpages, chosen by a dropdown under its master switch. */
 public final class VarioConfigScreen extends Screen {
 	private static final int PAGE_COUNT = 6;
 	private final Screen parent;
@@ -102,8 +102,9 @@ public final class VarioConfigScreen extends Screen {
 		boolean separated = false;
 		for (var option : ConfigOptions.all()) {
 			if (option.page() != page || option.equals(header) || !shown(option, group)) continue;
+			// The rule went away when the markers page had nothing above it to divide, and comes
+			// back now that it does: the page's own two switches are not the named marker's.
 			if (option.group() != null && !separated) {
-				// The shared settings above always exist, so the rule never opens the list.
 				list.append(new SeparatorRow());
 				separated = true;
 			}
@@ -321,10 +322,10 @@ public final class VarioConfigScreen extends Screen {
 		@Override public int getRowWidth() { return panelWidth - 24; }
 	}
 
-	/** The list holds two kinds of row, so they share one self-typed base. */
+	/** The list holds three kinds of row, so they share one self-typed base. */
 	private abstract class Row extends ContainerObjectSelectionList.Entry<Row> { }
 
-	/** A rule between the settings shared by every marker and the selected marker's own. */
+	/** A rule between the settings the whole page shares and the selected marker's own. */
 	private final class SeparatorRow extends Row {
 		@Override
 		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
