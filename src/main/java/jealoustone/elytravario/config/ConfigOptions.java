@@ -162,12 +162,14 @@ public final class ConfigOptions {
 		add("speedoY", 5, -4096, 4096, 1, 0, false, false);
 		add("speedoRadius", 5, 12, 200, 1, 0, false, false);
 		add("speedoMaxSpeed", 5, 1, 400, 20, 0, false, false);
-		add("showSpeedoTotal", 5, 0, 1, 1, 0, false, false);
-		add("speedoTotalColor", 5, 0, 1, 1, 0, true, false);
-		add("showSpeedoHorizontal", 5, 0, 1, 1, 0, false, false);
-		add("speedoHorizontalColor", 5, 0, 1, 1, 0, true, false);
-		add("showSpeedoVertical", 5, 0, 1, 1, 0, false, false);
-		add("speedoVerticalColor", 5, 0, 1, 1, 0, true, false);
+
+		// Keep the dial settings on every subpage, then give each needle its own show/color pair.
+		add("showSpeedoTotal", 5, "speedoTotal", 0, 1, 1, 0, false, false);
+		add("speedoTotalColor", 5, "speedoTotal", 0, 1, 1, 0, true, false);
+		add("showSpeedoHorizontal", 5, "speedoHorizontal", 0, 1, 1, 0, false, false);
+		add("speedoHorizontalColor", 5, "speedoHorizontal", 0, 1, 1, 0, true, false);
+		add("showSpeedoVertical", 5, "speedoVertical", 0, 1, 1, 0, false, false);
+		add("speedoVerticalColor", 5, "speedoVertical", 0, 1, 1, 0, true, false);
 		add("showSpeedoLabels", 5, 0, 1, 1, 0, false, false);
 		add("showSpeedoBorder", 5, 0, 1, 1, 0, false, false);
 		add("speedoOpacity", 5, 0, 100, 100, 0, false, false);

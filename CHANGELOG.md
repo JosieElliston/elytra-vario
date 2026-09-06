@@ -16,6 +16,9 @@ and key-registration APIs, not behavior.
 - Three optional constant pitch markers for the fastest steady horizontal glide, minimum steady
   fall rate, and zero pitch / best steady glide ratio. They are independent of player state,
   use neutral ladder colors, and default to on.
+- Speedometer needle subpages for total, horizontal, and vertical speed, keeping each needle's
+  visibility and color controls together below a selector, with shared dial settings above it.
+  Changing the selected needle preserves the list's scroll position.
 
 ### Changed
 
