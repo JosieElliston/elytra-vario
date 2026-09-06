@@ -524,7 +524,7 @@ public final class VarioConfigScreen extends Screen {
 			boolean isHovered = hovered != null && bounds.module() == hovered.module();
 			if (bounds.module() == selected || isHovered) {
 				int color = isHovered ? 0xFFFFFFFF : 0xFF66CCFF;
-				graphics.outline(bounds.x() - 1, bounds.y() - 1,
+				graphics.renderOutline(bounds.x() - 1, bounds.y() - 1,
 						bounds.width() + 2, bounds.height() + 2, color);
 			}
 		}
@@ -537,7 +537,7 @@ public final class VarioConfigScreen extends Screen {
 			int ghostY = Math.clamp((int) Math.round(dragY), 0,
 					Math.max(0, height - bounds.height()));
 			if (ghostX != bounds.x() || ghostY != bounds.y()) {
-				graphics.outline(ghostX - 1, ghostY - 1,
+				graphics.renderOutline(ghostX - 1, ghostY - 1,
 						bounds.width() + 2, bounds.height() + 2, 0xA0FFFFFF);
 			}
 		}
@@ -605,12 +605,12 @@ public final class VarioConfigScreen extends Screen {
 		}
 
 		@Override
-		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
+		public void renderContent(GuiGraphics graphics, int mouseX, int mouseY,
 				boolean hovered, float delta) {
 			control.setX(getContentX());
 			control.setY(getContentY());
 			control.setWidth(getContentWidth());
-			control.extractRenderState(graphics, mouseX, mouseY, delta);
+			control.render(graphics, mouseX, mouseY, delta);
 		}
 
 		@Override public List<? extends GuiEventListener> children() { return List.of(control); }
@@ -705,7 +705,7 @@ public final class VarioConfigScreen extends Screen {
 			Component label = text(option.key());
 			if (option.color()) {
 				control = Button.builder(colorLabel(option, settings.get(option.key())), button ->
-						minecraft.gui.setScreen(new ColorPickerScreen(option)))
+						minecraft.setScreen(new ColorPickerScreen(option)))
 						.bounds(0, 0, 180, 20).build();
 			} else if (option.toggle() || option.choices() > 0) {
 				control = Button.builder(valueLabel(), button -> {
@@ -818,22 +818,22 @@ public final class VarioConfigScreen extends Screen {
 		}
 
 		private void finish() {
-			minecraft.gui.setScreen(VarioConfigScreen.this);
+			minecraft.setScreen(VarioConfigScreen.this);
 		}
 
 		private void cancel() {
 			settings.put(option.key(), initialValue);
 			changed();
-			minecraft.gui.setScreen(VarioConfigScreen.this);
+			minecraft.setScreen(VarioConfigScreen.this);
 		}
 
 		@Override public void onClose() { cancel(); }
 
 		@Override
-		public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
+		public void render(GuiGraphics graphics, int mouseX, int mouseY,
 				float delta) {
-			super.extractRenderState(graphics, mouseX, mouseY, delta);
-			graphics.centeredText(font, title, width / 2, previewTop - 18, 0xFFFFFFFF);
+			super.render(graphics, mouseX, mouseY, delta);
+			graphics.drawCenteredString(font, title, width / 2, previewTop - 18, 0xFFFFFFFF);
 			// A checkerboard makes partial opacity visible rather than merely making the swatch dim.
 			for (int y = 0; y < PREVIEW_HEIGHT; y += 8) {
 				for (int x = 0; x < previewWidth; x += 8) {
@@ -845,9 +845,9 @@ public final class VarioConfigScreen extends Screen {
 			}
 			int previewRight = previewLeft + previewWidth;
 			graphics.fill(previewLeft, previewTop, previewRight, previewTop + PREVIEW_HEIGHT, color);
-			graphics.outline(previewLeft, previewTop, previewRight - previewLeft, PREVIEW_HEIGHT,
+			graphics.renderOutline(previewLeft, previewTop, previewRight - previewLeft, PREVIEW_HEIGHT,
 					0xFFFFFFFF);
-			graphics.centeredText(font, Component.literal(option.format(color)), width / 2,
+			graphics.drawCenteredString(font, Component.literal(option.format(color)), width / 2,
 					previewTop + (PREVIEW_HEIGHT - font.lineHeight) / 2, ARGB.opaque(contrast(color)));
 		}
 
