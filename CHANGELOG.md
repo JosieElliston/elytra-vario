@@ -10,6 +10,8 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-06
+
 ### Added
 
 - **The settings key is rebindable on the Global page**, beside the HUD master switch, the way
