@@ -14,11 +14,11 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 
 /**
- * The five instruments that can be shown or hidden as a whole, each with a key that toggles it.
+ * The instruments that can be shown or hidden as a whole, each with a key that toggles it.
  *
- * <p>The bugs on the ladder are one instrument here rather than five, matching the settings
+ * <p>The markers on the ladder are one instrument here rather than seven, matching the settings
  * screen: the markers page has a single switch above its per-marker subpages, and a key per bug
- * would be five binds for a set that is read as one overlay.
+ * or reference would be seven binds for a set that is read as one overlay.
  *
  * <p>The key flips exactly the setting the screen's own switch flips, and saves. That it writes
  * the config file rather than holding a runtime override is what makes it a toggle rather than a
@@ -35,8 +35,10 @@ public enum VarioInstrument {
 			() -> VarioConfig.showChart, () -> VarioConfig.chartGlidingOnly),
 	STATS("stats", "showStats", "statsGlidingOnly",
 			() -> VarioConfig.showStats, () -> VarioConfig.statsGlidingOnly),
-	SPEEDOMETER("speedometer", "showSpeedo", "speedoGlidingOnly",
-			() -> VarioConfig.showSpeedo, () -> VarioConfig.speedoGlidingOnly);
+	BAR_SPEEDOMETER("bar_speedometer", "showBarSpeedo", "barSpeedoGlidingOnly",
+			() -> VarioConfig.showBarSpeedo, () -> VarioConfig.barSpeedoGlidingOnly),
+	DIAL_SPEEDOMETER("dial_speedometer", "showDialSpeedo", "dialSpeedoGlidingOnly",
+			() -> VarioConfig.showDialSpeedo, () -> VarioConfig.dialSpeedoGlidingOnly);
 
 	private final String id;
 	/**
@@ -61,7 +63,7 @@ public enum VarioInstrument {
 	}
 
 	/**
-	 * All five, unbound by default. Unbound because five default binds is five keys taken off a
+	 * All instruments, unbound by default. Unbound because default binds are keys taken off a
 	 * keyboard that already has a mod key on it, for an action most flights never need; the
 	 * settings screen puts the binding control on the page of the instrument it toggles, so
 	 * anyone who does want one finds it beside the switch it flips.

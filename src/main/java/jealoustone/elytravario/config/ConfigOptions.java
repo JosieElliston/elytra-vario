@@ -162,28 +162,49 @@ public final class ConfigOptions {
 		add("negativeColor", 4, 0, 1, 1, 0, true, false);
 		add("panelWidth", 4, 132, 400, 1, 0, false, true);
 
-		add("showSpeedo", 5, 0, 1, 1, 0, false, false);
-		add("speedoGlidingOnly", 5, 0, 1, 1, 0, false, false);
-		add("speedoX", 5, -4096, 4096, 1, 0, false, false);
-		add("speedoY", 5, -4096, 4096, 1, 0, false, false);
-		add("speedoHeight", 5, 12, 200, 1, 0, false, false);
-		add("speedoMaxSpeed", 5, 1, 400, 20, 0, false, false);
+		add("showBarSpeedo", 5, 0, 1, 1, 0, false, false);
+		add("barSpeedoGlidingOnly", 5, 0, 1, 1, 0, false, false);
+		add("barSpeedoX", 5, -4096, 4096, 1, 0, false, false);
+		add("barSpeedoY", 5, -4096, 4096, 1, 0, false, false);
+		add("barSpeedoHeight", 5, 12, 200, 1, 0, false, false);
+		add("barSpeedoMaxSpeed", 5, 1, 400, 20, 0, false, false);
 
 		// Keep the chart settings on every subpage, then give each bar its own show/color pair.
-		add("showSpeedoTotal", 5, "speedoTotal", 0, 1, 1, 0, false, false);
-		add("speedoTotalColor", 5, "speedoTotal", 0, 1, 1, 0, true, false);
-		add("showSpeedoHorizontal", 5, "speedoHorizontal", 0, 1, 1, 0, false, false);
-		add("speedoHorizontalColor", 5, "speedoHorizontal", 0, 1, 1, 0, true, false);
-		add("showSpeedoVertical", 5, "speedoVertical", 0, 1, 1, 0, false, false);
-		add("speedoVerticalColor", 5, "speedoVertical", 0, 1, 1, 0, true, false);
-		add("showSpeedoAcceleration", 5, 0, 1, 1, 0, false, false);
-		add("showSpeedoSoftMaxMarker", 5, 0, 1, 1, 0, false, false);
-		add("showSpeedoTerminalMarker", 5, 0, 1, 1, 0, false, false);
-		add("showSpeedoLabels", 5, 0, 1, 1, 0, false, false);
-		add("showSpeedoBorder", 5, 0, 1, 1, 0, false, false);
-		add("speedoOpacity", 5, 0, 100, 100, 0, false, false);
-		add("speedoMajorStep", 5, 1, 400, 20, 0, false, true);
-		add("speedoPeggedColor", 5, 0, 1, 1, 0, true, true);
+		add("showBarSpeedoTotal", 5, "barSpeedoTotal", 0, 1, 1, 0, false, false);
+		add("barSpeedoTotalColor", 5, "barSpeedoTotal", 0, 1, 1, 0, true, false);
+		add("showBarSpeedoHorizontal", 5, "barSpeedoHorizontal", 0, 1, 1, 0, false, false);
+		add("barSpeedoHorizontalColor", 5, "barSpeedoHorizontal", 0, 1, 1, 0, true, false);
+		add("showBarSpeedoVertical", 5, "barSpeedoVertical", 0, 1, 1, 0, false, false);
+		add("barSpeedoVerticalColor", 5, "barSpeedoVertical", 0, 1, 1, 0, true, false);
+		add("showBarSpeedoAcceleration", 5, 0, 1, 1, 0, false, false);
+		add("showBarSpeedoMaxHorizontalSpeedMarkers", 5, 0, 1, 1, 0, false, false);
+		add("showBarSpeedoTerminalVelocityMarkers", 5, 0, 1, 1, 0, false, false);
+		add("showBarSpeedoLabels", 5, 0, 1, 1, 0, false, false);
+		add("showBarSpeedoBorder", 5, 0, 1, 1, 0, false, false);
+		add("barSpeedoOpacity", 5, 0, 100, 100, 0, false, false);
+		add("barSpeedoMajorStep", 5, 1, 400, 20, 0, false, true);
+		add("barSpeedoPeggedColor", 5, 0, 1, 1, 0, true, true);
+
+		add("showDialSpeedo", 6, 0, 1, 1, 0, false, false);
+		add("dialSpeedoGlidingOnly", 6, 0, 1, 1, 0, false, false);
+		add("dialSpeedoX", 6, -4096, 4096, 1, 0, false, false);
+		add("dialSpeedoY", 6, -4096, 4096, 1, 0, false, false);
+		add("dialSpeedoRadius", 6, 12, 200, 1, 0, false, false);
+		add("dialSpeedoMaxSpeed", 6, 1, 400, 20, 0, false, false);
+
+		add("showDialSpeedoTotal", 6, "dialSpeedoTotal", 0, 1, 1, 0, false, false);
+		add("dialSpeedoTotalColor", 6, "dialSpeedoTotal", 0, 1, 1, 0, true, false);
+		add("showDialSpeedoHorizontal", 6, "dialSpeedoHorizontal", 0, 1, 1, 0, false, false);
+		add("dialSpeedoHorizontalColor", 6, "dialSpeedoHorizontal", 0, 1, 1, 0, true, false);
+		add("showDialSpeedoVertical", 6, "dialSpeedoVertical", 0, 1, 1, 0, false, false);
+		add("dialSpeedoVerticalColor", 6, "dialSpeedoVertical", 0, 1, 1, 0, true, false);
+		add("showDialSpeedoAcceleration", 6, 0, 1, 1, 0, false, false);
+		add("showDialSpeedoLabels", 6, 0, 1, 1, 0, false, false);
+		add("showDialSpeedoBorder", 6, 0, 1, 1, 0, false, false);
+		add("dialSpeedoOpacity", 6, 0, 100, 100, 0, false, false);
+		add("dialSpeedoMajorStep", 6, 1, 400, 20, 0, false, true);
+		add("dialSpeedoMinorStep", 6, 1, 400, 20, 0, false, true);
+		add("dialSpeedoPeggedColor", 6, 0, 1, 1, 0, true, true);
 	}
 
 	private static void add(String key, int page, double min, double max, double factor,

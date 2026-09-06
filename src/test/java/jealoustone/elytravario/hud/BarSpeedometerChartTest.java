@@ -3,8 +3,8 @@ package jealoustone.elytravario.hud;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
-class SpeedometerChartTest {
-	private static final SpeedometerChart CHART = new SpeedometerChart(64, 4.0);
+class BarSpeedometerChartTest {
+	private static final BarSpeedometerChart CHART = new BarSpeedometerChart(64, 4.0);
 
 	@Test void zeroIsAtTheBottomFullScaleAtTheTopAndHalfScaleIsCentered() {
 		assertEquals(CHART.baselineY(), CHART.speedY(0.0));
@@ -29,18 +29,18 @@ class SpeedometerChartTest {
 	}
 
 	@Test void aChartWithNoScaleReadsZeroRatherThanDividing() {
-		SpeedometerChart degenerate = new SpeedometerChart(64, 0.0);
+		BarSpeedometerChart degenerate = new BarSpeedometerChart(64, 0.0);
 		assertEquals(0.0, degenerate.fraction(2.0));
 		assertEquals(degenerate.baselineY(), degenerate.speedY(2.0));
 	}
 
 	@Test void threeBarsFitExactlyInsideThePlot() {
 		assertEquals(CHART.plotX(), CHART.barX(0));
-		assertEquals(CHART.barX(0) + SpeedometerChart.BAR_WIDTH + SpeedometerChart.BAR_GAP,
+		assertEquals(CHART.barX(0) + BarSpeedometerChart.BAR_WIDTH + BarSpeedometerChart.BAR_GAP,
 				CHART.barX(1));
 		assertEquals(CHART.plotX() + CHART.plotWidth(),
-				CHART.barX(2) + SpeedometerChart.BAR_WIDTH);
-		assertEquals(CHART.baselineY() + SpeedometerChart.CATEGORY_HEIGHT + SpeedometerChart.PAD,
+				CHART.barX(2) + BarSpeedometerChart.BAR_WIDTH);
+		assertEquals(CHART.baselineY() + BarSpeedometerChart.CATEGORY_HEIGHT + BarSpeedometerChart.PAD,
 				CHART.height());
 	}
 }

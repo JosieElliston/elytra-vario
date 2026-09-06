@@ -24,20 +24,42 @@ class ConfigStoreTest {
 		assertEquals("true", values.get("showMaxHorizontalSpeedPitch"));
 		assertEquals("true", values.get("showMinimumFallSpeedPitch"));
 		assertEquals("true", values.get("showZeroPitch"));
-		assertEquals("144", values.get("speedoX"));
+		assertEquals("144", values.get("barSpeedoX"));
+		assertEquals("240", values.get("dialSpeedoX"));
 		assertEquals("4", values.get("positionMargin"));
 		assertEquals("4", values.get("positionSnapDistance"));
 		assertFalse(values.containsKey("speedoAnchor"));
 		assertFalse(values.containsKey("futureOption"));
 	}
 
-	@Test void oldDialGetsTheNewChartDimensionsAndLighterStockBackground() {
-		var migrated = ConfigStore.decode("{\"speedoRadius\":64,\"speedoOpacity\":45}");
-		assertEquals("96", migrated.get("speedoHeight"));
-		assertEquals("25", migrated.get("speedoOpacity"));
+	@Test void legacyDialSettingsReturnToTheDial() {
+		var migrated = ConfigStore.decode("{\"speedoRadius\":48,\"speedoOpacity\":30,"
+				+ "\"speedoX\":12,\"showSpeedoTotal\":false}");
+		assertEquals("48", migrated.get("dialSpeedoRadius"));
+		assertEquals("30", migrated.get("dialSpeedoOpacity"));
+		assertEquals("12", migrated.get("dialSpeedoX"));
+		assertEquals("false", migrated.get("showDialSpeedoTotal"));
+		assertEquals("96", migrated.get("barSpeedoHeight"));
+	}
 
-		var customized = ConfigStore.decode("{\"speedoRadius\":64,\"speedoOpacity\":30}");
-		assertEquals("30", customized.get("speedoOpacity"));
+	@Test void versionThirteenSettingsMigrateToTheBarSpeedometer() {
+		var migrated = ConfigStore.decode("{\"speedoHeight\":72,\"speedoOpacity\":30,"
+				+ "\"showSpeedoSoftMaxMarker\":false}");
+		assertEquals("72", migrated.get("barSpeedoHeight"));
+		assertEquals("30", migrated.get("barSpeedoOpacity"));
+		assertEquals("false", migrated.get("showBarSpeedoMaxHorizontalSpeedMarkers"));
+		assertEquals("64", migrated.get("dialSpeedoRadius"));
+	}
+
+	@Test void retiredSpeedometerVisibilityFollowsTheInstrumentVersion() {
+		var dial = ConfigStore.decode("{\"speedoRadius\":64,\"speedoVisibility\":\"2\"}");
+		assertEquals("false", dial.get("showDialSpeedo"));
+		assertEquals("true", dial.get("showBarSpeedo"));
+
+		var bar = ConfigStore.decode("{\"speedoHeight\":96,\"speedoVisibility\":\"1\"}");
+		assertEquals("true", bar.get("showBarSpeedo"));
+		assertEquals("true", bar.get("barSpeedoGlidingOnly"));
+		assertEquals("true", bar.get("showDialSpeedo"));
 	}
 
 	@Test void retiredVisibilityChoicesBecomeTheirTwoSwitches() {
