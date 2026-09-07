@@ -152,7 +152,6 @@ public final class ConfigOptions {
 		add("showHorizontalAcceleration", 4, 0, 1, 1, 0, false, false);
 		add("showTotalAcceleration", 4, 0, 1, 1, 0, false, false);
 		add("showVerticalAcceleration", 4, 0, 1, 1, 0, false, false);
-		add("showAngleOfAttack", 4, 0, 1, 1, 0, false, false);
 		add("showKineticEnergy", 4, 0, 1, 1, 0, false, false);
 		add("showPotentialEnergy", 4, 0, 1, 1, 0, false, false);
 		add("showTotalEnergy", 4, 0, 1, 1, 0, false, false);

@@ -12,6 +12,7 @@ import jealoustone.elytravario.config.ConfigStore;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.input.KeyEvent;
 
 /**
  * The instruments that can be shown or hidden as a whole, each with a key that toggles it.
@@ -84,6 +85,24 @@ public enum VarioInstrument {
 			if (instrument.key == null) continue;
 			while (instrument.key.consumeClick()) instrument.toggle();
 		}
+	}
+
+	/**
+	 * Applies every toggle bound to this press while a screen has keyboard focus.
+	 *
+	 * <p>Minecraft does not queue ordinary gameplay mappings while a screen is open, so the
+	 * settings screen offers its key events here directly. Do not stop at the first match:
+	 * vanilla permits conflicting bindings, and in that case both actions are meant to fire.
+	 */
+	public static boolean toggleMatching(KeyEvent event) {
+		boolean matched = false;
+		for (VarioInstrument instrument : values()) {
+			if (instrument.key != null && instrument.key.matches(event)) {
+				instrument.toggle();
+				matched = true;
+			}
+		}
+		return matched;
 	}
 
 	/** The instrument either of whose visibility settings has this key, or null for the rest. */

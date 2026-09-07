@@ -18,18 +18,21 @@ class ConfigStoreTest {
 	}
 
 	@Test void omittedSettingsUseDefaultsAndUnknownSettingsAreIgnored() {
-		var values = ConfigStore.decode("{\"chartMinVxz\":\"-20\",\"futureOption\":true}");
+		var values = ConfigStore.decode("{\"chartMinVxz\":\"-20\",\"futureOption\":true,"
+				+ "\"showAngleOfAttack\":true}");
 		assertEquals("-20", values.get("chartMinVxz"));
 		assertEquals("true", values.get("showHoldPitch"));
 		assertEquals("true", values.get("showMaxHorizontalSpeedPitch"));
 		assertEquals("true", values.get("showMinimumFallSpeedPitch"));
 		assertEquals("true", values.get("showZeroPitch"));
+		assertEquals("true", values.get("showFlightPath"));
 		assertEquals("144", values.get("barSpeedoX"));
 		assertEquals("240", values.get("dialSpeedoX"));
 		assertEquals("4", values.get("positionMargin"));
 		assertEquals("4", values.get("positionSnapDistance"));
 		assertFalse(values.containsKey("speedoAnchor"));
 		assertFalse(values.containsKey("futureOption"));
+		assertFalse(values.containsKey("showAngleOfAttack"));
 	}
 
 	@Test void legacyDialSettingsReturnToTheDial() {

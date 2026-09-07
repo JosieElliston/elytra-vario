@@ -114,8 +114,7 @@ public final class VarioHudElement implements HudElement {
 				+ (VarioConfig.showTotalSpeed ? 1 : 0) + (VarioConfig.showVerticalSpeed ? 1 : 0)
 				+ (VarioConfig.showHorizontalAcceleration ? 1 : 0)
 				+ (VarioConfig.showTotalAcceleration ? 1 : 0)
-				+ (VarioConfig.showVerticalAcceleration ? 1 : 0)
-				+ (VarioConfig.showAngleOfAttack ? 1 : 0);
+				+ (VarioConfig.showVerticalAcceleration ? 1 : 0);
 	}
 
 	private static int energyRows() {
@@ -165,14 +164,6 @@ public final class VarioHudElement implements HudElement {
 				"ACCEL XYZ", totalAcceleration(sample, previous));
 		if (VarioConfig.showVerticalAcceleration) row = accelerationRow(graphics, font, x, row,
 				"ACCEL Y", verticalAcceleration(sample, previous));
-
-		if (VarioConfig.showAngleOfAttack) {
-			// How far the nose sits above the flight path, which is the vertical gap between
-			// the crosshair and the pitch ladder's flight path marker, read as a number.
-			double aoa = sample.angleOfAttack();
-			row = row(graphics, font, x, row, "AOA",
-					Double.isFinite(aoa) ? fmt("%+.1f\u00b0", aoa) : "--", VALUE);
-		}
 
 		if (speedRows() > 0 && energyRows() > 0) {
 			graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);

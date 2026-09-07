@@ -1,8 +1,13 @@
 package jealoustone.elytravario;
 
+import java.io.IOException;
+import java.util.Map;
+
 import com.mojang.blaze3d.platform.InputConstants;
 
 import jealoustone.elytravario.flight.FlightRecorder;
+import jealoustone.elytravario.config.ConfigOptions;
+import jealoustone.elytravario.config.ConfigStore;
 import jealoustone.elytravario.config.VarioConfigScreen;
 import jealoustone.elytravario.hud.PitchLadderElement;
 import jealoustone.elytravario.hud.BarSpeedometerElement;
@@ -16,6 +21,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.player.LocalPlayer;
 
 import org.lwjgl.glfw.GLFW;
@@ -24,12 +30,16 @@ public class ElytraVarioClient implements ClientModInitializer {
 	public static final FlightRecorder RECORDER = new FlightRecorder();
 
 	private static KeyMapping settingsKey;
+	private static KeyMapping visibilityKey;
 
 	/**
 	 * The key that opens the settings, so that the screen can also close on it.
 	 * Null until {@link #onInitializeClient} has run, which is once, during client init.
 	 */
 	public static KeyMapping settingsKey() { return settingsKey; }
+
+	/** The unbound-by-default key that flips the master HUD switch. */
+	public static KeyMapping visibilityKey() { return visibilityKey; }
 
 	@Override
 	public void onInitializeClient() {
@@ -40,10 +50,16 @@ public class ElytraVarioClient implements ClientModInitializer {
 				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_V,
 				category));
+		visibilityKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+				"key.elytra-vario.toggle.visibility",
+				InputConstants.Type.KEYSYM,
+				InputConstants.UNKNOWN.getValue(),
+				category));
 		VarioInstrument.registerAll(category);
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			VarioInstrument.tickAll();
+			while (visibilityKey.consumeClick()) toggleVisibility();
 
 			while (settingsKey.consumeClick()) {
 				if (client.screen == null) {
@@ -100,5 +116,25 @@ public class ElytraVarioClient implements ClientModInitializer {
 				new DialSpeedometerElement(RECORDER));
 
 		ElytraVario.LOGGER.info("Elytra Vario initialized");
+	}
+
+	/** Applies the global visibility binding while the settings screen owns keyboard input. */
+	public static boolean toggleVisibilityIfMatches(KeyEvent event) {
+		if (visibilityKey == null || !visibilityKey.matches(event)) return false;
+		toggleVisibility();
+		return true;
+	}
+
+	/** Flips the same persisted master switch that the Global settings page shows. */
+	private static void toggleVisibility() {
+		Map<String, String> values = ConfigOptions.snapshot();
+		values.put("enabled", Boolean.toString(!VarioConfig.enabled));
+		ConfigOptions.apply(values);
+		try {
+			ConfigStore.save(values);
+		} catch (IOException | RuntimeException e) {
+			ElytraVario.LOGGER.warn(
+					"Could not save the global visibility toggle; it applies for this session only", e);
+		}
 	}
 }

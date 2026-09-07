@@ -56,7 +56,7 @@ public final class VarioConfigScreen extends Screen {
 	private int listPage;
 	/** The bind waiting for the next key or mouse press, if any. */
 	private KeyMapping capturing;
-	private KeyControl keyControl;
+	private final List<KeyControl> keyControls = new ArrayList<>();
 	/** An edit the next write will persist. */
 	private boolean dirty;
 	private String saveError;
@@ -85,7 +85,7 @@ public final class VarioConfigScreen extends Screen {
 	protected void init() {
 		// A rebuild discards the control that armed the capture, so the capture goes with it.
 		capturing = null;
-		keyControl = null;
+		keyControls.clear();
 		optionList = null;
 		coordinateBoxes.clear();
 		int span = Math.min(width - 16, minecraft.level != null ? 320 : 600);
@@ -110,8 +110,8 @@ public final class VarioConfigScreen extends Screen {
 		// the subpage selector and the scrolling list rather than among the settings for how the
 		// instrument draws. On the markers page in particular they are not the selected marker's.
 		//
-		// Global has the same shape, switches then key: the master switch governs every
-		// instrument, and the key answers for the screen rather than for anything on it.
+		// Global has the same shape, switch then keys: the master switch governs every
+		// instrument, with separate bindings for toggling it and opening this screen.
 		VarioInstrument instrument = instrument(page);
 		List<String> pageWide = instrument != null
 				? List.of(instrument.showKey(), instrument.glidingOnlyKey())
@@ -121,12 +121,12 @@ public final class VarioConfigScreen extends Screen {
 			top += 24;
 		}
 		if (instrument != null) {
-			keyControl = new KeyControl(instrument.key(), "toggleKey");
+			addKeyControl(instrument.key(), "toggleKey", left, top, span);
+			top += 24;
 		} else if (page == GLOBAL_PAGE) {
-			keyControl = new KeyControl(ElytraVarioClient.settingsKey(), "settingsKey");
-		}
-		if (keyControl != null) {
-			addRenderableWidget(keyControl.button(left + 4, top, span - 8));
+			addKeyControl(ElytraVarioClient.visibilityKey(), "visibilityKey", left, top, span);
+			top += 24;
+			addKeyControl(ElytraVarioClient.settingsKey(), "settingsKey", left, top, span);
 			top += 24;
 		}
 		List<String> groups = ConfigOptions.groups(page);
@@ -235,6 +235,24 @@ public final class VarioConfigScreen extends Screen {
 		return null;
 	}
 
+	private void addKeyControl(KeyMapping mapping, String labelKey, int left, int top, int span) {
+		KeyControl control = new KeyControl(mapping, labelKey);
+		keyControls.add(control);
+		addRenderableWidget(control.button(left + 4, top, span - 8));
+	}
+
+	/**
+	 * Pulls externally toggled visibility values into the screen without replacing unrelated
+	 * edits, including a half-typed value that is not yet valid enough to apply.
+	 */
+	private void syncVisibilitySettings() {
+		Map<String, String> live = ConfigOptions.snapshot();
+		settings.put("enabled", live.get("enabled"));
+		for (VarioInstrument instrument : VarioInstrument.values()) {
+			settings.put(instrument.showKey(), live.get(instrument.showKey()));
+		}
+	}
+
 	/**
 	 * Binds the armed toggle, or unbinds it when the press was Escape.
 	 *
@@ -249,7 +267,7 @@ public final class VarioConfigScreen extends Screen {
 		KeyMapping.resetMapping();
 		minecraft.options.save();
 		capturing = null;
-		if (keyControl != null) keyControl.refresh();
+		for (KeyControl control : keyControls) control.refresh();
 	}
 
 	@Override
@@ -279,10 +297,17 @@ public final class VarioConfigScreen extends Screen {
 		// no such care because nothing on this screen wants it. Offering the event to the widgets
 		// first is not enough on its own, since a text box takes its ordinary characters through
 		// charTyped and so refuses this event, hence the explicit check.
-		KeyMapping settingsKey = ElytraVarioClient.settingsKey();
-		if (settingsKey != null && settingsKey.matches(event) && !typing(getFocused())) {
-			onClose();
-			return true;
+		if (!typing(getFocused())) {
+			boolean handled = ElytraVarioClient.toggleVisibilityIfMatches(event);
+			handled |= VarioInstrument.toggleMatching(event);
+			KeyMapping settingsKey = ElytraVarioClient.settingsKey();
+			if (handled) syncVisibilitySettings();
+			if (settingsKey != null && settingsKey.matches(event)) {
+				onClose();
+				return true;
+			}
+			if (handled) rebuildWidgets();
+			return handled;
 		}
 		return false;
 	}
@@ -619,8 +644,8 @@ public final class VarioConfigScreen extends Screen {
 	}
 
 	/**
-	 * The page's own key — an instrument's toggle, or on Global the one that opens this screen —
-	 * rebindable here so that the whole of a page's behavior is in one place rather than split
+	 * The page's own keys — an instrument's toggle, or on Global the visibility and settings
+	 * keys — rebindable here so that the whole of a page's behavior is in one place rather than split
 	 * between this screen and the vanilla Controls list. Every one of these mappings is
 	 * registered with the game, so they are all in that list too, and either screen sets them.
 	 *

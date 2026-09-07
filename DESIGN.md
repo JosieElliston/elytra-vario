@@ -525,39 +525,23 @@ distance is weighted positively, 12.8° when weighted negatively. Weighting dist
 pulling the floor down is counterintuitive, and it is the one place the derivation might be
 luck rather than structure.
 
-## Readouts that are off by default
+## Direction-of-travel reading
 
-**Angle of attack, in both its forms.** Real, correct, and once unused: the pump-cycle research
-did not refer to it, so on instruments watched continuously the `AOA` row and the flight path
-marker were both clutter competing with readings in use. Kept behind `showAngleOfAttack` and
-`showFlightPath` rather than deleted, because whether angle of attack matters was an open
-question rather than a settled one.
-
-**That question has since been answered in one direction**, which is worth being honest about
-rather than quietly leaving the switches where they were. The dive's rule is read as a gap
-between the hold bug and where the player is actually going, and that gap *is* angle of attack
-— so the quantity is worth watching after all, as a distance between two marks. Reading it that
-way means turning the marker on, which is also the only thing that draws it: a gray bug marking
-the same direction on the pitch axis alone existed for a while and was deleted as a second
-drawing of one reading. What the two switches add is a printed figure and the exact
-two-dimensional placement with its sideslip; neither is needed to fly the dive rule, so neither
-is on by default, but the rationale above no longer covers the quantity, only these renderings
-of it.
-
-Turning the marker off costs the ladder its only sideslip cue, which is the one thing it
-carried that the number did not. That is affordable because the chart shows sideslip too, as
-the gap between its two cursors — and the chart is the instrument that turning is analyzed on
-anyway. The design notes below still describe how the marker is placed, because the code is
-still there and still correct.
+The flight-path marker is the sole direction-of-travel reading. Its vertical gap from the
+crosshair shows angle of attack spatially, while its horizontal gap shows sideslip. The former
+numeric `AOA` row expressed only the first of those dimensions, so it and its setting were
+removed rather than maintaining two renderings of one reading. The marker defaults to on; the
+chart also shows sideslip as the gap between its two cursors.
 
 ## Toggle keys
 
 Each of the six instruments — pitch ladder, markers, velocity graph, flight stats, bar
-speedometer, and dial speedometer — has a key that switches it off and back on, all unbound by
-default. Not the individual
+speedometer, and dial speedometer — has a key that switches it off and back on. A seventh
+visibility key switches the master HUD setting, independently of the key that opens the settings
+screen. All seven visibility keys are unbound by default. Not the individual
 markers: those are seven settings behind one switch on one page, and the ladder's bugs are read
 as one overlay, so seven more binds would buy nothing that switching the whole set off does not.
-Unbound by default because six keys is a lot to take off a keyboard that already has `V` on it
+Unbound by default because seven keys is a lot to take off a keyboard that already has `V` on it
 for an action most flights never need, and because the settings screen puts the binding control
 directly beneath the pair of switches it flips, so anyone who wants one finds it there.
 
@@ -584,6 +568,12 @@ on top of that, not a second store: the row sets the same mapping and writes `op
 immediately. That is the only arrangement in which the two menus agree — a bind this screen held
 back until later would be silently reverted by a Cancel in the vanilla one — and it is why the
 toggle key row is the one row on a page that Reset does not touch.
+
+Ordinary gameplay mappings are not queued while a screen owns keyboard input. The settings
+screen therefore matches its own key events against all visibility mappings directly, just as it
+does for its open/close key, so a module or the whole HUD can be toggled while its live preview is
+being adjusted. Text fields retain ordinary characters. If mappings conflict, every matching
+visibility action still fires, preserving vanilla's conflict behavior.
 
 Config files written before the split still read: `ConfigStore` translates a retired
 `*Visibility` value into the pair, since the alternative is that every hidden instrument quietly
@@ -836,19 +826,15 @@ marker on is what makes that gap visible.
 The bug disappears when no pitch holds the current angle at all — a near-vertical fall cannot
 be sustained by any attitude — rather than picking the least bad degree.
 
-## Off by default
+## Marker switches
 
-Angle of attack — how far the nose sits above the flight path — is built and correct, in two
-forms, and both are switched off. Nothing in the pump-cycle work refers to it yet, and on
-instruments watched continuously they were clutter competing with readings actually in use.
+| Switch | Default | Effect |
+| --- | --- | --- |
+| `showOptimalPitch` | Off | The magenta one-tick bug on the ladder |
+| `showFlightPath` | On | A winged circle showing where you are going rather than where you are looking. Its vertical gap from the crosshair is angle of attack, and its horizontal gap is sideslip. It is not drawn once it falls outside the ladder band or off the edge of the screen |
 
-| Switch | Brings back |
-| --- | --- |
-| `showOptimalPitch` | The magenta one-tick bug on the ladder |
-| `showAngleOfAttack` | An `AOA` row on the panel, which resizes itself around it |
-| `showFlightPath` | The flight path marker: a winged circle on the ladder marking where you are actually going, as against the crosshair's where you are looking. Its vertical gap from the crosshair is angle of attack drawn rather than printed, and its horizontal gap is sideslip. Not drawn once it falls outside the ladder band or off the edge of the screen |
-
-Sideslip is still readable without the marker, from the gap between the chart's two cursors.
+Sideslip remains readable without the flight-path marker from the gap between the chart's two
+cursors.
 
 ## Known limitations
 
