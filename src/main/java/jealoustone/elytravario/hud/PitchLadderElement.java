@@ -215,25 +215,6 @@ public final class PitchLadderElement implements HudElement {
 	 */
 	private void drawBugs(GuiGraphicsExtractor graphics, float cameraPitch,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
-		// Fixed scale references go down first. Their zero rise makes each a single row, and
-		// lets any state-dependent wedge that happens to agree remain the dominant mark.
-		if (VarioConfig.showMaxHorizontalSpeedPitch) {
-			drawBug(graphics, cameraPitch, MAX_HORIZONTAL_SPEED_PITCH, 0,
-					VarioConfig.maxHorizontalSpeedPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
-		}
-
-		if (VarioConfig.showMinimumFallSpeedPitch) {
-			drawBug(graphics, cameraPitch, MINIMUM_FALL_SPEED_PITCH, 0,
-					VarioConfig.minimumFallSpeedPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
-		}
-
-		if (VarioConfig.showZeroPitch) {
-			drawBug(graphics, cameraPitch, ZERO_PITCH, 0, VarioConfig.zeroPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
-		}
-
 		// In descending order of rise, which is what makes an overlap nest. Retuning the rises
 		// in VarioConfig means reordering these calls to match; nothing checks it.
 		if (VarioConfig.showLookaheadPitch) {
@@ -260,6 +241,25 @@ public final class PitchLadderElement implements HudElement {
 						VarioConfig.optimalPitchColor,
 						centerX, centerY, scale, bandUp, bandDown);
 			}
+		}
+
+		// Fixed scale references go down last. Their zero rise makes each a single row, so
+		// drawing them after every wedge keeps the little markers visible when readings agree.
+		if (VarioConfig.showMaxHorizontalSpeedPitch) {
+			drawBug(graphics, cameraPitch, MAX_HORIZONTAL_SPEED_PITCH, 0,
+					VarioConfig.maxHorizontalSpeedPitchColor,
+					centerX, centerY, scale, bandUp, bandDown);
+		}
+
+		if (VarioConfig.showMinimumFallSpeedPitch) {
+			drawBug(graphics, cameraPitch, MINIMUM_FALL_SPEED_PITCH, 0,
+					VarioConfig.minimumFallSpeedPitchColor,
+					centerX, centerY, scale, bandUp, bandDown);
+		}
+
+		if (VarioConfig.showZeroPitch) {
+			drawBug(graphics, cameraPitch, ZERO_PITCH, 0, VarioConfig.zeroPitchColor,
+					centerX, centerY, scale, bandUp, bandDown);
 		}
 	}
 
