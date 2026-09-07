@@ -91,22 +91,6 @@ public record Sample(
 	}
 
 	/**
-	 * Angle of attack: how far the nose sits above the flight path, in degrees.
-	 *
-	 * <p>Positive means looking above where you are going, which is the normal state in a
-	 * glide — hold the look level and the elytra still descends. This is the divergence that
-	 * makes elytra physics feel unintuitive, and on the pitch ladder it is the vertical gap
-	 * between the crosshair and the flight path marker.
-	 *
-	 * <p>Signed the aviation way round even though the angles it is built from are not: both
-	 * terms use Minecraft's convention, and subtracting flips the sense, so a nose-high
-	 * attitude reads positive as it should.
-	 */
-	public double angleOfAttack() {
-		return flightPathPitch() - pitch;
-	}
-
-	/**
 	 * Blocks forward per block down. Negative while climbing, where it reads as blocks
 	 * forward per block <em>gained</em>.
 	 *

@@ -21,26 +21,12 @@ public final class VarioConfig {
 	public static boolean showEnergyField = true;
 
 	/**
-	 * Angle of attack, in its two forms: a row on the panel, and the flight path marker on
-	 * the ladder, whose vertical gap from the crosshair is the same quantity drawn rather
-	 * than printed. Both are off by default.
-	 *
-	 * <p>The code for both is kept and correct. Nothing in the pump-cycle research refers to
-	 * angle of attack yet, so on instruments that are watched continuously they were clutter
-	 * competing with readings actually being used — and whether it matters is an open
-	 * question rather than a settled one.
-	 *
-	 * <p>Turning the marker back on also restores the only sideslip cue on the ladder; the
-	 * chart's cyan cursor still shows sideslip either way.
-	 *
-	 * <p>The open question has since closed, and these two switches did not move. The dive's
-	 * rule is read as the gap between the hold bug and where the player is actually going, and
-	 * that gap is angle of attack — so turning the marker on is what shows it as a distance
-	 * between two marks. What the rule itself needs is neither the printed figure nor the exact
-	 * two-dimensional placement, which is why both stay off by default.
+	 * The flight path marker shows where the player is going rather than where they are
+	 * looking. Its vertical gap from the crosshair shows angle of attack, and its horizontal
+	 * gap shows sideslip, making it more expressive than the former numeric angle-of-attack
+	 * readout. It is on by default.
 	 */
-	public static boolean showAngleOfAttack = false;
-	public static boolean showFlightPath = false;
+	public static boolean showFlightPath = true;
 
 	/**
 	 * The optimal pitch bug: a pair of wedges in the ladder's center gap marking the pitch

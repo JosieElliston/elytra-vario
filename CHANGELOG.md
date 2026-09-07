@@ -10,6 +10,22 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- Added a separate, unbound-by-default global key binding that toggles and saves the entire
+  Elytra Vario HUD without opening the settings screen.
+
+### Changed
+
+- The flight-path direction-of-travel marker now defaults to on.
+- Instrument toggle keys and the global HUD visibility key now work while the settings screen
+  is open, as the open/close settings key already did.
+
+### Removed
+
+- The numeric `AOA` Flight Stats row and its setting. The flight-path marker shows the same
+  vertical angle spatially and additionally shows sideslip.
+
 ## [1.4.0] - 2026-09-06
 
 ### Added
