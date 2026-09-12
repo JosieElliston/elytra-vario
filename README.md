@@ -73,3 +73,5 @@ coincident readings remain distinguishable:
 | blue   | vertical magnitude, `\|vy\|`   | shortest |
 
 Matching-color concentric arrows at the needle tips project each speed's measured acceleration one second forward.
+
+Optional gray markers show straight-down terminal velocity, one per needle: 78.400 b/s total and vertical, and zero horizontal. Each is a short radial mark across its own needle's tip, so a needle reaching its mark is at that speed.

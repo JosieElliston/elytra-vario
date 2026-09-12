@@ -461,6 +461,7 @@ public final class VarioConfig {
 	public static int dialSpeedoVerticalColor = 0xFF4D8CFF;
 	public static boolean showDialSpeedoAcceleration = true;
 	public static int dialSpeedoPeggedColor = 0xFF8C9298;
+	public static boolean showDialSpeedoTerminalVelocityMarkers = false;
 	public static boolean showDialSpeedoLabels = true;
 	public static boolean showDialSpeedoBorder = true;
 	public static double dialSpeedoOpacity = 0.45;

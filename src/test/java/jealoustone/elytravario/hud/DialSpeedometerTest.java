@@ -34,6 +34,35 @@ class DialSpeedometerTest {
 		assertEquals(Math.PI, degenerate.angle(2.0));
 	}
 
+	@Test void eachNeedlesMarkerLaneIsCenteredOnItsTipAndKeepsClearOfTheNext() {
+		int[] tips = { DIAL.needleTip(DialSpeedometer.TOTAL_LENGTH),
+				DIAL.needleTip(DialSpeedometer.HORIZONTAL_LENGTH),
+				DIAL.needleTip(DialSpeedometer.VERTICAL_LENGTH) };
+		assertArrayEquals(new int[] { 43, 35, 26 }, tips);
+
+		double[] lengths = { DialSpeedometer.TOTAL_LENGTH, DialSpeedometer.HORIZONTAL_LENGTH,
+				DialSpeedometer.VERTICAL_LENGTH };
+		for (int i = 0; i < lengths.length; i++) {
+			int from = DIAL.markerFrom(lengths[i]);
+			int to = DIAL.markerTo(lengths[i]);
+			assertEquals(tips[i] - 3, from);
+			assertEquals(tips[i] + 3, to);
+			assertTrue(from > 0, "a marker stays clear of the hub");
+			assertTrue(to <= DIAL.radius(), "a marker stays inside the scale arc");
+			if (i > 0) assertTrue(DIAL.markerTo(lengths[i]) < DIAL.markerFrom(lengths[i - 1]),
+					"neighboring lanes keep daylight between them");
+		}
+	}
+
+	/** Below the settable minimum radius the lane rounds away; it is floored, not dropped. */
+	@Test void aDialTooSmallToScaleTheLaneStillMarksAPixelEitherWay() {
+		DialSpeedometer tiny = new DialSpeedometer(8, 4.0);
+		assertEquals(tiny.needleTip(DialSpeedometer.TOTAL_LENGTH) - 1,
+				tiny.markerFrom(DialSpeedometer.TOTAL_LENGTH));
+		assertEquals(tiny.needleTip(DialSpeedometer.TOTAL_LENGTH) + 1,
+				tiny.markerTo(DialSpeedometer.TOTAL_LENGTH));
+	}
+
 	@Test void theBoxExactlyBoundsTheHalfDisc() {
 		assertEquals(0, DIAL.hubX() - DIAL.rim());
 		assertEquals(DIAL.width() - 1, DIAL.hubX() + DIAL.rim());

@@ -11,6 +11,13 @@ and key-registration APIs, not behavior.
 
 ## [Unreleased]
 
+### Added
+
+- Toggleable gray straight-down terminal-velocity markers on the dial speedometer, matching the
+  bar speedometer's set: 78.400 b/s total and vertical, and zero horizontal. Each is a short
+  radial mark across its own needle's tip, drawn only for needles that are shown, and they
+  default to off.
+
 ### Changed
 
 - The bar speedometer's panel is now measured around what it actually shows. Turning off the
