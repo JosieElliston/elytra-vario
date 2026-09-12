@@ -686,12 +686,25 @@ centered on its neighbor or on the screen reads as deliberate however its edges 
 resizing it is the line that moves least predictably, since it drifts by half of whatever the
 edge does.
 
-Only one line can win, because one setting places all four of them: the nearest rest takes it,
-and the guide that appears says which. A rest the setting cannot actually reach is passed over
-for one it can, which happens whenever a module's size comes in steps, as the dial's diameter
-does, and to centers more often than to edges, since a center moves half a pixel per unit of
-size. The guides are drawn from the module as it ends up rather than from the size that was
-aimed at, so a line appears only where an edge or a center genuinely lies on it.
+Only one answer can win, because one setting places all four lines. Every reachable rest proposes
+a size, and the size whose resulting corner is closest to the mouse in both dimensions chooses
+the answer. Every marker which independently produces that same answer appears with it;
+constraints proposing another size are not carried into rendering. The snap-distance gate is
+measured at the dragged edge rather than at the line offering the rest. A center moves half as
+fast, so measuring its own gap would give it twice the capture range and let it pull the corner
+twice the configured distance. A rest the setting cannot actually reach is passed over for one it
+can, which happens
+whenever a module's size comes in steps, as the dial's diameter does, and to centers more often
+than to edges, since a center moves half a pixel per unit of size. The winning markers are checked
+against the module as it ends up rather than merely against the size that was aimed at, so a line
+appears only where an edge or a center genuinely lies on it after layout rounding.
+
+The calculation is always made from the box and setting at the start of the drag. Feeding the
+previous frame's rounded box back into the next frame would make the arithmetic depend on which
+rest won last, allowing nearly equivalent edge and center answers to trade places under a steady
+pointer. Alongside the snapped answer, the calculation returns the unsnapped box requested by the
+pointer. That box is the translucent true-position outline during a resize, just as the raw
+position is during a move; the live module and its guides show where snapping put it.
 
 **The grips say which drag is armed.** The four corners are drawn as thickened corners on the
 outline, and the one under the pointer is drawn longer, thicker and white. At the same moment

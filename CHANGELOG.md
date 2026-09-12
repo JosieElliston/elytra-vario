@@ -37,8 +37,12 @@ build identifier and released feature for feature; see its own changelog.
   therefore rests flush on a right edge or a margin short of a left edge, and never flush against
   the left edge itself, because a move would not shove two modules together either.
 
-  Only one line can win, since one setting places all four of them, so the nearest rest takes it
-  and the guide that appears says which. A rest the setting cannot actually reach — the dial's
+  Only one answer can win, since one setting places all four lines. Every reachable rest proposes
+  a size, and the size whose resulting corner is closest to the mouse in both dimensions chooses
+  the answer. Every marker that independently produces that same answer appears with it;
+  constraints proposing another size do not. The snap-distance gate is measured at the dragged
+  edge: a center moves half as fast, and measuring its own gap would let it pull the corner twice
+  the configured distance. A rest the setting cannot actually reach — the dial's
   diameter comes in steps of two, so half its widths do not exist, and a center moves only half a
   pixel per unit of size — is passed over for one it can. The guides are drawn from the module as
   it ends up rather than from the size that was aimed at, so a line appears only where an edge or
@@ -54,12 +58,15 @@ build identifier and released feature for feature; see its own changelog.
   whenever the larger mark is showing.
 
   A resize writes the same setting the module's page does, so its box follows the drag, and that
-  box's tooltip now says the corners are there. The new size is measured off the module after
-  the setting has been applied rather than predicted from it, so a scale that lands between
-  pixels cannot walk the pinned corner sideways over a long drag.
+  box's tooltip now says the corners are there. Its pinned corner is placed from the module's
+  actual post-layout size, so a scale that lands between pixels cannot walk that corner sideways
+  over a long drag.
 
 ### Changed
 
+- A resize now shows the same translucent true-position outline as a move. The live module still
+  shows the snapped result; the outline shows the unsnapped box the mouse is requesting, making
+  both the captured alignment and the distance needed to pull free explicit.
 - The velocity graph keeps the heatmap it has while a resize drag is in progress, stretching it
   over the graph, and builds the exact one when the mouse comes up. A rebuild costs around 30ms
   at the default size and grows with the area, and a drag asks for a new size every pixel it
@@ -82,6 +89,18 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Fixed
 
+- Resize candidates are now evaluated from the immutable geometry at the start of the drag and
+  ranked by the resulting corner's full two-dimensional distance from the mouse. Recomputing
+  from each previous rounded result could make equivalent edge and center alignments trade places
+  from frame to frame, while comparing only the offering line could choose the farther result on
+  modules such as the two-to-one dial.
+- Resize snapping now carries the constraints that produced its winning size through to guide
+  rendering. The renderer previously rediscovered every line the rounded result happened to
+  touch, which could show markers whose constraints had proposed different sizes. Multiple
+  markers now appear together only when each independently gives the winning answer.
+- Center-line resize snaps no longer pull a corner twice the configured snap distance. Since a
+  module's center moves half as fast as its edge, this could make a resize visibly hitch when it
+  entered or left an alignment; center snaps now use the same maximum resize travel as edge snaps.
 - The dial speedometer's acceleration arrows sat centered on their needle's tip radius, so
   half the stem's width hung past the end of the needle. The arc now rides half a stem
   further in, flush with the tip.

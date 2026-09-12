@@ -71,6 +71,11 @@ public final class VarioConfigScreen extends Screen {
 	private ModulePositionEditor.Module draggingModule;
 	/** The grip being dragged, when the drag is a resize rather than a move. */
 	private ModulePositionEditor.Corner draggingCorner;
+	/** Immutable geometry at the start of a resize, so rounding cannot feed one frame into the next. */
+	private ModulePositionEditor.Bounds resizeOrigin;
+	private double resizeOriginValue;
+	/** The unsnapped box requested by the pointer, shared by move and resize rendering. */
+	private ModulePositionEditor.Bounds trueDragBounds;
 	/** Pointer-driven position before snapping, retained so a snapped module can pull free.
 	 * A move drags the module's top-left; a resize drags the grabbed corner. */
 	private double dragX;
@@ -348,6 +353,18 @@ public final class VarioConfigScreen extends Screen {
 				clearFocus();
 				draggingModule = target.module();
 				draggingCorner = ModulePositionEditor.grip(target, event.x(), event.y());
+				resizeOrigin = null;
+				trueDragBounds = null;
+				if (draggingCorner != null) {
+					ConfigOptions.Option size = option(draggingModule.sizeKey);
+					try {
+						resizeOriginValue = Double.parseDouble(settings.get(size.key())) / size.factor();
+						resizeOrigin = target;
+					} catch (RuntimeException ignored) {
+						// A half-typed size cannot normally be reached through a module, but if it is,
+						// leave the drag inert instead of inventing an origin for it.
+					}
+				}
 				// Resizing the chart would otherwise rebuild the heatmap on every pixel of the
 				// drag, so it stretches the one it has until the mouse comes up.
 				VarioHudElement.stretchEnergyField = draggingCorner != null
@@ -382,6 +399,8 @@ public final class VarioConfigScreen extends Screen {
 		if (draggingModule == null) return super.mouseReleased(event);
 		draggingModule = null;
 		draggingCorner = null;
+		resizeOrigin = null;
+		trueDragBounds = null;
 		VarioHudElement.stretchEnergyField = false;
 		snapVerticalGuides = List.of();
 		snapHorizontalGuides = List.of();
@@ -433,6 +452,10 @@ public final class VarioConfigScreen extends Screen {
 			if (candidate.module() == module) moving = candidate;
 		}
 		if (moving == null) return;
+		trueDragBounds = new ModulePositionEditor.Bounds(module,
+				Math.clamp(x, 0, Math.max(0, width - moving.width())),
+				Math.clamp(y, 0, Math.max(0, height - moving.height())),
+				moving.width(), moving.height());
 		ModulePositionEditor.Snap snap = ModulePositionEditor.snap(module, x, y,
 				moving.width(), moving.height(), bounds, width, height,
 				VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
@@ -451,36 +474,30 @@ public final class VarioConfigScreen extends Screen {
 	 * Scales the module so that the grabbed corner follows the pointer and the corner opposite
 	 * it stays where it is.
 	 *
-	 * <p>The new size is measured off the module after the setting has been applied rather than
-	 * predicted from it, so that the pinned corner survives whatever rounding the module does
-	 * when it lays itself out: a scale is a real number and a box is a whole number of pixels.
+	 * <p>Every event is solved from the drag's immutable origin. The live module is then measured
+	 * after applying the winning setting, so the pinned corner survives layout rounding without
+	 * letting one frame's rounded result perturb the next frame's snap decision.
 	 */
 	private void resize(ModulePositionEditor.Module module, ModulePositionEditor.Corner corner,
 			double pointerX, double pointerY) {
+		if (resizeOrigin == null) return;
 		List<ModulePositionEditor.Bounds> bounds = moduleBounds();
-		ModulePositionEditor.Bounds before = boundsOf(bounds, module);
-		if (before == null) return;
 		ConfigOptions.Option size = option(module.sizeKey);
-		double value;
-		try {
-			value = Double.parseDouble(settings.get(size.key())) / size.factor();
-		} catch (RuntimeException e) {
-			// A size box may temporarily contain incomplete input.
-			return;
-		}
-		double resized = ModulePositionEditor.resize(corner, before, value,
+		ModulePositionEditor.Resize resize = ModulePositionEditor.resizeWithMarkers(
+				corner, resizeOrigin, resizeOriginValue,
 				new ModulePositionEditor.Sizing(ModulePositionEditor.growth(module),
 						size.min() / size.factor(), size.max() / size.factor(), size.integral()),
 				pointerX, pointerY, bounds, width, height,
 				VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
-		String next = size.format(resized);
+		trueDragBounds = resize.trueBounds();
+		String next = size.format(resize.value());
 		if (!next.equals(settings.get(size.key()))) {
 			settings.put(size.key(), next);
 			editorWrote(size.key());
 		}
 		ModulePositionEditor.Bounds after = renderedBounds(module);
 		if (after == null) return;
-		ModulePositionEditor.Position position = ModulePositionEditor.anchored(corner, before,
+		ModulePositionEditor.Position position = ModulePositionEditor.anchored(corner, resizeOrigin,
 				after.width(), after.height());
 		int x = Math.clamp(position.x(), 0, Math.max(0, width - after.width()));
 		int y = Math.clamp(position.y(), 0, Math.max(0, height - after.height()));
@@ -494,9 +511,8 @@ public final class VarioConfigScreen extends Screen {
 		}
 		// Asked of the module as it ended up, so a guide is drawn only where an edge is
 		// genuinely on it. The others have not moved, so the rests they offer are unchanged.
-		ModulePositionEditor.Guides guides = ModulePositionEditor.resizeGuides(
-				new ModulePositionEditor.Bounds(module, x, y, after.width(), after.height()),
-				corner, bounds, width, height, VarioConfig.positionMargin);
+		ModulePositionEditor.Guides guides = ModulePositionEditor.resizeGuides(resize,
+				new ModulePositionEditor.Bounds(module, x, y, after.width(), after.height()), corner);
 		snapVerticalGuides = guides.vertical();
 		snapHorizontalGuides = guides.horizontal();
 	}
@@ -667,18 +683,11 @@ public final class VarioConfigScreen extends Screen {
 		}
 		if (draggingModule == null) return;
 		drawSnapGuides(graphics);
-		// A resize needs no ghost: the module is already drawn at the size the drag is asking
-		// for, and the corner it is pinning has not moved.
-		if (draggingCorner != null) return;
-		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
-			if (bounds.module() != draggingModule) continue;
-			int ghostX = Math.clamp((int) Math.round(dragX), 0,
-					Math.max(0, width - bounds.width()));
-			int ghostY = Math.clamp((int) Math.round(dragY), 0,
-					Math.max(0, height - bounds.height()));
-			if (ghostX != bounds.x() || ghostY != bounds.y()) {
-				graphics.outline(ghostX, ghostY, bounds.width(), bounds.height(), 0xA0FFFFFF);
-			}
+		if (trueDragBounds == null) return;
+		ModulePositionEditor.Bounds rendered = renderedBounds(draggingModule);
+		if (rendered != null && !trueDragBounds.equals(rendered)) {
+			graphics.outline(trueDragBounds.x(), trueDragBounds.y(), trueDragBounds.width(),
+					trueDragBounds.height(), 0xA0FFFFFF);
 		}
 	}
 

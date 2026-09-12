@@ -96,6 +96,21 @@ class ModulePositionEditorTest {
 	}
 
 	@Test
+	void moveGuidesCanShareLeftAndCenterAnswersButNotTheRightAfterRounding() {
+		var other = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS, 100, 20, 40, 30);
+		// With integer centers, widths 40 and 41 can have the same left edge and center while
+		// their right edges differ by one. Left and center both answer x=100; right answers x=99.
+		var snap = ModulePositionEditor.snap(ModulePositionEditor.Module.DIAL_SPEEDOMETER,
+				100, 80, 41, 20, List.of(other), 320, 240, 4, 4);
+
+		assertEquals(new ModulePositionEditor.Position(100, 80), snap.position());
+		assertEquals(List.of(
+				new ModulePositionEditor.Guide(100, 20, 50),
+				new ModulePositionEditor.Guide(120, 20, 50)), snap.verticalGuides());
+	}
+
+	@Test
 	void nudgeChangesAbsolutePositionInScreenDirection() {
 		Map<String, String> draft = chart(10, 20);
 		assertTrue(ModulePositionEditor.nudge(ModulePositionEditor.Module.CHART, 1, 1, draft));
@@ -319,6 +334,24 @@ class ModulePositionEditorTest {
 	}
 
 	@Test
+	void resizeChoosesTheCandidateClosestToTheMouseInBothDimensions() {
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.DIAL_SPEEDOMETER, 100, 100, 91, 46);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(2, 1), 12, 200, true);
+		// The right-edge rest four pixels away proposes radius 42. The bottom-edge rest only
+		// three pixels away proposes radius 43, but moves the full corner farther from the mouse.
+		var right = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS, 155, 20, 40, 40);
+		var below = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 129, 30, 20);
+
+		// Radius 42 moves the corner by (4, 2), versus (6, 3) for radius 43.
+		assertEquals(42, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 40, sizing, 191, 146, List.of(right, below), 320, 240, 4, 4));
+	}
+
+	@Test
 	void resizeSnapsTheCenterTheDraggedEdgeTrails() {
 		var other = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS, 150, 100, 40, 60);
@@ -329,14 +362,36 @@ class ModulePositionEditorTest {
 
 		// Nothing is near the dragged edge at 199, but the center it trails is a pixel off the
 		// screen's own center line, and a height of 160 puts it exactly on it.
-		assertEquals(160, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
-				bounds, 100, sizing, 200, 199, List.of(other), 320, 240, 4, 4));
+		var resize = ModulePositionEditor.resizeWithMarkers(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 100, sizing, 200, 199, List.of(other), 320, 240, 4, 4);
+		assertEquals(160, resize.value());
+		assertEquals(new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 159),
+				resize.trueBounds());
 		var landed = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 160);
 		assertEquals(List.of(new ModulePositionEditor.Guide(120, 0, 320)),
-				ModulePositionEditor.resizeGuides(landed,
-						ModulePositionEditor.Corner.BOTTOM_RIGHT, List.of(other), 320, 240, 4)
+				ModulePositionEditor.resizeGuides(resize, landed,
+						ModulePositionEditor.Corner.BOTTOM_RIGHT)
 						.horizontal());
+	}
+
+	@Test
+	void resizeCenterSnapCannotPullTheCornerTwiceTheSnapDistance() {
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 100);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
+
+		// The free height is 152, putting the center four pixels above the screen center.
+		// Snapping that center would grow the dragged edge eight pixels, outside the configured
+		// four-pixel distance, so the corner continues to follow the pointer.
+		assertEquals(152, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 100, sizing, 200, 192, List.of(), 320, 240, 4, 4));
+		// One pixel nearer, the center needs only four pixels of edge travel and can snap.
+		assertEquals(160, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 100, sizing, 200, 196, List.of(), 320, 240, 4, 4));
 	}
 
 	@Test
@@ -383,24 +438,59 @@ class ModulePositionEditorTest {
 	}
 
 	@Test
-	void resizeGuidesDrawOnlyWhereAnEdgeHasLanded() {
+	void resizeGuidesDrawOnlyMarkersThatGiveTheWinningAnswerAndActuallyLanded() {
 		var other = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS, 30, 20, 70, 60);
+		var before = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 40, 40, 59, 39);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
+		var resize = ModulePositionEditor.resizeWithMarkers(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				before, 39, sizing, 99, 79, List.of(other), 320, 240, 4, 4);
 		var landed = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.BAR_SPEEDOMETER, 40, 40, 60, 40);
+				ModulePositionEditor.Module.CHART, 40, 40, 60, 40);
 
-		// Flush on both: the right edge on the other module's right edge, the bottom on its
-		// bottom, each guide spanning the module that offered it.
-		var guides = ModulePositionEditor.resizeGuides(landed,
-				ModulePositionEditor.Corner.BOTTOM_RIGHT, List.of(other), 320, 240, 4);
+		// Both rests independently produce size 40, so both belong to the winning answer.
+		assertEquals(40, resize.value());
+		var guides = ModulePositionEditor.resizeGuides(resize, landed,
+				ModulePositionEditor.Corner.BOTTOM_RIGHT);
 		assertEquals(List.of(new ModulePositionEditor.Guide(100, 20, 80)), guides.vertical());
 		assertEquals(List.of(new ModulePositionEditor.Guide(80, 30, 100)), guides.horizontal());
 
+		// Applying a nonintegral setting can round a predicted line away. Even though its marker
+		// gave the winning arithmetic answer, it is not drawn unless the rendered box landed.
 		var shorter = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.BAR_SPEEDOMETER, 40, 40, 60, 37);
-		assertEquals(List.of(), ModulePositionEditor.resizeGuides(shorter,
-				ModulePositionEditor.Corner.BOTTOM_RIGHT, List.of(other), 320, 240, 4)
+				ModulePositionEditor.Module.CHART, 40, 40, 60, 37);
+		assertEquals(List.of(), ModulePositionEditor.resizeGuides(resize, shorter,
+				ModulePositionEditor.Corner.BOTTOM_RIGHT)
 				.horizontal());
+	}
+
+	@Test
+	void resizeMarkersNeverCombineDifferentAnswers() {
+		var right = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS, 160, 20, 40, 40);
+		var below = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 176, 30, 20);
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 100, 100, 40, 40);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
+
+		// The right-edge rest answers 100 and the bottom-edge rest answers 96. Only the nearer
+		// right-edge answer wins, so the solver must not return the bottom marker with it.
+		var resize = ModulePositionEditor.resizeWithMarkers(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 40, sizing, 199, 199, List.of(right, below), 320, 240, 4, 4);
+		var landed = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 100, 100, 100, 100);
+		var guides = ModulePositionEditor.resizeGuides(resize, landed,
+				ModulePositionEditor.Corner.BOTTOM_RIGHT);
+
+		assertEquals(100, resize.value());
+		assertEquals(List.of(new ModulePositionEditor.Guide(200, 20, 60)), guides.vertical());
+		assertEquals(List.of(), guides.horizontal());
 	}
 
 	private static Map<String, String> chart(int x, int y) {
