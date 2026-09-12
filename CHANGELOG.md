@@ -15,6 +15,10 @@ build identifier and released feature for feature; see its own changelog.
 - The dial speedometer's acceleration arrows sat centered on their needle's tip radius, so
   half the stem's width hung past the end of the needle. The arc now rides half a stem
   further in, flush with the tip.
+- The dial speedometer's acceleration arrowheads came to a point by crossing both barbs
+  past the end of the stem, which rounded to a one-pixel spike on whichever side of the stem
+  it fell and read as off-center. The head now ends in a snub one stem wide, with no part of
+  it reaching past the nose.
 
 ## [1.6.0] - 2026-09-12
 

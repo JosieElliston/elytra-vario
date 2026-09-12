@@ -25,6 +25,8 @@ public final class DialSpeedometerElement implements HudElement {
 	private static final double TPS = 20.0;
 	private static final double ACCELERATION_ARROW_SECONDS = 1.0;
 	private static final double ACCELERATION_ARROW_WEIGHT = 1.0;
+	private static final double ACCELERATION_ARROW_HEAD = 2.0;
+	private static final double ACCELERATION_ARROW_DEPTH = 3.0;
 	private static final int MAJOR = 0xFFC6CCD2;
 	private static final int MINOR = 0xA0B4BAC0;
 	private static final int MAJOR_LENGTH = 7;
@@ -264,27 +266,56 @@ public final class DialSpeedometerElement implements HudElement {
 					ACCELERATION_ARROW_WEIGHT, color);
 		}
 
-		// As the arc shrinks to zero, the head becomes a stable radial five-pixel mark.
+		// As the arc shrinks to zero, the head becomes a stable radial mark.
 		double visiblePixels = Math.abs(sweep) * radius;
-		double headDepth = Math.min(3.0, visiblePixels);
+		double headDepth = Math.min(ACCELERATION_ARROW_DEPTH, visiblePixels);
 		double direction = Math.signum(sweep);
 		double endX = centerX + Math.cos(endAngle) * radius;
 		double endY = centerY + Math.sin(endAngle) * radius;
 		double tangentX = -Math.sin(endAngle) * direction;
 		double tangentY = Math.cos(endAngle) * direction;
-		double radialX = Math.cos(endAngle) * 2.0;
-		double radialY = Math.sin(endAngle) * 2.0;
-		double baseX = endX - tangentX * headDepth;
-		double baseY = endY - tangentY * headDepth;
+		double radialX = Math.cos(endAngle);
+		double radialY = Math.sin(endAngle);
 		if (sweep == 0.0) {
-			smoothLine(graphics, endX + radialX, endY + radialY,
-					endX - radialX, endY - radialY, ACCELERATION_ARROW_WEIGHT, color);
+			smoothLine(graphics,
+					endX + radialX * ACCELERATION_ARROW_HEAD,
+					endY + radialY * ACCELERATION_ARROW_HEAD,
+					endX - radialX * ACCELERATION_ARROW_HEAD,
+					endY - radialY * ACCELERATION_ARROW_HEAD,
+					ACCELERATION_ARROW_WEIGHT, color);
 		} else {
-			smoothLine(graphics, endX, endY, baseX + radialX, baseY + radialY,
-					ACCELERATION_ARROW_WEIGHT, color);
-			smoothLine(graphics, endX, endY, baseX - radialX, baseY - radialY,
-					ACCELERATION_ARROW_WEIGHT, color);
+			barb(graphics, endX, endY, tangentX, tangentY, radialX, radialY, headDepth,
+					1.0, color);
+			barb(graphics, endX, endY, tangentX, tangentY, radialX, radialY, headDepth,
+					-1.0, color);
 		}
+	}
+
+	/**
+	 * One barb of the head, running back and out from a corner of the arrow's nose. The
+	 * stroke's leading corner is what sits on that corner, so no part of the barb reaches
+	 * past the end of the stem: the nose stays a flat snub exactly one stem wide. Barbs
+	 * aimed at the stem's centerline instead cross past it into a spike a third of a pixel
+	 * long, which rounds to whichever side of the stem it happens to fall on and reads as
+	 * an off-center point.
+	 */
+	private static void barb(GuiGraphicsExtractor graphics, double endX, double endY,
+			double tangentX, double tangentY, double radialX, double radialY, double depth,
+			double side, int color) {
+		double length = Math.hypot(depth, ACCELERATION_ARROW_HEAD);
+		double alongX = (radialX * ACCELERATION_ARROW_HEAD * side - tangentX * depth) / length;
+		double alongY = (radialY * ACCELERATION_ARROW_HEAD * side - tangentY * depth) / length;
+		double normalX = -alongY;
+		double normalY = alongX;
+		if (normalX * tangentX + normalY * tangentY < 0.0) {
+			normalX = -normalX;
+			normalY = -normalY;
+		}
+		double half = ACCELERATION_ARROW_WEIGHT / 2.0;
+		double fromX = endX + (radialX * side - normalX) * half;
+		double fromY = endY + (radialY * side - normalY) * half;
+		smoothLine(graphics, fromX, fromY, fromX + alongX * length, fromY + alongY * length,
+				ACCELERATION_ARROW_WEIGHT, color);
 	}
 
 	/** A subpixel-positioned rotated rectangle, matching the needle rendering. */
