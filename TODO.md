@@ -26,15 +26,29 @@ josie's todo/notes, don't edit this, tho you should include it in commits
     - translucent
 - not fixed module render order?
 - if you are dragging a corner, the center comes into radius before the edge, so the center is draw without the edge, so we sometimes snap to an edge without it getting drawn. ig this is correct tho.
-- ehop/ebounce
-    - should we use ehop or ebounce
-    - number of ticks between last ground touch and last elytra deploy
+- e-bounce
     - ground touch
-        - speed
-    - last elytra deploy
-        - speed
-        - distance delta from ground touch
-- sort the stats panel so it's speed/accel y, xz, xyz rather than xz, xyz, y
+        - vel
+    - ground leave
+        - vel
+        - time since ground touch
+    - elytra deploy
+        - vel
+        - distance delta from ground leave
+        - time since ground leave
+        - not time or distance from ground touch for fewer things
+    - for the distance and time, for eg the leave column, you show leave-touch.
+
+|             | touch | leave | deploy |
+| ----------- | ----- | ----- | ------ |
+| vel x       |       |       |        |
+| vel xz      |       |       |        |
+| vel xyz     |       |       |        |
+| delta x     | .     |       |        |
+| delta xz    | .     |       |        |
+| delta xyz   | .     |       |        |
+| delta ticks | .     |       |        |
+
 - make the panel hover text hide when dragging (not hovering) a panel. rn the hover text obscures elements to the right you might be trying to align to.
 
 ## myopic metrics
