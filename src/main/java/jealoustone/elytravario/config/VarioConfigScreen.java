@@ -368,7 +368,7 @@ public final class VarioConfigScreen extends Screen {
 
 	private List<ModulePositionEditor.Bounds> moduleBounds() {
 		boolean gliding = minecraft.player != null && minecraft.player.isFallFlying();
-		return ModulePositionEditor.bounds(width, height, gliding);
+		return ModulePositionEditor.bounds(font, width, height, gliding);
 	}
 
 	private ModulePositionEditor.Bounds moduleAt(double x, double y,

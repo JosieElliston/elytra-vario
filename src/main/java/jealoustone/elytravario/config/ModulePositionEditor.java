@@ -11,6 +11,8 @@ import jealoustone.elytravario.hud.BarSpeedometerChart;
 import jealoustone.elytravario.hud.DialSpeedometer;
 import jealoustone.elytravario.hud.VarioHudElement;
 
+import net.minecraft.client.gui.Font;
+
 /** Geometry and coordinate changes for the in-world module position editor. */
 final class ModulePositionEditor {
 	enum Module {
@@ -43,7 +45,7 @@ final class ModulePositionEditor {
 	private record AxisSnap(int position, List<Guide> guides) { }
 
 	/** Bounds in paint order; callers search backwards so the topmost overlapping module wins. */
-	static List<Bounds> bounds(int screenWidth, int screenHeight, boolean gliding) {
+	static List<Bounds> bounds(Font font, int screenWidth, int screenHeight, boolean gliding) {
 		List<Bounds> result = new ArrayList<>();
 		if (!VarioConfig.enabled) return result;
 
@@ -63,8 +65,7 @@ final class ModulePositionEditor {
 				chartWidth, chartHeight));
 
 		if (VarioInstrument.BAR_SPEEDOMETER.visible(gliding)) {
-			BarSpeedometerChart speedometerChart = new BarSpeedometerChart(VarioConfig.barSpeedoHeight,
-					VarioConfig.barSpeedoMaxSpeed);
+			BarSpeedometerChart speedometerChart = BarSpeedometerChart.of(font);
 			HudPosition position = HudPosition.clamp(VarioConfig.barSpeedoX, VarioConfig.barSpeedoY,
 					speedometerChart.width(), speedometerChart.height(), screenWidth, screenHeight);
 			result.add(new Bounds(Module.BAR_SPEEDOMETER, position.x(), position.y(),
