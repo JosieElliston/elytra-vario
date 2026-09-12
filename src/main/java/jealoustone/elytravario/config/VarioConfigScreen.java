@@ -733,11 +733,11 @@ public final class VarioConfigScreen extends Screen {
 	private void drawSnapGuides(GuiGraphicsExtractor graphics) {
 		int color = 0xFFFFD866;
 		for (ModulePositionEditor.Guide guide : snapVerticalGuides) {
-			int x = Math.clamp(guide.coordinate(), 0, Math.max(0, width - 1));
+			int x = Math.clamp(guide.strokeCoordinate(), 0, Math.max(0, width - 1));
 			graphics.fill(x, guide.from(), x + 1, guide.to(), color);
 		}
 		for (ModulePositionEditor.Guide guide : snapHorizontalGuides) {
-			int y = Math.clamp(guide.coordinate(), 0, Math.max(0, height - 1));
+			int y = Math.clamp(guide.strokeCoordinate(), 0, Math.max(0, height - 1));
 			graphics.fill(guide.from(), y, guide.to(), y + 1, color);
 		}
 	}
