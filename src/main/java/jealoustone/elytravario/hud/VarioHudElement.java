@@ -218,17 +218,17 @@ public final class VarioHudElement implements HudElement {
 		if (VarioConfig.showPitch) row = row(graphics, font, x, row, "PITCH", fmt("%.1f°", sample.pitch()), VALUE);
 		if (VarioConfig.showGlideRatio) row = row(graphics, font, x, row, "GLIDE",
 				Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
-		if (VarioConfig.showHorizontalSpeed) row = row(graphics, font, x, row, "SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
-		if (VarioConfig.showTotalSpeed) row = row(graphics, font, x, row, "SPEED XYZ", speed(sample.speed()), VALUE);
 		// Color on displayed blocks/second, with a small neutral deadband.
 		if (VarioConfig.showVerticalSpeed) row = row(graphics, font, x, row, "SPEED Y", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
+		if (VarioConfig.showHorizontalSpeed) row = row(graphics, font, x, row, "SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
+		if (VarioConfig.showTotalSpeed) row = row(graphics, font, x, row, "SPEED XYZ", speed(sample.speed()), VALUE);
 
+		if (VarioConfig.showVerticalAcceleration) row = accelerationRow(graphics, font, x, row,
+				"ACCEL Y", verticalAcceleration(sample, previous));
 		if (VarioConfig.showHorizontalAcceleration) row = accelerationRow(graphics, font, x, row,
 				"ACCEL XZ", horizontalAcceleration(sample, previous));
 		if (VarioConfig.showTotalAcceleration) row = accelerationRow(graphics, font, x, row,
 				"ACCEL XYZ", totalAcceleration(sample, previous));
-		if (VarioConfig.showVerticalAcceleration) row = accelerationRow(graphics, font, x, row,
-				"ACCEL Y", verticalAcceleration(sample, previous));
 
 		if (speedRows() > 0 && energyRows() > 0) {
 			graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);
