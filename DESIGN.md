@@ -245,6 +245,9 @@ coincident readings remain distinguishable even when color does not. Vertical sp
 Each needle's acceleration arrow begins at its tip and follows a concentric arc to the speed
 projected one second ahead. The three radii keep the arrows separate just as the needle lengths
 do, so they can use their matching needle colors instead of the bar chart's white overlay color.
+The arc rides half its own stem inside the tip radius rather than centered on it, which puts the
+stem's outer edge flush with the end of the needle; centered, half the stem hung past the tip
+and the arrow read as overshooting the reading it starts from.
 
 **Reference markers turn ninety degrees, not into arcs.** Both sets mark the same speeds they
 mark on the bar chart, and for the same reason each is three marks rather than one: the

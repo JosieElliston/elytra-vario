@@ -11,6 +11,12 @@ and key-registration APIs, not behavior.
 
 ## [Unreleased]
 
+### Fixed
+
+- The dial speedometer's acceleration arrows sat centered on their needle's tip radius, so
+  half the stem's width hung past the end of the needle. The arc now rides half a stem
+  further in, flush with the tip.
+
 ## [1.6.0+mc1.21.11] - 2026-09-12
 
 ### Added
