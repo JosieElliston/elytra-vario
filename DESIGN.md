@@ -583,11 +583,11 @@ chart also shows sideslip as the gap between its two cursors.
 
 ## Toggle keys
 
-Each of the six instruments — pitch ladder, markers, velocity graph, flight stats, bar
+Each of the six instruments — pitch ladder, ladder markers, velocity graph, flight stats, bar
 speedometer, and dial speedometer — has a key that switches it off and back on. A seventh
 visibility key switches the master HUD setting, independently of the key that opens the settings
 screen. All seven visibility keys are unbound by default. Not the individual
-markers: those are seven settings behind one switch on one page, and the ladder's bugs are read
+ladder markers: those are seven settings behind one switch on one page, and the markers are read
 as one overlay, so seven more binds would buy nothing that switching the whole set off does not.
 Unbound by default because seven keys is a lot to take off a keyboard that already has `V` on it
 for an action most flights never need, and because the settings screen puts the binding control
@@ -780,9 +780,9 @@ Needs JDK 25.
 `V` opens settings.
 
 Open Mod Menu's configuration button for Elytra Vario. Seven pages separate Global, Pitch Ladder,
-Markers, Velocity Graph, Flight Stats, Bar Speedometer, and Dial Speedometer. Global holds the
+Ladder Markers, Velocity Graph, Flight Stats, Bar Speedometer, and Dial Speedometer. Global holds the
 HUD master switch; each instrument’s
-visibility control stays on its own page. Marker names identify the displayed quantities;
+visibility control stays on its own page. Ladder-marker names identify the displayed quantities;
 tooltips define their calculations and describe possible uses. Edits take effect in the HUD as
 you make them and save themselves to `config/elytra-vario.json`, so there is nothing to confirm
 on the way out: Close and Escape simply close. A half-typed number is held back from both the

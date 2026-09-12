@@ -1,6 +1,6 @@
 # TODO
 
-josie's todo/notes, don't edit this
+josie's todo/notes, don't edit this, tho you can include it in commits
 
 - should we expose rules for when to switch?
 - rename vel graph to energy field
