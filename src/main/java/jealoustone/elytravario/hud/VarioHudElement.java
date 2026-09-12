@@ -112,7 +112,8 @@ public final class VarioHudElement implements HudElement {
 		if (stats) {
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(panel.x(), panel.y());
-			graphics.pose().scale((float) VarioConfig.panelScale, (float) VarioConfig.panelScale);
+			float scale = (float) statsScale();
+			graphics.pose().scale(scale, scale);
 			drawPanel(graphics, minecraft.font, sample, 0, 0);
 			graphics.pose().popMatrix();
 		}
@@ -144,12 +145,16 @@ public final class VarioHudElement implements HudElement {
 
 	/** The stats panel's on-screen width, shared with the settings screen's drag target. */
 	public static int statsWidth() {
-		return (int) Math.ceil(VarioConfig.panelWidth * VarioConfig.panelScale);
+		return VarioConfig.statsSize;
 	}
 
 	/** The stats panel's on-screen height, shared with the settings screen's drag target. */
 	public static int statsHeight() {
-		return (int) Math.ceil(panelHeight() * VarioConfig.panelScale);
+		return Math.ceilDiv(panelHeight() * VarioConfig.statsSize, VarioConfig.panelWidth);
+	}
+
+	private static double statsScale() {
+		return (double) VarioConfig.statsSize / VarioConfig.panelWidth;
 	}
 
 	/** Returns the y coordinate just past the bottom of the panel. */
@@ -263,7 +268,7 @@ public final class VarioHudElement implements HudElement {
 				continue;
 			}
 
-			int alpha = 20 + (int) ((1.0f - (float) i / trail) * 190.0f);
+			int alpha = 20 + (trail - i) * 190 / trail;
 			int px = chartX(x, past.horizontalSpeed());
 			int py = chartY(y, past.vy());
 			graphics.fill(px, py, px + 1, py + 1, ((alpha * (VarioConfig.trailColor >>> 24) / 255) << 24) | (VarioConfig.trailColor & 0xFFFFFF));
@@ -311,7 +316,7 @@ public final class VarioHudElement implements HudElement {
 		EnergyField field = stretchEnergyField ? EnergyField.cached() : null;
 		if (field == null) {
 			field = EnergyField.of(width, height, VarioConfig.chartMinVxz,
-					VarioConfig.chartMaxVy, VarioConfig.chartScale, sample.gravity());
+					VarioConfig.chartMaxVy, chartScale(), sample.gravity());
 		}
 		EnergyFieldTexture.blit(graphics, field, x, y, width, height);
 	}
@@ -372,8 +377,8 @@ public final class VarioHudElement implements HudElement {
 		int startX = chartX(chartOriginX, vx);
 		int startY = chartY(chartOriginY, vy);
 		double secondsInTicks = ACCELERATION_ARROW_SECONDS * TPS;
-		double dx = deltaVx * secondsInTicks * VarioConfig.chartScale;
-		double dy = -deltaVy * secondsInTicks * VarioConfig.chartScale;
+		double dx = deltaVx * secondsInTicks * chartScale();
+		double dy = -deltaVy * secondsInTicks * chartScale();
 		double length = Math.hypot(dx, dy);
 		if (length < 1.0) return;
 
@@ -462,20 +467,24 @@ public final class VarioHudElement implements HudElement {
 	 * same change in speed horizontally and vertically whatever the domain is.
 	 */
 	public static int chartWidth() {
-		return (int) Math.round((VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz) * VarioConfig.chartScale);
+		return VarioConfig.chartSize;
 	}
 
 	public static int chartHeight() {
-		return (int) Math.round((VarioConfig.chartMaxVy - VarioConfig.chartMinVy) * VarioConfig.chartScale);
+		return (int) Math.round((VarioConfig.chartMaxVy - VarioConfig.chartMinVy) * chartScale());
+	}
+
+	private static double chartScale() {
+		return VarioConfig.chartSize / (VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz);
 	}
 
 	private static int chartX(int originX, double vxz) {
-		double px = (vxz - VarioConfig.chartMinVxz) * VarioConfig.chartScale;
+		double px = (vxz - VarioConfig.chartMinVxz) * chartScale();
 		return originX + (int) Math.round(Mth.clamp(px, 0.0, chartWidth() - 1.0));
 	}
 
 	private static int chartY(int originY, double vy) {
-		double py = (VarioConfig.chartMaxVy - vy) * VarioConfig.chartScale;
+		double py = (VarioConfig.chartMaxVy - vy) * chartScale();
 		return originY + (int) Math.round(Mth.clamp(py, 0.0, chartHeight() - 1.0));
 	}
 

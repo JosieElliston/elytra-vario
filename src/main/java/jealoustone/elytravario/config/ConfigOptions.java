@@ -115,7 +115,7 @@ public final class ConfigOptions {
 		add("chartGlidingOnly", 3, 0, 1, 1, 0, false, false);
 		add("chartX", 3, -4096, 4096, 1, 0, false, false);
 		add("chartY", 3, -4096, 4096, 1, 0, false, false);
-		add("chartScale", 3, 4, 128, 1, 0, false, false);
+		add("chartSize", 3, 2, 512, 1, 0, false, false);
 		add("chartMinVxz", 3, -200, 200, 20, 0, false, false);
 		add("chartMaxVxz", 3, -200, 200, 20, 0, false, false);
 		add("chartMinVy", 3, -200, 200, 20, 0, false, false);
@@ -143,7 +143,7 @@ public final class ConfigOptions {
 		add("statsGlidingOnly", 4, 0, 1, 1, 0, false, false);
 		add("statsX", 4, -4096, 4096, 1, 0, false, false);
 		add("statsY", 4, -4096, 4096, 1, 0, false, false);
-		add("panelScale", 4, 0.5, 3, 1, 0, false, false);
+		add("statsSize", 4, 66, 1200, 1, 0, false, false);
 		add("panelOpacity", 4, 0, 100, 100, 0, false, false);
 		add("showPanelBorder", 4, 0, 1, 1, 0, false, false);
 		add("showPitch", 4, 0, 1, 1, 0, false, false);
@@ -260,9 +260,8 @@ public final class ConfigOptions {
 		double x = number(parsed, "chartMaxVxz") - number(parsed, "chartMinVxz");
 		double y = number(parsed, "chartMaxVy") - number(parsed, "chartMinVy");
 		if (x < 0.05 - 1e-9 || y < 0.05 - 1e-9) return "range";
-		double scale = number(parsed, "chartScale");
-		if (Math.round(x * scale) < 2 || Math.round(y * scale) < 2
-				|| Math.round(x * scale) > 512 || Math.round(y * scale) > 512) return "size";
+		double scale = number(parsed, "chartSize") / x;
+		if (Math.round(y * scale) < 2 || Math.round(y * scale) > 512) return "size";
 		return null;
 	}
 

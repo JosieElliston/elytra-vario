@@ -84,9 +84,9 @@ off a ledge closes a cycle too.
 
 ## The chart
 
-**Its scale is one number.** Both chart dimensions derive from `chartScale` (pixels per
-block/tick), so a pixel is worth the same change in speed on both axes whatever the domain is.
-Widening a range grows the chart rather than rescaling it.
+**Its size is one number.** `chartSize` is its exact width in pixels; the height follows the
+ratio of the two domains, so a pixel is worth the same change in speed on both axes whatever
+the domain is. Widening the vertical range grows the chart rather than rescaling that axis.
 
 ## The delta-TE heatmap
 
@@ -205,10 +205,10 @@ A cursor outside the domain is clamped to the edge rather than dropped, so it si
 being a reading and becomes a floor or a ceiling, with no cue that it has happened. **A domain
 that slid to keep the cursor inside would fix that, and is noted here as a possible future
 feature rather than a plan.** The costs are real: distances on the chart would stop meaning a
-fixed change in speed, which is the property the single `chartScale` exists to guarantee; the
-heatmap would have to be rebuilt as the domain moved, which is a third of a second the first
-time and 30ms after; and a map that moves under a cursor that is trying to stay still is a
-different instrument from a fixed one, quite possibly a worse one.
+fixed change in speed, which is the property the chart's locked aspect ratio exists to
+guarantee; the heatmap would have to be rebuilt as the domain moved, which is a third of a
+second the first time and 30ms after; and a map that moves under a cursor that is trying to stay
+still is a different instrument from a fixed one, quite possibly a worse one.
 
 ## The speedometers
 
@@ -641,7 +641,7 @@ the settings screen open. Clicking a module opens its page; dragging its middle 
 dragging a corner resizes it; the arrow keys move the selected module a pixel at a time.
 
 **Corners resize, edges do not.** Every one of these modules is a single size setting — the
-graph's scale, the stats panel's scale, the bar speedometer's plot height, the dial's radius —
+graph's width, the stats panel's width, the bar speedometer's plot height, the dial's radius —
 so there is no such thing as a nonuniform resize to offer, and an edge would have nothing to
 drag that a corner does not already drag.
 
@@ -653,13 +653,13 @@ and labels rather than a setting, the same expression collapses to following the
 vertically and ignoring the rest.
 
 **The box is affine in its setting, and the constant is measured rather than modelled.** A
-slope — the chart's domains, the panel's unscaled size, two for the dial's diameter — plus the
+slope — the graph's and panel's aspect ratios, two for the dial's diameter — plus the
 size the module is currently drawn at pins the whole relationship, so whatever the box carries
 that the setting does not pay for, like the label column or the dial's rim, falls out as the
 difference between them. After the setting is applied the module is measured again and the
-pinned corner recomputed from that, rather than from what the arithmetic predicted: a scale is
-a real number and a box is a whole number of pixels, and over a long drag the rounding would
-otherwise walk the corner it is supposed to be holding still.
+pinned corner recomputed from that, rather than from what the arithmetic predicted: the primary
+size is exact, but an aspect ratio can still leave the other dimension between pixels, and over
+a long drag that rounding would otherwise walk the corner it is supposed to be holding still.
 
 **A resize snaps to the rests a move snaps to, and to no others.** A module should come to rest
 in the same places whether it was carried there or grown there; a rest that only one of the two

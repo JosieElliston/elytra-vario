@@ -16,8 +16,8 @@ import net.minecraft.client.gui.Font;
 /** Geometry and coordinate changes for the in-world module position editor. */
 final class ModulePositionEditor {
 	enum Module {
-		CHART(3, "chartX", "chartY", "chartScale"),
-		STATS(4, "statsX", "statsY", "panelScale"),
+		CHART(3, "chartX", "chartY", "chartSize"),
+		STATS(4, "statsX", "statsY", "statsSize"),
 		BAR_SPEEDOMETER(5, "barSpeedoX", "barSpeedoY", "barSpeedoHeight"),
 		DIAL_SPEEDOMETER(6, "dialSpeedoX", "dialSpeedoY", "dialSpeedoRadius");
 
@@ -278,11 +278,11 @@ final class ModulePositionEditor {
 	 */
 	static Growth growth(Module module) {
 		return switch (module) {
-			// One scale in pixels per block/tick serves both of the chart's axes, so it grows
-			// by its domains, and keeps its aspect only where the two domains are equal.
-			case CHART -> new Growth(VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz,
-					VarioConfig.chartMaxVy - VarioConfig.chartMinVy);
-			case STATS -> new Growth(VarioConfig.panelWidth, VarioHudElement.panelHeight());
+			// Size is the exact width; height follows the module's aspect ratio.
+			case CHART -> new Growth(1, (VarioConfig.chartMaxVy - VarioConfig.chartMinVy)
+					/ (VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz));
+			case STATS -> new Growth(1,
+					(double) VarioHudElement.panelHeight() / VarioConfig.panelWidth);
 			// The bar chart is as wide as its bars and its scale labels, and neither is the
 			// setting: only the plot's height follows the pointer.
 			case BAR_SPEEDOMETER -> new Growth(0, 1);
@@ -412,8 +412,9 @@ final class ModulePositionEditor {
 
 	/**
 	 * The winning answer's guides which the resized module genuinely landed on. A module lays
-	 * itself out in whole pixels and a scale is a real number, so applying an answer can round
-	 * away from a line it reached arithmetically; that line must not be drawn.
+	 * itself out in whole pixels and its aspect ratio can make the secondary dimension
+	 * fractional, so applying an answer can round away from a line it reached arithmetically;
+	 * that line must not be drawn.
 	 */
 	static Guides resizeGuides(Resize resize, Bounds resized, Corner corner) {
 		List<Guide> vertical = new ArrayList<>();
