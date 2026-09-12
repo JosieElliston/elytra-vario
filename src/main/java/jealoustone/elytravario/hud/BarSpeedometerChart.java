@@ -57,8 +57,14 @@ public record BarSpeedometerChart(int plotHeight, double maxSpeed, double majorS
 
 	/**
 	 * The panel as currently configured, with the parts that are switched off measured out of
-	 * it. Scale labels are also dropped when the major step is too fine for them to sit clear
-	 * of one another, in which case the column they would occupy goes too.
+	 * it.
+	 *
+	 * <p>Whether the scale carries labels is the switch's answer alone. The panel used to drop
+	 * them on its own once the major step was too fine for them to sit clear of one another,
+	 * which meant the panel's width depended on its height: dragging the plot shorter made the
+	 * label column vanish and the whole panel jump sideways under the pointer. Labels that
+	 * crowd at a fine step are the step's problem and are visibly so, which is better than a
+	 * panel that changes shape for reasons the person resizing it cannot see.
 	 */
 	public static BarSpeedometerChart of(Font font) {
 		int barCount = (VarioConfig.showBarSpeedoVertical ? 1 : 0)
@@ -67,7 +73,7 @@ public record BarSpeedometerChart(int plotHeight, double maxSpeed, double majorS
 		BarSpeedometerChart unlabeled = new BarSpeedometerChart(VarioConfig.barSpeedoHeight,
 				VarioConfig.barSpeedoMaxSpeed, VarioConfig.barSpeedoMajorStep, barCount, 0,
 				font.lineHeight);
-		if (!VarioConfig.showBarSpeedoLabels || !unlabeled.scaleLabelsFit()) return unlabeled;
+		if (!VarioConfig.showBarSpeedoLabels) return unlabeled;
 
 		int labelWidth = 0;
 		for (double speed : unlabeled.steps()) {
@@ -102,10 +108,6 @@ public record BarSpeedometerChart(int plotHeight, double maxSpeed, double majorS
 	private int scaleLabelColumn() { return scaleLabeled() ? scaleLabelWidth + LABEL_GAP : 0; }
 	private int topClearance() { return scaleLabeled() ? textHeight / 2 : 0; }
 	private int categoryHeight() { return barCount == 0 ? 0 : CATEGORY_GAP + textHeight; }
-
-	private boolean scaleLabelsFit() {
-		return plotHeight * fraction(majorStep) >= textHeight + LABEL_GAP;
-	}
 
 	/** The speeds the scale is ruled at, from zero up to the last step within full scale. */
 	public double[] steps() {
