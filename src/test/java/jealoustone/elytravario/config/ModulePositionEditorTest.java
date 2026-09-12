@@ -28,7 +28,7 @@ class ModulePositionEditorTest {
 	}
 
 	@Test
-	void snapAlignsEdgesCentersAndAdjacentEdgesOnEachAxis() {
+	void snapAlignsEdgesAndAdjacentEdgesOnEachAxis() {
 		var other = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS, 100, 70, 40, 30);
 		var bounds = List.of(other);
@@ -36,22 +36,16 @@ class ModulePositionEditorTest {
 		assertEquals(new ModulePositionEditor.Position(100, 70),
 				ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 						103, 68, 20, 10, bounds, 320, 240, 4, 4).position());
-		assertEquals(new ModulePositionEditor.Position(110, 80),
-				ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
-						108, 83, 20, 10, bounds, 320, 240, 4, 4).position());
 		assertEquals(new ModulePositionEditor.Position(144, 104),
 				ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 						146, 106, 20, 10, bounds, 320, 240, 4, 4).position());
 	}
 
 	@Test
-	void snapUsesMarginAtScreenEdgesAndScreenCenter() {
+	void snapUsesMarginAtScreenEdges() {
 		assertEquals(new ModulePositionEditor.Position(4, 4),
 				ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 						1, 7, 20, 10, List.of(), 320, 240, 4, 4).position());
-		assertEquals(new ModulePositionEditor.Position(150, 115),
-				ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
-						153, 112, 20, 10, List.of(), 320, 240, 4, 4).position());
 		assertEquals(new ModulePositionEditor.Position(296, 226),
 				ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 						293, 228, 20, 10, List.of(), 320, 240, 4, 4).position());
@@ -114,18 +108,19 @@ class ModulePositionEditorTest {
 	}
 
 	@Test
-	void moveGuidesCanShareLeftAndCenterAnswersButNotTheRightAfterRounding() {
+	void snapDoesNotOfferModuleOrScreenCenters() {
 		var other = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS, 100, 20, 40, 30);
-		// With integer centers, widths 40 and 41 can have the same left edge and center while
-		// their right edges differ by one. Left and center both answer x=100; right answers x=99.
-		var snap = ModulePositionEditor.snap(ModulePositionEditor.Module.DIAL_SPEEDOMETER,
-				100, 80, 41, 20, List.of(other), 320, 240, 4, 4);
+		var moduleCenter = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
+				108, 80, 20, 10, List.of(other), 320, 240, 4, 4);
+		var screenCenter = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
+				153, 112, 20, 10, List.of(), 320, 240, 4, 4);
 
-		assertEquals(new ModulePositionEditor.Position(100, 80), snap.position());
-		assertEquals(List.of(
-				new ModulePositionEditor.Guide(100, 20, 50),
-				new ModulePositionEditor.Guide(120, 20, 50)), snap.verticalGuides());
+		assertEquals(new ModulePositionEditor.Position(108, 80), moduleCenter.position());
+		assertEquals(List.of(), moduleCenter.verticalGuides());
+		assertEquals(new ModulePositionEditor.Position(153, 112), screenCenter.position());
+		assertEquals(List.of(), screenCenter.verticalGuides());
+		assertEquals(List.of(), screenCenter.horizontalGuides());
 	}
 
 	@Test
@@ -426,7 +421,7 @@ class ModulePositionEditorTest {
 	}
 
 	@Test
-	void resizeSnapsTheCenterTheDraggedEdgeTrails() {
+	void resizeDoesNotSnapTheCenterTheDraggedEdgeTrails() {
 		var other = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS, 150, 100, 40, 60);
 		var bounds = new ModulePositionEditor.Bounds(
@@ -434,38 +429,16 @@ class ModulePositionEditorTest {
 		var sizing = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
 
-		// Nothing is near the dragged edge at 199, but the center it trails is a pixel off the
-		// screen's own center line, and a height of 160 puts it exactly on it.
+		// Nothing is near the dragged edge at 199. The center it trails passes close to the
+		// screen's center line, but center lines are not snap targets.
 		var resize = ModulePositionEditor.resizeWithMarkers(
 				ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				bounds, 100, sizing, 200, 199, List.of(other), 320, 240, 4, 4);
-		assertEquals(160, resize.value());
+		assertEquals(159, resize.value());
 		assertEquals(new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 159),
 				resize.trueBounds());
-		var landed = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 160);
-		assertEquals(List.of(new ModulePositionEditor.Guide(120, 0, 320)),
-				ModulePositionEditor.resizeGuides(resize, landed,
-						ModulePositionEditor.Corner.BOTTOM_RIGHT)
-						.horizontal());
-	}
-
-	@Test
-	void resizeCenterSnapCannotPullTheCornerTwiceTheSnapDistance() {
-		var bounds = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 100);
-		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
-
-		// The free height is 152, putting the center four pixels above the screen center.
-		// Snapping that center would grow the dragged edge eight pixels, outside the configured
-		// four-pixel distance, so the corner continues to follow the pointer.
-		assertEquals(152, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
-				bounds, 100, sizing, 200, 192, List.of(), 320, 240, 4, 4));
-		// One pixel nearer, the center needs only four pixels of edge travel and can snap.
-		assertEquals(160, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
-				bounds, 100, sizing, 200, 196, List.of(), 320, 240, 4, 4));
+		assertEquals(List.of(), resize.markers());
 	}
 
 	@Test

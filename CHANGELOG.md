@@ -30,26 +30,23 @@ build identifier and released feature for feature; see its own changelog.
 
   A resize snaps to the rests a move snaps to and to no others, with the same guides drawn: a
   module should come to rest in the same places whether it was carried there or grown there. A
-  move relates two whole boxes — like edge to like edge, center to center, or the box set down a
-  margin clear of the other — so a resize takes that same list read line by line. The dragged
-  edge takes the rest of its own kind and the margin clearance on its own side; the center line,
-  which the drag carries along at half the edge's rate, takes another module's center or the
-  screen's; the pinned edge takes nothing, since it does not move. An edge dragged rightwards
-  therefore rests flush on a right edge or a margin short of a left edge, and never flush against
-  the left edge itself, because a move would not shove two modules together either.
+  move relates two whole boxes by aligning like edges or setting one down a margin clear of the
+  other, so a resize takes that same list read line by line. The dragged edge takes the rest of
+  its own kind and the margin clearance on its own side; the pinned edge takes nothing, since it
+  does not move. An edge dragged rightwards therefore rests flush on a right edge or a margin
+  short of a left edge, and never flush against the left edge itself, because a move would not
+  shove two modules together either.
 
-  Only one answer can win, since one setting places all four lines. Every reachable rest proposes
-  a size, and the size whose resulting corner is closest to the mouse in both dimensions chooses
-  the answer. A module carrying two settings is solved a setting at a time and so has an answer
-  for each; that is exact rather than approximate, because the two are orthogonal and each solve
-  falls entirely on the axis its own setting grows. Every marker that independently produces that
-  same answer appears with it; constraints proposing another size do not. The snap-distance gate
-  is measured at the dragged edge: a center moves half as fast, and measuring its own gap would
-  let it pull the corner twice the configured distance. A rest the setting cannot actually reach —
-  the dial's diameter comes in steps of two, so half its widths do not exist, and a center moves
-  only half a pixel per unit of size — is passed over for one it can. The guides are drawn from
-  the module as it ends up rather than from the size that was aimed at, so a line appears only
-  where an edge or a center genuinely lies on it.
+  Only one answer can win, since one setting may place both moving edges. Every reachable rest
+  proposes a size, and the size whose resulting corner is closest to the mouse in both dimensions
+  chooses the answer. A module carrying two settings is solved a setting at a time and so has an
+  answer for each; that is exact rather than approximate, because the two are orthogonal and each
+  solve falls entirely on the axis its own setting grows. Every marker that independently
+  produces that same answer appears with it; constraints proposing another size do not. A rest
+  the setting cannot actually reach — the dial's diameter comes in steps of two, so half its
+  widths do not exist — is passed over for one it can. The guides are drawn from the module as it
+  ends up rather than from the size that was aimed at, so a line appears only where an edge
+  genuinely lies on it.
 
   The module under the pointer draws its four grips as thickened corners on the outline it
   already had, and the grip the pointer has found is drawn longer, thicker and white. At the
@@ -67,6 +64,8 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Changed
 
+- Drag snapping no longer uses module or screen center lines. Moves and corner resizes now snap
+  only to edges, removing the competing middle guide when boxes are already edge-aligned.
 - Flight Stats is now sized by a width and a height that move independently, replacing its
   single size setting and the advanced content width behind it. The height sets the text size:
   the rows are laid out at a fixed line height and scaled to fill exactly the height asked for,
@@ -107,16 +106,13 @@ build identifier and released feature for feature; see its own changelog.
 
 - Resize candidates are now evaluated from the immutable geometry at the start of the drag and
   ranked by the resulting corner's full two-dimensional distance from the mouse. Recomputing
-  from each previous rounded result could make equivalent edge and center alignments trade places
-  from frame to frame, while comparing only the offering line could choose the farther result on
+  from each previous rounded result could make equivalent edge alignments trade places from
+  frame to frame, while comparing only the offering line could choose the farther result on
   modules such as the two-to-one dial.
 - Resize snapping now carries the constraints that produced its winning size through to guide
   rendering. The renderer previously rediscovered every line the rounded result happened to
   touch, which could show markers whose constraints had proposed different sizes. Multiple
   markers now appear together only when each independently gives the winning answer.
-- Center-line resize snaps no longer pull a corner twice the configured snap distance. Since a
-  module's center moves half as fast as its edge, this could make a resize visibly hitch when it
-  entered or left an alignment; center snaps now use the same maximum resize travel as edge snaps.
 - The dial speedometer's acceleration arrows sat centered on their needle's tip radius, so
   half the stem's width hung past the end of the needle. The arc now rides half a stem
   further in, flush with the tip.
