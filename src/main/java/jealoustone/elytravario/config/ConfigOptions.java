@@ -19,6 +19,8 @@ public final class ConfigOptions {
 			int choices, boolean color, boolean advanced, String defaultValue) {
 		public String key() { return field.getName(); }
 		public boolean toggle() { return field.getType() == boolean.class; }
+		/** Whether the setting counts in whole units, so that a computed value has to round. */
+		public boolean integral() { return field.getType() == int.class; }
 		public boolean opaque() { return key().startsWith("chartField") && color; }
 
 		public Object parse(String text) {
