@@ -661,20 +661,47 @@ pinned corner recomputed from that, rather than from what the arithmetic predict
 a real number and a box is a whole number of pixels, and over a long drag the rounding would
 otherwise walk the corner it is supposed to be holding still.
 
-**A resize snaps to the same rests a move does** — flush with another module's edge or center,
-a margin clear of it, or against the screen's margins or center. Only one edge can win, because
-both edges of a corner are the same number: the nearer rest takes it. A rest the setting cannot
-actually reach is passed over for one it can, which happens whenever a module's size comes in
-steps, as the dial's diameter does. The guides are drawn from the module as it ends up rather
-than from the size that was aimed at, so a line appears only where an edge genuinely lies on it.
+**A resize snaps to the rests a move snaps to, and to no others.** A module should come to rest
+in the same places whether it was carried there or grown there; a rest that only one of the two
+knows about is one nobody can predict. A move relates two whole boxes, so on each axis it offers,
+against another module:
+
+- near edges flush, far edges flush, or the two centers aligned;
+- the box set down a margin clear of the other, on whichever side it is approaching from;
+
+and against the screen: the near edge a margin in, the far edge a margin in, or the box centered
+on the screen's center.
+
+A resize holds one edge still, so it can only take the rests its moving lines can reach, which is
+that same list read line by line. The dragged edge takes the rest of its own kind — a right edge
+on a right edge, a left edge on a left edge — and the margin clearance on its own side, and the
+screen margin on its own side. The center, which the drag carries along at half the edge's rate,
+takes the centers: another module's, or the screen's. The pinned edge takes nothing, because it
+is not going anywhere.
+
+So an edge dragged rightwards rests flush on a right edge, or a margin short of a left edge, and
+never flush against a left edge: a move would not put two modules together with nothing between
+them either. The center rest is the one that earns its place on its own account — a module
+centered on its neighbor or on the screen reads as deliberate however its edges fall, and while
+resizing it is the line that moves least predictably, since it drifts by half of whatever the
+edge does.
+
+Only one line can win, because one setting places all four of them: the nearest rest takes it,
+and the guide that appears says which. A rest the setting cannot actually reach is passed over
+for one it can, which happens whenever a module's size comes in steps, as the dial's diameter
+does, and to centers more often than to edges, since a center moves half a pixel per unit of
+size. The guides are drawn from the module as it ends up rather than from the size that was
+aimed at, so a line appears only where an edge or a center genuinely lies on it.
 
 **The grips say which drag is armed.** The four corners are drawn as thickened corners on the
-outline, and the one under the pointer is drawn longer and thicker than the others. At the same
-moment the white hover outline — which means *this is what a drag would pick up and carry* —
-goes, leaving the quieter outline of the module whose page is open. The grown grip is drawn
-larger than the area it answers to, which is safe in the one direction that matters: the
-pointer is inside the plain reach whenever the larger mark is showing, so the mark never claims
-ground a click would not.
+outline, and the one under the pointer is drawn longer, thicker and white. At the same moment
+the white hover outline — which means *this is what a drag would pick up and carry* — goes,
+leaving the quieter outline of the module whose page is open. The white is not lost so much as
+handed over: it moves from the box to the grip that has taken the drag over, so exactly one
+thing on screen is white and it is always the thing the next click will act on. The grown grip
+is drawn larger than the area it answers to, which is safe in the one direction that matters:
+the pointer is inside the plain reach whenever the larger mark is showing, so the mark never
+claims ground a click would not.
 
 ## Minecraft 26.2 notes
 
