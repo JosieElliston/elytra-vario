@@ -26,9 +26,13 @@ public final class ConfigStore {
 	 */
 	private static final Map<String, Split> RETIRED = Map.of(
 			"ladderVisibility", new Split("showLadder", "ladderGlidingOnly"),
-			"markerVisibility", new Split("showMarkers", "markersGlidingOnly"),
+			"markerVisibility", new Split("showLadderMarkers", "ladderMarkersGlidingOnly"),
 			"chartVisibility", new Split("showChart", "chartGlidingOnly"),
 			"statsVisibility", new Split("showStats", "statsGlidingOnly"));
+	/** Ladder Markers used to be named just Markers, before the speedometers also had markers. */
+	private static final Map<String, String> RETIRED_MARKER_KEYS = Map.of(
+			"showMarkers", "showLadderMarkers",
+			"markersGlidingOnly", "ladderMarkersGlidingOnly");
 	/** Flight Stats used to call its coordinates an origin. */
 	private static final Map<String, String> RETIRED_POSITIONS = Map.of(
 			"originX", "statsX",
@@ -72,6 +76,11 @@ public final class ConfigStore {
 			}
 		}
 		for (var entry : RETIRED_POSITIONS.entrySet()) {
+			if (root.has(entry.getKey()) && !root.has(entry.getValue())) {
+				values.put(entry.getValue(), root.get(entry.getKey()).getAsString());
+			}
+		}
+		for (var entry : RETIRED_MARKER_KEYS.entrySet()) {
 			if (root.has(entry.getKey()) && !root.has(entry.getValue())) {
 				values.put(entry.getValue(), root.get(entry.getKey()).getAsString());
 			}

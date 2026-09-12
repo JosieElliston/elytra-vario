@@ -86,8 +86,8 @@ public final class ConfigOptions {
 
 		// The on/off switch heads the page; the rest is one subpage per marker, in the
 		// order of the subpage dropdown and of the rows within each subpage.
-		add("showMarkers", 2, 0, 1, 1, 0, false, false);
-		add("markersGlidingOnly", 2, 0, 1, 1, 0, false, false);
+		add("showLadderMarkers", 2, 0, 1, 1, 0, false, false);
+		add("ladderMarkersGlidingOnly", 2, 0, 1, 1, 0, false, false);
 
 		add("showLookaheadPitch", 2, "lookahead", 0, 1, 1, 0, false, false);
 		add("lookaheadPitchColor", 2, "lookahead", 0, 1, 1, 0, true, false);

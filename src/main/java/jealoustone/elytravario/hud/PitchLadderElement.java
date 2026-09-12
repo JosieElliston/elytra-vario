@@ -189,7 +189,7 @@ public final class PitchLadderElement implements HudElement {
 			if (VarioConfig.showFineTicks) drawFineTicks(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 			drawRungs(graphics, minecraft.font, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 		}
-		if (!VarioInstrument.MARKERS.visible(sample.gliding())) return;
+		if (!VarioInstrument.LADDER_MARKERS.visible(sample.gliding())) return;
 
 		drawBugs(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 

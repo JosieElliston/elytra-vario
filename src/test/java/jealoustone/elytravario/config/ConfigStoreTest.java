@@ -75,11 +75,28 @@ class ConfigStoreTest {
 		assertEquals("true", values.get("showStats"));
 		assertEquals("false", values.get("statsGlidingOnly"));
 		// Untouched instruments keep their defaults, and the old key does not survive a save.
-		assertEquals("true", values.get("showMarkers"));
+		assertEquals("true", values.get("showLadderMarkers"));
 		assertFalse(ConfigStore.encode(values).contains("ladderVisibility"));
 		// A file holding both was written after the split, so the new keys win.
 		assertEquals("true", ConfigStore.decode(
 				"{\"ladderVisibility\":\"2\",\"showLadder\":\"true\"}").get("showLadder"));
+	}
+
+	@Test void retiredMarkerNamesBecomeLadderMarkerNames() {
+		var values = ConfigStore.decode(
+				"{\"showMarkers\":false,\"markersGlidingOnly\":true}");
+		assertEquals("false", values.get("showLadderMarkers"));
+		assertEquals("true", values.get("ladderMarkersGlidingOnly"));
+		String encoded = ConfigStore.encode(values);
+		assertFalse(encoded.contains("\"showMarkers\""));
+		assertFalse(encoded.contains("\"markersGlidingOnly\""));
+
+		var visibility = ConfigStore.decode("{\"markerVisibility\":\"1\"}");
+		assertEquals("true", visibility.get("showLadderMarkers"));
+		assertEquals("true", visibility.get("ladderMarkersGlidingOnly"));
+		assertEquals("true", ConfigStore.decode(
+				"{\"showMarkers\":false,\"showLadderMarkers\":true}")
+				.get("showLadderMarkers"));
 	}
 
 	@Test void retiredStatsOriginBecomesItsAbsolutePosition() {
@@ -152,7 +169,8 @@ class ConfigStoreTest {
 			assertEquals(-1, VarioConfig.chartMinVxz);
 			assertEquals(150, VarioConfig.chartTrailTicks);
 			assertEquals(0xFF123456, VarioConfig.chartFieldGainColor);
-			assertTrue(VarioConfig.visible(VarioConfig.showMarkers, VarioConfig.markersGlidingOnly, true));
+			assertTrue(VarioConfig.visible(VarioConfig.showLadderMarkers,
+					VarioConfig.ladderMarkersGlidingOnly, true));
 			assertFalse(VarioConfig.visible(VarioConfig.showLadder, VarioConfig.ladderGlidingOnly, true));
 			values.put("enabled", "false");
 			values.put("chartSize", "513");

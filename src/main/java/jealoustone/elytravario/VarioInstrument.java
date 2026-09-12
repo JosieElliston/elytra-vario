@@ -17,9 +17,9 @@ import net.minecraft.client.input.KeyEvent;
 /**
  * The instruments that can be shown or hidden as a whole, each with a key that toggles it.
  *
- * <p>The markers on the ladder are one instrument here rather than seven, matching the settings
- * screen: the markers page has a single switch above its per-marker subpages, and a key per bug
- * or reference would be seven binds for a set that is read as one overlay.
+ * <p>The ladder markers are one instrument here rather than seven, matching the settings
+ * screen: the Ladder Markers page has a single switch above its per-marker subpages, and a key
+ * per individual marker would be seven binds for a set that is read as one overlay.
  *
  * <p>The key flips exactly the setting the screen's own switch flips, and saves. That it writes
  * the config file rather than holding a runtime override is what makes it a toggle rather than a
@@ -30,8 +30,9 @@ import net.minecraft.client.input.KeyEvent;
 public enum VarioInstrument {
 	LADDER("ladder", "showLadder", "ladderGlidingOnly",
 			() -> VarioConfig.showLadder, () -> VarioConfig.ladderGlidingOnly),
-	MARKERS("markers", "showMarkers", "markersGlidingOnly",
-			() -> VarioConfig.showMarkers, () -> VarioConfig.markersGlidingOnly),
+	// Keep the original key ID so existing bindings in options.txt continue to work.
+	LADDER_MARKERS("markers", "showLadderMarkers", "ladderMarkersGlidingOnly",
+			() -> VarioConfig.showLadderMarkers, () -> VarioConfig.ladderMarkersGlidingOnly),
 	CHART("chart", "showChart", "chartGlidingOnly",
 			() -> VarioConfig.showChart, () -> VarioConfig.chartGlidingOnly),
 	STATS("stats", "showStats", "statsGlidingOnly",

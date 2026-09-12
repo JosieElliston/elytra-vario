@@ -6,9 +6,9 @@ A client-side HUD for elytra flight and [pump cycles](https://www.youtube.com/wa
 
 The pitch ladder shows pitches fixed to their position in the world.
 
-## Markers
+## Ladder Markers
 
-There are several markers you can show inside the pitch ladder:
+There are several ladder markers you can show:
 
 - flight path: the current velocity
 - one-tick optimal: the pitch that maximizes your energy gain on the next tick

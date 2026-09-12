@@ -372,11 +372,11 @@ public final class VarioConfig {
 	 * preference that survives being switched off and on.
 	 */
 	public static boolean showLadder = true;
-	public static boolean showMarkers = true;
+	public static boolean showLadderMarkers = true;
 	public static boolean showChart = true;
 	public static boolean showStats = true;
 	public static boolean ladderGlidingOnly = false;
-	public static boolean markersGlidingOnly = false;
+	public static boolean ladderMarkersGlidingOnly = false;
 	public static boolean chartGlidingOnly = false;
 	public static boolean statsGlidingOnly = false;
 	public static boolean showLadderLabels = true;

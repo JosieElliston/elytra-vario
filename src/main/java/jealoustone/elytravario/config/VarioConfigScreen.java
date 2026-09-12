@@ -120,7 +120,8 @@ public final class VarioConfigScreen extends Screen {
 		// Whether the instrument is shown, whether it is wanted only while gliding, and the key
 		// that flips the first: three answers about the page as a whole, so they sit above both
 		// the subpage selector and the scrolling list rather than among the settings for how the
-		// instrument draws. On the markers page in particular they are not the selected marker's.
+		// instrument draws. On the Ladder Markers page in particular they are not the selected
+		// marker's.
 		//
 		// Global has the same shape, switch then keys: the master switch governs every
 		// instrument, with separate bindings for toggling it and opening this screen.
@@ -156,7 +157,7 @@ public final class VarioConfigScreen extends Screen {
 		}
 		if (group != null) {
 			if (rows.isEmpty()) {
-				// With nothing shared, keep the selector fixed above the list as on Markers.
+				// With nothing shared, keep the selector fixed above the list as on Ladder Markers.
 				addRenderableWidget(subpageSelector(groups, group, left + 4, top, span - 8));
 				top += 24;
 			} else {
