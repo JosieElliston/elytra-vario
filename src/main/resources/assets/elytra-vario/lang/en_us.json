@@ -301,6 +301,8 @@
 	"config.elytra-vario.dialSpeedoVerticalColor.tooltip": "Choose a color and opacity.",
 	"config.elytra-vario.showDialSpeedoAcceleration": "Show acceleration arrows",
 	"config.elytra-vario.showDialSpeedoAcceleration.tooltip": "Project each needle's measured acceleration one second forward as a concentric arrow at its tip, using the needle's color.",
+	"config.elytra-vario.showDialSpeedoMaxHorizontalSpeedMarkers": "Show max-horizontal-speed markers",
+	"config.elytra-vario.showDialSpeedoMaxHorizontalSpeedMarkers.tooltip": "Thin white marks across each needle's tip at the XYZ, XZ, and |Y| speeds for the steady +53.366\u00b0 glide: 70.719, 67.776, and 20.191 b/s.",
 	"config.elytra-vario.showDialSpeedoTerminalVelocityMarkers": "Show terminal-velocity markers",
 	"config.elytra-vario.showDialSpeedoTerminalVelocityMarkers.tooltip": "Thin gray marks across each needle's tip at the straight-down terminal XYZ, XZ, and |Y| speeds: 78.400, 0, and 78.400 b/s. Off by default.",
 	"config.elytra-vario.showDialSpeedoLabels": "Show scale labels",

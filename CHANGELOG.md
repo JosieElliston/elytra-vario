@@ -12,10 +12,12 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Added
 
-- Toggleable gray straight-down terminal-velocity markers on the dial speedometer, matching the
-  bar speedometer's set: 78.400 b/s total and vertical, and zero horizontal. Each is a short
-  radial mark across its own needle's tip, drawn only for needles that are shown, and they
-  default to off.
+- Reference markers on the dial speedometer, matching the bar speedometer's two sets: white
+  marks at the +53.366° max-horizontal-speed glide — 70.719 b/s total, 67.776 horizontal, and
+  20.191 vertical — and gray marks at straight-down terminal velocity — 78.400 b/s total and
+  vertical, and zero horizontal. Each is a short radial mark across its own needle's tip, drawn
+  only for needles that are shown. The white set defaults to on and the gray set to off, as
+  they do on the bar speedometer.
 
 ### Changed
 
