@@ -684,7 +684,7 @@ public final class VarioConfigScreen extends Screen {
 			graphics.drawCenteredString(font, text(error != null ? error : saveError),
 					panelCenter, height - 18, 0xFFFF7777);
 		}
-		if (minecraft.level != null && !overControl(mouseX, mouseY)) {
+		if (minecraft.level != null && draggingModule == null && !overControl(mouseX, mouseY)) {
 			ModulePositionEditor.Bounds hovered = moduleAt(mouseX, mouseY, draggingModule);
 			if (hovered == null) return;
 			int tooltipWidth = Math.max(40, Math.min(240, width - 24));
