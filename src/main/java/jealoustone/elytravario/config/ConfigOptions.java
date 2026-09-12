@@ -198,6 +198,7 @@ public final class ConfigOptions {
 		add("showDialSpeedoVertical", 6, "dialSpeedoVertical", 0, 1, 1, 0, false, false);
 		add("dialSpeedoVerticalColor", 6, "dialSpeedoVertical", 0, 1, 1, 0, true, false);
 		add("showDialSpeedoAcceleration", 6, 0, 1, 1, 0, false, false);
+		add("showDialSpeedoMaxHorizontalSpeedMarkers", 6, 0, 1, 1, 0, false, false);
 		add("showDialSpeedoTerminalVelocityMarkers", 6, 0, 1, 1, 0, false, false);
 		add("showDialSpeedoLabels", 6, 0, 1, 1, 0, false, false);
 		add("showDialSpeedoBorder", 6, 0, 1, 1, 0, false, false);

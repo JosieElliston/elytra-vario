@@ -74,4 +74,4 @@ coincident readings remain distinguishable:
 
 Matching-color concentric arrows at the needle tips project each speed's measured acceleration one second forward.
 
-Optional gray markers show straight-down terminal velocity, one per needle: 78.400 b/s total and vertical, and zero horizontal. Each is a short radial mark across its own needle's tip, so a needle reaching its mark is at that speed.
+Reference markers, one per needle, are short radial marks across that needle's own tip, so a needle reaching its mark is at that speed. White markers show the steady-state max-horizontal-speed glide: 70.719 b/s total, 67.776 b/s horizontal, and 20.191 b/s vertical. Optional gray markers show straight-down terminal velocity: 78.400 b/s total and vertical, and zero horizontal.

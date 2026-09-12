@@ -1,6 +1,7 @@
 package jealoustone.elytravario.hud;
 
 import java.util.Locale;
+import java.util.function.ToDoubleFunction;
 
 import static jealoustone.elytravario.hud.HudChrome.BORDER;
 import static jealoustone.elytravario.hud.HudChrome.LABEL;
@@ -161,25 +162,38 @@ public final class DialSpeedometerElement implements HudElement {
 	}
 
 	/**
-	 * The reference marks, one per shown needle, under the needles rather than over them. On
-	 * the bar chart a marker has to sit over its bar to survive being swallowed by the fill;
-	 * here a mark is only ever crossed by its needle at the moment the two agree, and a needle
-	 * that stays unbroken is the quieter of the two readings.
+	 * The reference marks, one set per steady state and one mark per shown needle, under the
+	 * needles rather than over them. On the bar chart a marker has to sit over its bar to
+	 * survive being swallowed by the fill; here a mark is only ever crossed by its needle at
+	 * the moment the two agree, and a needle that stays unbroken is the quieter of the two
+	 * readings.
 	 */
 	private static void drawMarkers(GuiGraphics graphics, DialSpeedometer dial,
 			int hubX, int hubY) {
-		if (!VarioConfig.showDialSpeedoTerminalVelocityMarkers) return;
+		if (VarioConfig.showDialSpeedoMaxHorizontalSpeedMarkers) {
+			markerSet(graphics, dial, hubX, hubY, ReferenceSpeeds::maxHorizontalSpeed,
+					ReferenceSpeeds.MAX_HORIZONTAL_SPEED_COLOR);
+		}
+		if (VarioConfig.showDialSpeedoTerminalVelocityMarkers) {
+			markerSet(graphics, dial, hubX, hubY, ReferenceSpeeds::terminal,
+					ReferenceSpeeds.TERMINAL_COLOR);
+		}
+	}
+
+	/** One steady state read off all three components, in the needles' own order. */
+	private static void markerSet(GuiGraphicsExtractor graphics, DialSpeedometer dial, int hubX,
+			int hubY, ToDoubleFunction<ReferenceSpeeds> speed, int color) {
 		if (VarioConfig.showDialSpeedoTotal) {
-			marker(graphics, dial, hubX, hubY, ReferenceSpeeds.TOTAL.terminal(),
-					DialSpeedometer.TOTAL_LENGTH, ReferenceSpeeds.TERMINAL_COLOR);
+			marker(graphics, dial, hubX, hubY, speed.applyAsDouble(ReferenceSpeeds.TOTAL),
+					DialSpeedometer.TOTAL_LENGTH, color);
 		}
 		if (VarioConfig.showDialSpeedoHorizontal) {
-			marker(graphics, dial, hubX, hubY, ReferenceSpeeds.HORIZONTAL.terminal(),
-					DialSpeedometer.HORIZONTAL_LENGTH, ReferenceSpeeds.TERMINAL_COLOR);
+			marker(graphics, dial, hubX, hubY, speed.applyAsDouble(ReferenceSpeeds.HORIZONTAL),
+					DialSpeedometer.HORIZONTAL_LENGTH, color);
 		}
 		if (VarioConfig.showDialSpeedoVertical) {
-			marker(graphics, dial, hubX, hubY, ReferenceSpeeds.VERTICAL.terminal(),
-					DialSpeedometer.VERTICAL_LENGTH, ReferenceSpeeds.TERMINAL_COLOR);
+			marker(graphics, dial, hubX, hubY, speed.applyAsDouble(ReferenceSpeeds.VERTICAL),
+					DialSpeedometer.VERTICAL_LENGTH, color);
 		}
 	}
 
