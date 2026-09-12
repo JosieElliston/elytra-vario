@@ -89,6 +89,14 @@ class ConfigStoreTest {
 		assertFalse(ConfigStore.encode(values).contains("originX"));
 	}
 
+	@Test void retiredModuleScalesBecomeExactPixelWidths() {
+		var values = ConfigStore.decode("{\"chartScale\":37.714286,\"panelScale\":1.25}");
+		assertEquals("132", values.get("chartSize"));
+		assertEquals("165", values.get("statsSize"));
+		assertFalse(ConfigStore.encode(values).contains("chartScale"));
+		assertFalse(ConfigStore.encode(values).contains("panelScale"));
+	}
+
 	@Test void savingReplacesTheFileAndPreservesDisplayUnits() throws Exception {
 		var values = ConfigOptions.defaults();
 		values.put("chartMinVxz", "-20");
@@ -111,7 +119,7 @@ class ConfigStoreTest {
 	}
 
 	@Test void badNumbersAndColorsCannotReachTheRenderer() {
-		for (var bad : Map.of("chartScale", "NaN", "chartTrailTicks", "0.07",
+		for (var bad : Map.of("chartSize", "1.5", "chartTrailTicks", "0.07",
 				"lookaheadTicks", "1.5", "ladderOpacity", "101", "statsX", "5000",
 				"holdPitchColor", "garbage", "chartFieldGainColor", "009E3692").entrySet()) {
 			var values = ConfigOptions.defaults();
@@ -127,8 +135,8 @@ class ConfigStoreTest {
 		values.put("chartMinVy", "80");
 		assertEquals("range", ConfigOptions.error(values));
 		values = ConfigOptions.defaults();
-		values.put("chartMaxVxz", "200");
-		values.put("chartScale", "128");
+		values.put("chartMaxVy", "200");
+		values.put("chartSize", "512");
 		assertEquals("size", ConfigOptions.error(values));
 	}
 
@@ -147,7 +155,7 @@ class ConfigStoreTest {
 			assertTrue(VarioConfig.visible(VarioConfig.showMarkers, VarioConfig.markersGlidingOnly, true));
 			assertFalse(VarioConfig.visible(VarioConfig.showLadder, VarioConfig.ladderGlidingOnly, true));
 			values.put("enabled", "false");
-			values.put("chartScale", "Infinity");
+			values.put("chartSize", "513");
 			assertThrows(IllegalArgumentException.class, () -> ConfigOptions.apply(values));
 			assertTrue(VarioConfig.enabled);
 		} finally { ConfigOptions.apply(original); }

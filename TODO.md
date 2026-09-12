@@ -18,6 +18,7 @@ josie's todo/notes, don't edit this
 - make modules more unobtrusive
     - translucent
 - not fixed module render order?
+- snap guides are stroked outside for bottom and right, and stroked inside for top and left
 
 ## myopic metrics
 

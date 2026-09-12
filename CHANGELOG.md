@@ -18,8 +18,8 @@ build identifier and released feature for feature; see its own changelog.
   module's shorter side, so a small module keeps a middle to pick it up by.
 
   Corners and not edges, because none of these modules has a nonuniform resize to offer. Each
-  one's box is a function of a single setting — the velocity graph's scale, the flight stats
-  panel's scale, the bar speedometer's plot height, the dial's radius — so an edge would have
+  one's box is a function of a single setting — the velocity graph's width, the flight stats
+  panel's width, the bar speedometer's plot height, the dial's radius — so an edge would have
   nothing to drag that a corner does not. Where both axes follow that setting the corner tracks
   the pointer down the box's diagonal, which is what dragging a locked-aspect corner looks like
   anywhere else. The bar speedometer is the exception worth knowing about: its width is its bars
@@ -59,11 +59,14 @@ build identifier and released feature for feature; see its own changelog.
 
   A resize writes the same setting the module's page does, so its box follows the drag, and that
   box's tooltip now says the corners are there. Its pinned corner is placed from the module's
-  actual post-layout size, so a scale that lands between pixels cannot walk that corner sideways
-  over a long drag.
+  actual post-layout size, so a secondary dimension rounded from the module's aspect ratio
+  cannot walk that corner sideways over a long drag.
 
 ### Changed
 
+- Velocity Graph and Flight Stats now expose their exact integer pixel widths instead of
+  floating-point scale factors, matching the speedometers' pixel size settings. Existing scale
+  settings migrate to the widths they rendered at, and resizing now changes a whole-pixel size.
 - A resize now shows the same translucent true-position outline as a move. The live module still
   shows the snapped result; the outline shows the unsnapped box the mouse is requesting, making
   both the captured alignment and the distance needed to pull free explicit.
@@ -80,12 +83,11 @@ build identifier and released feature for feature; see its own changelog.
   made the label column vanish and the whole panel jump sideways under the pointer. Labels that
   crowd at a fine step are the step's problem and are visibly so, which is better than a panel
   that changes shape for reasons the person resizing it cannot see.
-- The velocity chart's default scale is now 37.714286 pixels per block/tick rather than 34, so
-  the default chart is exactly as wide as the flight stats panel stacked above it: 132 pixels
-  instead of 119. Nothing about the picture changes — the domain is the same and a pixel is
-  still worth the same change in speed on both axes — it is only drawn larger. Both axes span
-  3.5 b/tick, so the chart stays square and gained the same 13 pixels in height, and the
-  heatmap behind it now covers about a fifth more area to build.
+- The velocity chart's default width is now 132 pixels rather than 119, exactly matching the
+  flight stats panel stacked above it. Nothing about the picture changes — the domain is the
+  same and a pixel is still worth the same change in speed on both axes — it is only drawn
+  larger. Both axes span 3.5 b/tick, so the chart stays square and gained the same 13 pixels in
+  height, and the heatmap behind it now covers about a fifth more area to build.
 
 ### Fixed
 

@@ -83,8 +83,28 @@ public final class ConfigStore {
 			}
 			if (root.has(option.key())) values.put(option.key(), root.get(option.key()).getAsString());
 		}
+		// Module size used to be stored as a floating-point scale. Preserve the exact rendered
+		// width those settings produced; one save replaces the retired keys with pixel sizes.
+		if (root.has("chartScale") && !root.has("chartSize")) {
+			double horizontalRange = number(values, "chartMaxVxz") - number(values, "chartMinVxz");
+			values.put("chartSize", Long.toString(Math.round(
+					horizontalRange * root.get("chartScale").getAsDouble())));
+		}
+		if (root.has("panelScale") && !root.has("statsSize")) {
+			values.put("statsSize", Long.toString((long) Math.ceil(
+					number(values, "panelWidth")
+							* root.get("panelScale").getAsDouble())));
+		}
 		if (ConfigOptions.error(values) != null) throw new IllegalArgumentException("Invalid config values");
 		return values;
+	}
+
+	/** Parses a displayed config value through the same unit conversion as normal loading. */
+	private static double number(Map<String, String> values, String key) {
+		for (var option : ConfigOptions.all()) {
+			if (option.key().equals(key)) return ((Number) option.parse(values.get(key))).doubleValue();
+		}
+		throw new IllegalArgumentException(key);
 	}
 
 	private static String legacyBarKey(String key) {
