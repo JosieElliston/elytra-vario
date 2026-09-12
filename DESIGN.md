@@ -249,6 +249,15 @@ The arc rides half its own stem inside the tip radius rather than centered on it
 stem's outer edge flush with the end of the needle; centered, half the stem hung past the tip
 and the arrow read as overshooting the reading it starts from.
 
+**The head ends in a snub, not a point.** Its two barbs run back and out from the corners of the
+stem's own end face, and it is each stroke's leading *corner* that sits on a corner, so nothing
+in the head reaches past where the stem stops. Barbs aimed at the stem's centerline instead —
+the obvious construction — cross it and stand a third of a pixel proud of the nose. A third of a
+pixel cannot be drawn: it rounds to whichever side of the centerline it happens to fall on, so
+the arrow grew a one-pixel spike that changed sides with the angle and read as a point pulled
+off-center. The nose is now exactly one stem wide, which is the smallest mark the arrow can end
+in and still be the same object as its stem.
+
 **Reference markers turn ninety degrees, not into arcs.** Both sets mark the same speeds they
 mark on the bar chart, and for the same reason each is three marks rather than one: the
 terminal state is 78.400 b/s XYZ and Y and zero XZ, which is not a single speed to draw a ring
