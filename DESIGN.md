@@ -674,42 +674,33 @@ in the same places whether it was carried there or grown there; a rest that only
 knows about is one nobody can predict. A move relates two whole boxes, so on each axis it offers,
 against another module:
 
-- near edges flush, far edges flush, or the two centers aligned;
+- near edges flush or far edges flush;
 - the box set down a margin clear of the other, on whichever side it is approaching from;
 
-and against the screen: the near edge a margin in, the far edge a margin in, or the box centered
-on the screen's center.
+and against the screen: the near edge a margin in or the far edge a margin in.
 
 A resize holds one edge still, so it can only take the rests its moving lines can reach, which is
 that same list read line by line. The dragged edge takes the rest of its own kind — a right edge
 on a right edge, a left edge on a left edge — and the margin clearance on its own side, and the
-screen margin on its own side. The center, which the drag carries along at half the edge's rate,
-takes the centers: another module's, or the screen's. The pinned edge takes nothing, because it
-is not going anywhere.
+screen margin on its own side. The pinned edge takes nothing, because it is not going anywhere.
 
 So an edge dragged rightwards rests flush on a right edge, or a margin short of a left edge, and
 never flush against a left edge: a move would not put two modules together with nothing between
-them either. The center rest is the one that earns its place on its own account — a module
-centered on its neighbor or on the screen reads as deliberate however its edges fall, and while
-resizing it is the line that moves least predictably, since it drifts by half of whatever the
-edge does.
+them either. Centers are deliberately not snap targets: when boxes share an edge and a center,
+the edge is the single visible explanation for where the drag came to rest.
 
-Only one answer can win, because one setting places all four lines. Every reachable rest proposes
-a size, and the size whose resulting corner is closest to the mouse in both dimensions chooses
-the answer. Every marker which independently produces that same answer appears with it;
-constraints proposing another size are not carried into rendering. The snap-distance gate is
-measured at the dragged edge rather than at the line offering the rest. A center moves half as
-fast, so measuring its own gap would give it twice the capture range and let it pull the corner
-twice the configured distance. A rest the setting cannot actually reach is passed over for one it
-can, which happens
-whenever a module's size comes in steps, as the dial's diameter does, and to centers more often
-than to edges, since a center moves half a pixel per unit of size. The winning markers are checked
+Only one answer can win, because one setting may place both moving edges. Every reachable rest
+proposes a size, and the size whose resulting corner is closest to the mouse in both dimensions
+chooses the answer. Every marker which independently produces that same answer appears with it;
+constraints proposing another size are not carried into rendering. A rest the setting cannot
+actually reach is passed over for one it can, which happens whenever a module's size comes in
+steps, as the dial's diameter does. The winning markers are checked
 against the module as it ends up rather than merely against the size that was aimed at, so a line
-appears only where an edge or a center genuinely lies on it after layout rounding.
+appears only where an edge genuinely lies on it after layout rounding.
 
 The calculation is always made from the box and setting at the start of the drag. Feeding the
 previous frame's rounded box back into the next frame would make the arithmetic depend on which
-rest won last, allowing nearly equivalent edge and center answers to trade places under a steady
+rest won last, allowing nearly equivalent edge answers to trade places under a steady
 pointer. Alongside the snapped answer, the calculation returns the unsnapped box requested by the
 pointer. That box is the translucent true-position outline during a resize, just as the raw
 position is during a move; the live module and its guides show where snapping put it.

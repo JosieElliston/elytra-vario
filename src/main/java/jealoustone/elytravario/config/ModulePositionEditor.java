@@ -85,7 +85,7 @@ final class ModulePositionEditor {
 	record Resize(double value, Bounds trueBounds, List<Marker> markers) { }
 	private record Candidate(int position, Guide guide) { }
 	private record AxisSnap(int position, List<Guide> guides) { }
-	private record Marker(boolean vertical, boolean center, Guide guide) { }
+	private record Marker(boolean vertical, Guide guide) { }
 	private record ResizeCandidate(double value, double error, Marker marker) { }
 
 	/** Bounds in paint order; callers search backwards so the topmost overlapping module wins. */
@@ -181,9 +181,8 @@ final class ModulePositionEditor {
 	}
 
 	/**
-	 * Snaps a drag independently on each axis. Equal edges and centers align directly;
-	 * opposing edges keep {@code margin} pixels between the modules. Screen edges use the
-	 * same margin, while the screen center aligns directly.
+	 * Snaps a drag independently on each axis. Equal edges align directly; opposing edges keep
+	 * {@code margin} pixels between the modules. Screen edges use the same margin.
 	 */
 	static Snap snap(Module moving, int x, int y, int width, int height,
 			List<Bounds> bounds, int screenWidth, int screenHeight, int margin, int distance) {
@@ -195,32 +194,22 @@ final class ModulePositionEditor {
 		List<Candidate> ys = new ArrayList<>();
 		addIfVisible(xs, margin, maxX, new Guide(0, 0, screenHeight));
 		addIfVisible(xs, maxX - margin, maxX, Guide.farEdge(screenWidth, 0, screenHeight));
-		addIfVisible(xs, (screenWidth - width) / 2, maxX,
-				new Guide(screenWidth / 2, 0, screenHeight));
 		addIfVisible(ys, margin, maxY, new Guide(0, 0, screenWidth));
 		addIfVisible(ys, maxY - margin, maxY, Guide.farEdge(screenHeight, 0, screenWidth));
-		addIfVisible(ys, (screenHeight - height) / 2, maxY,
-				new Guide(screenHeight / 2, 0, screenWidth));
 		for (Bounds other : bounds) {
 			if (other.module == moving) continue;
 			Guide left = new Guide(other.x, other.y, other.y + other.height);
-			Guide centerX = new Guide(other.x + other.width / 2,
-					other.y, other.y + other.height);
 			Guide right = Guide.farEdge(other.x + other.width,
 					other.y, other.y + other.height);
 			addIfVisible(xs, other.x, maxX, left);
 			addIfVisible(xs, other.x + other.width - width, maxX, right);
-			addIfVisible(xs, other.x + (other.width - width) / 2, maxX, centerX);
 			addIfVisible(xs, other.x + other.width + margin, maxX, right);
 			addIfVisible(xs, other.x - margin - width, maxX, left);
 			Guide top = new Guide(other.y, other.x, other.x + other.width);
-			Guide centerY = new Guide(other.y + other.height / 2,
-					other.x, other.x + other.width);
 			Guide bottom = Guide.farEdge(other.y + other.height,
 					other.x, other.x + other.width);
 			addIfVisible(ys, other.y, maxY, top);
 			addIfVisible(ys, other.y + other.height - height, maxY, bottom);
-			addIfVisible(ys, other.y + (other.height - height) / 2, maxY, centerY);
 			addIfVisible(ys, other.y + other.height + margin, maxY, bottom);
 			addIfVisible(ys, other.y - margin - height, maxY, top);
 		}
@@ -346,16 +335,12 @@ final class ModulePositionEditor {
 	 * the screen's displayed ones.
 	 *
 	 * <p>A line of the box that comes within {@code distance} of somewhere it could rest is put
-	 * there exactly instead. Four lines are looking: the two edges the corner moves, and the two
-	 * center lines, which move at half their rate and are worth snapping in their own right —
-	 * a module centered on its neighbor reads as deliberate however its edges fall. They rest
-	 * where {@link #snap} would let a move rest and nowhere else; see {@link #rests}. Only one
-	 * answer can win, because one setting places all four of them: every feasible answer is
+	 * there exactly instead. The two edges the corner moves look for the same rests that
+	 * {@link #snap} would let a move take and nowhere else; see {@link #rests}. Only one answer
+	 * can win, because one setting may place both edges: every feasible answer is
 	 * scored by how near its resulting corner is to the pointer, and the nearest takes it. A rest
 	 * the setting cannot actually reach, because it is out of range or because the module lays
 	 * itself out in whole pixels, is passed over for one it can.
-	 * Distance is measured at the dragged edge rather than at the line: a center moves half as
-	 * fast, and measuring its own gap would let it pull the corner twice the configured distance.
 	 */
 	static double resize(Corner corner, Bounds rendered, double value, Sizing sizing,
 			double pointerX, double pointerY, List<Bounds> bounds,
@@ -397,9 +382,8 @@ final class ModulePositionEditor {
 		double best = free;
 		double bestError = Double.POSITIVE_INFINITY;
 		List<ResizeCandidate> candidates = new ArrayList<>();
-		// Four lines are looking for a rest — the corner's two edges, and the two center lines
-		// that trail them at half the speed. Each reachable rest proposes a size; the size whose
-		// rendered corner is nearest the pointer wins across both axes.
+		// The corner's two moving edges look for a rest. Each reachable rest proposes a size;
+		// the size whose rendered corner is nearest the pointer wins across both axes.
 		for (int axis = 0; axis < 2; axis++) {
 			boolean vertical = axis == 0;
 			double slope = vertical ? width : height;
@@ -407,31 +391,24 @@ final class ModulePositionEditor {
 			double offset = vertical ? widthOffset : heightOffset;
 			int anchor = vertical ? anchorX : anchorY;
 			boolean lower = vertical ? corner.left : corner.top;
-			for (int line = 0; line < 2; line++) {
-				boolean center = line == 1;
-				int at = lineAt(anchor, lower, slope, offset, free, center);
-				for (Candidate candidate : rests(vertical, lower, center, bounds,
-						rendered.module, vertical ? screenWidth : screenHeight,
-						vertical ? screenHeight : screenWidth, margin)) {
-					int gap = Math.abs(candidate.position - at);
-					// Moving a center one pixel takes two pixels of size. Comparing that one-pixel
-					// gap directly with an edge's would give centers twice the capture range and
-					// make the grabbed corner jump twice as far when it pulled free.
-					int travel = center ? gap * 2 : gap;
-					if (travel > distance) continue;
-					double reaching = reaching(candidate.position, anchor, lower, slope, offset,
-							center, sizing, limit);
-					if (Double.isNaN(reaching)) continue;
-					int candidateWidth = (int) Math.round(width * reaching + widthOffset);
-					int candidateHeight = (int) Math.round(height * reaching + heightOffset);
-					double error = squared(candidateWidth - wantedWidth)
-							+ squared(candidateHeight - wantedHeight);
-					candidates.add(new ResizeCandidate(reaching, error,
-							new Marker(vertical, center, candidate.guide)));
-					if (error < bestError) {
-						best = reaching;
-						bestError = error;
-					}
+			int at = lineAt(anchor, lower, slope, offset, free);
+			for (Candidate candidate : rests(vertical, lower, bounds,
+					rendered.module, vertical ? screenWidth : screenHeight,
+					vertical ? screenHeight : screenWidth, margin)) {
+				int gap = Math.abs(candidate.position - at);
+				if (gap > distance) continue;
+				double reaching = reaching(candidate.position, anchor, lower, slope, offset,
+						sizing, limit);
+				if (Double.isNaN(reaching)) continue;
+				int candidateWidth = (int) Math.round(width * reaching + widthOffset);
+				int candidateHeight = (int) Math.round(height * reaching + heightOffset);
+				double error = squared(candidateWidth - wantedWidth)
+						+ squared(candidateHeight - wantedHeight);
+				candidates.add(new ResizeCandidate(reaching, error,
+						new Marker(vertical, candidate.guide)));
+				if (error < bestError) {
+					best = reaching;
+					bestError = error;
 				}
 			}
 		}
@@ -461,10 +438,8 @@ final class ModulePositionEditor {
 		List<Guide> horizontal = new ArrayList<>();
 		for (Marker marker : resize.markers) {
 			int line = marker.vertical
-					? marker.center ? resized.x + resized.width / 2
-							: corner.left ? resized.x : resized.x + resized.width
-					: marker.center ? resized.y + resized.height / 2
-							: corner.top ? resized.y : resized.y + resized.height;
+					? corner.left ? resized.x : resized.x + resized.width
+					: corner.top ? resized.y : resized.y + resized.height;
 			if (line != marker.guide.coordinate) continue;
 			List<Guide> guides = marker.vertical ? vertical : horizontal;
 			if (!guides.contains(marker.guide)) guides.add(marker.guide);
@@ -478,25 +453,22 @@ final class ModulePositionEditor {
 	 * ought to land in the same places whether it was carried there or grown there, and a rest
 	 * that only one of the two operations knows about is a rest nobody can predict.
 	 *
-	 * <p>A move relates two whole boxes — like edge to like edge, center to center, or a
-	 * margin's clearance between them — so what a resize can take is that same list restricted
+	 * <p>A move relates two whole boxes — edge to like edge or a margin's clearance between
+	 * them — so what a resize can take is that same list restricted
 	 * to the lines it actually moves. For the dragged edge, that is the other module's edge of
 	 * the same kind, the far side of the other module plus a margin, and the screen's own margin
 	 * on the side the edge is: an edge dragged rightwards rests flush on a right edge or a
 	 * margin short of a left edge, and never flush against the left edge itself, because a move
-	 * would never put two modules together with nothing between them either. For the center,
-	 * which a resize drags along at half the rate, it is the other centers and the screen's own.
+	 * would never put two modules together with nothing between them either.
 	 *
 	 * <p>{@code vertical} asks for the columns a line in x can rest on, and {@code lower} says
 	 * the dragged edge is the box's near edge — its left or top — rather than its far one. The
 	 * guide each rest draws spans the module that offered it, or the screen for the screen's own.
 	 */
-	private static List<Candidate> rests(boolean vertical, boolean lower, boolean center,
+	private static List<Candidate> rests(boolean vertical, boolean lower,
 			List<Bounds> bounds, Module moving, int screenSize, int crossSize, int margin) {
 		List<Candidate> candidates = new ArrayList<>();
-		if (center) {
-			candidates.add(new Candidate(screenSize / 2, new Guide(screenSize / 2, 0, crossSize)));
-		} else if (lower) {
+		if (lower) {
 			candidates.add(new Candidate(margin, new Guide(0, 0, crossSize)));
 		} else {
 			candidates.add(new Candidate(screenSize - margin,
@@ -508,10 +480,7 @@ final class ModulePositionEditor {
 			int size = vertical ? other.width : other.height;
 			int from = vertical ? other.y : other.x;
 			int to = from + (vertical ? other.height : other.width);
-			if (center) {
-				candidates.add(new Candidate(near + size / 2,
-						new Guide(near + size / 2, from, to)));
-			} else if (lower) {
+			if (lower) {
 				candidates.add(new Candidate(near, new Guide(near, from, to)));
 				candidates.add(new Candidate(near + size + margin,
 						Guide.farEdge(near + size, from, to)));
@@ -545,42 +514,38 @@ final class ModulePositionEditor {
 	}
 
 	/**
-	 * Where one of the box's moving lines falls at this size: the edge opposite the pinned one,
-	 * or the center, which the pinned edge drags along at half the rate. Centers are taken the
-	 * way every other center here is, as the near edge plus half the size.
+	 * Where the box's moving edge falls at this size.
 	 */
 	private static int lineAt(int anchor, boolean lower, double slope, double offset,
-			double value, boolean center) {
+			double value) {
 		int size = (int) Math.round(slope * value + offset);
-		if (!center) return lower ? anchor - size : anchor + size;
-		return (lower ? anchor - size : anchor) + size / 2;
+		return lower ? anchor - size : anchor + size;
 	}
 
 	/** The size that would put that line on a coordinate, before range and rounding. */
 	private static double valueAt(int line, int anchor, boolean lower, double slope,
-			double offset, boolean center) {
-		double size = (lower ? anchor - line : line - anchor) * (center ? 2 : 1);
+			double offset) {
+		double size = lower ? anchor - line : line - anchor;
 		return (size - offset) / slope;
 	}
 
 	/**
 	 * The setting that lands the line exactly on a rest, or {@code NaN} where none does.
 	 *
-	 * <p>A setting counting in whole units cannot put every line on every coordinate — a center
-	 * moves half a pixel for each unit of a size, so half the rests on its axis are between two
-	 * of the sizes it can take — so the two values either side of the one the arithmetic asks
-	 * for are tried before the rest is given up on. Landing is checked rather than assumed,
+	 * <p>A setting counting in whole units may not put a line on every coordinate, so the two
+	 * values either side of the one the arithmetic asks for are tried before the rest is given
+	 * up on. Landing is checked rather than assumed,
 	 * because a rest that is merely close is a guide that does not line up with anything.
 	 */
 	private static double reaching(int rest, int anchor, boolean lower, double slope,
-			double offset, boolean center, Sizing sizing, double limit) {
-		double settled = settled(valueAt(rest, anchor, lower, slope, offset, center),
+			double offset, Sizing sizing, double limit) {
+		double settled = settled(valueAt(rest, anchor, lower, slope, offset),
 				sizing, limit);
-		if (lineAt(anchor, lower, slope, offset, settled, center) == rest) return settled;
+		if (lineAt(anchor, lower, slope, offset, settled) == rest) return settled;
 		if (!sizing.integral()) return Double.NaN;
 		for (int step = -1; step <= 1; step += 2) {
 			double beside = settled(settled + step, sizing, limit);
-			if (lineAt(anchor, lower, slope, offset, beside, center) == rest) return beside;
+			if (lineAt(anchor, lower, slope, offset, beside) == rest) return beside;
 		}
 		return Double.NaN;
 	}
