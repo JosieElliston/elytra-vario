@@ -246,6 +246,18 @@ Each needle's acceleration arrow begins at its tip and follows a concentric arc 
 projected one second ahead. The three radii keep the arrows separate just as the needle lengths
 do, so they can use their matching needle colors instead of the bar chart's white overlay color.
 
+**Reference markers turn ninety degrees, not into arcs.** The gray terminal set marks the same
+three speeds it marks on the bar chart, and for the same reason it is three marks rather than
+one: the state is 78.400 b/s XYZ and Y and zero XZ, which is not a single speed to draw a ring
+at. What changes is the axis. On the bar chart the value axis is vertical, so a marker is a
+horizontal line laid across its bar; here the value axis is the angle, so a marker is a radial
+line laid across its needle's reach. The needle tips are a constant 0.18 of the radius apart,
+which gives each component a lane, and a mark reaches a third of that gap either side of its
+tip so it stays in its lane with daylight around it. The marks are drawn under the needles,
+unlike the bar chart's: there a marker inside a filled bar would simply be gone, while here a
+mark is hidden only at the instant its needle agrees with it, and an unbroken needle is the
+quieter of the two.
+
 ## The pitch ladder
 
 **It is conformal.** Every mark is projected through the same camera the world was drawn with,

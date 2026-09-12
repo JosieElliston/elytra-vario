@@ -29,10 +29,8 @@ public final class DialSpeedometerElement implements HudElement {
 	private static final int MINOR_LENGTH = 4;
 	private static final int LABEL_GAP = 3;
 	private static final int LABEL_RISE = 4;
-	private static final double TOTAL_LENGTH = 0.90;
-	private static final double HORIZONTAL_LENGTH = 0.72;
-	private static final double VERTICAL_LENGTH = 0.54;
 	private static final int NEEDLE_WEIGHT = 2;
+	private static final int MARKER_WEIGHT = 1;
 	private static final int HUB = 1;
 	private static final int MAX_TICKS = 1024;
 
@@ -62,6 +60,7 @@ public final class DialSpeedometerElement implements HudElement {
 		int hubY = y + dial.hubY();
 		drawFace(graphics, dial, hubX, hubY);
 		drawScale(graphics, font, dial, hubX, hubY);
+		drawMarkers(graphics, dial, hubX, hubY);
 		drawNeedles(graphics, dial, sample, previous, hubX, hubY);
 	}
 
@@ -132,8 +131,7 @@ public final class DialSpeedometerElement implements HudElement {
 
 	private static void needle(GuiGraphicsExtractor graphics, DialSpeedometer dial, int hubX,
 			int hubY, double speed, double length, int color) {
-		radial(graphics, hubX, hubY, dial.angle(speed), 0,
-				(int) Math.round(dial.radius() * length), NEEDLE_WEIGHT,
+		radial(graphics, hubX, hubY, dial.angle(speed), 0, dial.needleTip(length), NEEDLE_WEIGHT,
 				needleColor(dial, speed, color));
 	}
 
@@ -162,21 +160,57 @@ public final class DialSpeedometerElement implements HudElement {
 		graphics.text(font, text, x, Math.min(y, hubY - 2 * LABEL_RISE - 1), LABEL, true);
 	}
 
+	/**
+	 * The reference marks, one per shown needle, under the needles rather than over them. On
+	 * the bar chart a marker has to sit over its bar to survive being swallowed by the fill;
+	 * here a mark is only ever crossed by its needle at the moment the two agree, and a needle
+	 * that stays unbroken is the quieter of the two readings.
+	 */
+	private static void drawMarkers(GuiGraphicsExtractor graphics, DialSpeedometer dial,
+			int hubX, int hubY) {
+		if (!VarioConfig.showDialSpeedoTerminalVelocityMarkers) return;
+		if (VarioConfig.showDialSpeedoTotal) {
+			marker(graphics, dial, hubX, hubY, ReferenceSpeeds.TOTAL.terminal(),
+					DialSpeedometer.TOTAL_LENGTH, ReferenceSpeeds.TERMINAL_COLOR);
+		}
+		if (VarioConfig.showDialSpeedoHorizontal) {
+			marker(graphics, dial, hubX, hubY, ReferenceSpeeds.HORIZONTAL.terminal(),
+					DialSpeedometer.HORIZONTAL_LENGTH, ReferenceSpeeds.TERMINAL_COLOR);
+		}
+		if (VarioConfig.showDialSpeedoVertical) {
+			marker(graphics, dial, hubX, hubY, ReferenceSpeeds.VERTICAL.terminal(),
+					DialSpeedometer.VERTICAL_LENGTH, ReferenceSpeeds.TERMINAL_COLOR);
+		}
+	}
+
+	/**
+	 * A reference mark: a thin radial line at the marked speed's angle, spanning the lane
+	 * around one needle's tip. The value axis here is the angle, so the mark lies across the
+	 * needle's reach exactly as the bar chart's lies across the width of its bar.
+	 */
+	private static void marker(GuiGraphicsExtractor graphics, DialSpeedometer dial, int hubX,
+			int hubY, double speed, double length, int color) {
+		radial(graphics, hubX, hubY, dial.angle(speed), dial.markerFrom(length),
+				dial.markerTo(length), MARKER_WEIGHT, color);
+	}
+
 	private static void drawNeedles(GuiGraphicsExtractor graphics, DialSpeedometer dial,
 			Sample sample, Sample previous, int hubX, int hubY) {
 		if (VarioConfig.showDialSpeedoTotal) {
 			drawNeedle(graphics, dial, hubX, hubY, sample.speed(),
-					previous == null ? Double.NaN : previous.speed(), TOTAL_LENGTH,
+					previous == null ? Double.NaN : previous.speed(), DialSpeedometer.TOTAL_LENGTH,
 					VarioConfig.dialSpeedoTotalColor);
 		}
 		if (VarioConfig.showDialSpeedoHorizontal) {
 			drawNeedle(graphics, dial, hubX, hubY, sample.horizontalSpeed(),
-					previous == null ? Double.NaN : previous.horizontalSpeed(), HORIZONTAL_LENGTH,
+					previous == null ? Double.NaN : previous.horizontalSpeed(),
+					DialSpeedometer.HORIZONTAL_LENGTH,
 					VarioConfig.dialSpeedoHorizontalColor);
 		}
 		if (VarioConfig.showDialSpeedoVertical) {
 			drawNeedle(graphics, dial, hubX, hubY, Math.abs(sample.vy()),
-					previous == null ? Double.NaN : Math.abs(previous.vy()), VERTICAL_LENGTH,
+					previous == null ? Double.NaN : Math.abs(previous.vy()),
+					DialSpeedometer.VERTICAL_LENGTH,
 					VarioConfig.dialSpeedoVerticalColor);
 		}
 		graphics.fill(hubX - HUB, hubY - 2 * HUB, hubX + HUB + 1, hubY + 1, MAJOR);
@@ -187,7 +221,7 @@ public final class DialSpeedometerElement implements HudElement {
 		needle(graphics, dial, hubX, hubY, speed, length, color);
 		if (VarioConfig.showDialSpeedoAcceleration && Double.isFinite(previousSpeed)) {
 			accelerationArrow(graphics, dial, hubX, hubY, speed, previousSpeed,
-					(int) Math.round(dial.radius() * length), needleColor(dial, speed, color));
+					dial.needleTip(length), needleColor(dial, speed, color));
 		}
 	}
 

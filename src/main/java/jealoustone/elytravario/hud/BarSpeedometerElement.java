@@ -24,22 +24,10 @@ public final class BarSpeedometerElement implements HudElement {
 	private static final double ACCELERATION_ARROW_SECONDS = 1.0;
 	private static final int MAJOR = 0xFFC6CCD2;
 	private static final int ACCELERATION_ARROW = 0xFFFFFFFF;
-	private static final int MAX_HORIZONTAL_SPEED_MARKER = 0xFFFFFFFF;
-	private static final int TERMINAL_MARKER = 0xFF9AA0A6;
 
-	// Steady flight at +53.366 degrees, in blocks/tick. Vertical speed is a magnitude.
-	private static final double MAX_HORIZONTAL_SPEED_XZ = 3.38879;
-	private static final double MAX_HORIZONTAL_SPEED_Y = 1.00954;
-	private static final double MAX_HORIZONTAL_SPEED_XYZ = Math.hypot(MAX_HORIZONTAL_SPEED_XZ, MAX_HORIZONTAL_SPEED_Y);
-
-	// Straight-down steady-state speed: (v - gravity) * vertical drag = v.
-	private static final double TERMINAL_Y = 3.920003814700903;
-	private static final double TERMINAL_XZ = 0.0;
-	private static final double TERMINAL_XYZ = TERMINAL_Y;
-
-	/** One shown bar: what it is called, what it reads, and the two speeds it is marked against. */
+	/** One shown bar: what it is called, what it reads, and the speeds it is marked against. */
 	private record Bar(String label, double speed, double previousSpeed, int color,
-			double maxHorizontalSpeed, double terminal) { }
+			ReferenceSpeeds reference) { }
 
 	private final FlightRecorder recorder;
 
@@ -87,17 +75,17 @@ public final class BarSpeedometerElement implements HudElement {
 		if (VarioConfig.showBarSpeedoVertical) {
 			bars.add(new Bar("Y", Math.abs(sample.vy()),
 					previous == null ? Double.NaN : Math.abs(previous.vy()),
-					VarioConfig.barSpeedoVerticalColor, MAX_HORIZONTAL_SPEED_Y, TERMINAL_Y));
+					VarioConfig.barSpeedoVerticalColor, ReferenceSpeeds.VERTICAL));
 		}
 		if (VarioConfig.showBarSpeedoHorizontal) {
 			bars.add(new Bar("XZ", sample.horizontalSpeed(),
 					previous == null ? Double.NaN : previous.horizontalSpeed(),
-					VarioConfig.barSpeedoHorizontalColor, MAX_HORIZONTAL_SPEED_XZ, TERMINAL_XZ));
+					VarioConfig.barSpeedoHorizontalColor, ReferenceSpeeds.HORIZONTAL));
 		}
 		if (VarioConfig.showBarSpeedoTotal) {
 			bars.add(new Bar("XYZ", sample.speed(),
 					previous == null ? Double.NaN : previous.speed(),
-					VarioConfig.barSpeedoTotalColor, MAX_HORIZONTAL_SPEED_XYZ, TERMINAL_XYZ));
+					VarioConfig.barSpeedoTotalColor, ReferenceSpeeds.TOTAL));
 		}
 		return bars;
 	}
@@ -133,10 +121,12 @@ public final class BarSpeedometerElement implements HudElement {
 		}
 
 		if (VarioConfig.showBarSpeedoMaxHorizontalSpeedMarkers) {
-			marker(graphics, chart, bx, y, bar.maxHorizontalSpeed(), MAX_HORIZONTAL_SPEED_MARKER);
+			marker(graphics, chart, bx, y, bar.reference().maxHorizontalSpeed(),
+					ReferenceSpeeds.MAX_HORIZONTAL_SPEED_COLOR);
 		}
 		if (VarioConfig.showBarSpeedoTerminalVelocityMarkers) {
-			marker(graphics, chart, bx, y, bar.terminal(), TERMINAL_MARKER);
+			marker(graphics, chart, bx, y, bar.reference().terminal(),
+					ReferenceSpeeds.TERMINAL_COLOR);
 		}
 		if (VarioConfig.showBarSpeedoAcceleration && Double.isFinite(bar.previousSpeed())) {
 			accelerationArrow(graphics, chart, bx, y, bar.speed(), bar.previousSpeed());

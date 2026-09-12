@@ -301,6 +301,8 @@
 	"config.elytra-vario.dialSpeedoVerticalColor.tooltip": "Choose a color and opacity.",
 	"config.elytra-vario.showDialSpeedoAcceleration": "Show acceleration arrows",
 	"config.elytra-vario.showDialSpeedoAcceleration.tooltip": "Project each needle's measured acceleration one second forward as a concentric arrow at its tip, using the needle's color.",
+	"config.elytra-vario.showDialSpeedoTerminalVelocityMarkers": "Show terminal-velocity markers",
+	"config.elytra-vario.showDialSpeedoTerminalVelocityMarkers.tooltip": "Thin gray marks across each needle's tip at the straight-down terminal XYZ, XZ, and |Y| speeds: 78.400, 0, and 78.400 b/s. Off by default.",
 	"config.elytra-vario.showDialSpeedoLabels": "Show scale labels",
 	"config.elytra-vario.showDialSpeedoLabels.tooltip": "Label each major tick with its speed in blocks per second.",
 	"config.elytra-vario.showDialSpeedoBorder": "Show dial border",
