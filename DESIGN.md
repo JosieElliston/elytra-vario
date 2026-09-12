@@ -640,10 +640,12 @@ screen, and each can be set from its own page as a pair of numbers or moved in t
 the settings screen open. Clicking a module opens its page; dragging its middle moves it;
 dragging a corner resizes it; the arrow keys move the selected module a pixel at a time.
 
-**Corners resize, edges do not.** Every one of these modules is a single size setting — the
-graph's width, the stats panel's width, the bar speedometer's plot height, the dial's radius —
-so there is no such thing as a nonuniform resize to offer, and an edge would have nothing to
-drag that a corner does not already drag.
+**Corners resize, edges do not.** Three of these modules are a single size setting — the
+graph's width, the bar speedometer's plot height, the dial's radius — so there is no such thing
+as a nonuniform resize to offer, and an edge would have nothing to drag that a corner does not
+already drag. The stats panel is the exception with a width and a height of its own, and its
+corner drags them separately: pull it sideways and only the width moves. That is what a pair of
+edges would do one at a time, so it still does not need them.
 
 **One setting, a pointer with two dimensions, so the answer is least squares.** The size chosen
 is the one whose box comes closest to the box the pointer is asking for. Where both axes follow
@@ -652,11 +654,17 @@ locked-aspect corner looks like anywhere else; for the bar speedometer, whose wi
 and labels rather than a setting, the same expression collapses to following the pointer
 vertically and ignoring the rest.
 
-**The box is affine in its setting, and the constant is measured rather than modelled.** A
-slope — the graph's and panel's aspect ratios, two for the dial's diameter — plus the
-size the module is currently drawn at pins the whole relationship, so whatever the box carries
-that the setting does not pay for, like the label column or the dial's rim, falls out as the
-difference between them. After the setting is applied the module is measured again and the
+**Two settings are solved one at a time, which is exact rather than approximate.** The stats
+panel's width and height are orthogonal — one slope each, on its own axis — so each
+least-squares solve falls entirely on the axis its setting grows, and neither can move what the
+other answers. It is the same arithmetic run twice, with the same rests, and not a joint solve
+simplified.
+
+**The box is affine in its settings, and the constant is measured rather than modelled.** A
+slope — the graph's aspect ratio, one per axis for the panel, two for the dial's diameter —
+plus the size the module is currently drawn at pins the whole relationship, so whatever the box
+carries that the settings do not pay for, like the label column or the dial's rim, falls out as
+the difference between them. After the setting is applied the module is measured again and the
 pinned corner recomputed from that, rather than from what the arithmetic predicted: the primary
 size is exact, but an aspect ratio can still leave the other dimension between pixels, and over
 a long drag that rounding would otherwise walk the corner it is supposed to be holding still.
@@ -797,11 +805,28 @@ describe are gone. With the settings screen open the modules are editable in the
 one to open its page, drag its middle to move it, drag a corner to resize it, or use the arrow
 keys for a pixel at a time. Moves and resizes both snap to the other modules and to the screen,
 and the coordinate and size fields on each page stay in step with whatever the drag does. See
-*Placing the modules* above. Both horizontal and vertical chart bounds are editable. Visibility
-is independent for all four instruments, and stats rows are selectable. Energy rate has been
-removed; cycle gain and apex differences remain.
+*Placing the modules* above. Both horizontal and vertical chart bounds are editable, and Flight
+Stats carries a width and a height of its own. Visibility is independent for all four
+instruments, and stats rows are selectable. Energy rate has been removed; cycle gain and apex
+differences remain.
 
 ## The readout panel
+
+**Width and height are set separately, and the height is the one that sets the text size.** The
+rows are laid out at a fixed line height and the whole panel is scaled to the height asked for,
+so it is always exactly as tall as its rows need and never carries a gap at the bottom. The
+width then buys one thing only: the distance between a label and the value right-aligned
+against the far edge. That gap is the panel's only dead space, and a single size setting could
+not close it — narrowing the panel shrank the reading along with it. The cost of the split is
+that switching a row off no longer makes the panel shorter; it keeps the height it was given
+and draws the rows that remain larger.
+
+**A width narrower than the rows need is drawn at the width they need.** At 116 layout pixels
+the widest row the panel draws has met itself: `ACCEL XYZ` is 52 pixels of label, an
+acceleration like `+5.09 b/s²` is 54 of figure, and the padding takes eight. There is no dead
+space left to take there, and narrowing further would only stack one column on the other. The
+grips stop there, and a narrower width typed into the box is drawn at the minimum rather than
+refused, so the reading never turns into an overlap.
 
 | Row | Meaning |
 | --- | --- |

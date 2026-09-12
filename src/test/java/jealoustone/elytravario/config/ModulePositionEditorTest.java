@@ -234,6 +234,27 @@ class ModulePositionEditorTest {
 	}
 
 	@Test
+	void twoOrthogonalSettingsEachFollowTheirOwnAxisOfTheSameCorner() {
+		// The stats panel carries a width and a height, solved one at a time from one pointer.
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS, 100, 100, 60, 40);
+		var width = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(1, 0), 32, 1200, true);
+		var height = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
+
+		// Dragged from the corner opposite the pinned top left, each setting takes the distance
+		// on its own axis, and neither is pulled towards the other's.
+		assertEquals(90, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 60, width, 190, 155, List.of(), 320, 240, 4, 0));
+		assertEquals(55, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 40, height, 190, 155, List.of(), 320, 240, 4, 0));
+		// So the same corner can change one dimension and leave the other exactly as it was.
+		assertEquals(40, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 40, height, 190, 140, List.of(), 320, 240, 4, 0));
+	}
+
+	@Test
 	void resizeStopsAtTheScreenEdgeAndAtTheSettingsOwnRange() {
 		var wide = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
@@ -290,6 +311,41 @@ class ModulePositionEditorTest {
 			assertEquals(pinnedBottom, bounds.y() + bounds.height());
 		}
 		assertEquals(58, radius);
+	}
+
+	@Test
+	void aWholeDragOfTwoSettingsHoldsThePinnedCornerToo() {
+		// The stats panel taken by its top left and pulled up and to the left, with the width
+		// and the height applied and the box measured again on every step, as the screen does.
+		var width = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(1, 0), 32, 1200, true);
+		var height = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS, 120, 100, 60, 40);
+		int pinnedRight = bounds.x() + bounds.width();
+		int pinnedBottom = bounds.y() + bounds.height();
+		double pointerX = bounds.x();
+		double pointerY = bounds.y();
+		int boxWidth = bounds.width();
+		int boxHeight = bounds.height();
+		for (int step = 0; step < 30; step++) {
+			pointerX--;
+			pointerY--;
+			boxWidth = (int) ModulePositionEditor.resize(ModulePositionEditor.Corner.TOP_LEFT,
+					bounds, boxWidth, width, pointerX, pointerY, List.of(), 320, 240, 4, 0);
+			boxHeight = (int) ModulePositionEditor.resize(ModulePositionEditor.Corner.TOP_LEFT,
+					bounds, boxHeight, height, pointerX, pointerY, List.of(), 320, 240, 4, 0);
+			var position = ModulePositionEditor.anchored(ModulePositionEditor.Corner.TOP_LEFT,
+					bounds, boxWidth, boxHeight);
+			bounds = new ModulePositionEditor.Bounds(ModulePositionEditor.Module.STATS,
+					position.x(), position.y(), boxWidth, boxHeight);
+			assertEquals(pinnedRight, bounds.x() + bounds.width());
+			assertEquals(pinnedBottom, bounds.y() + bounds.height());
+		}
+		// Both dimensions are exactly the corner the pointer has been dragged to.
+		assertEquals(90, boxWidth);
+		assertEquals(70, boxHeight);
 	}
 
 	@Test

@@ -17,30 +17,33 @@ import net.minecraft.client.gui.Font;
 final class ModulePositionEditor {
 	enum Module {
 		CHART(3, "chartX", "chartY", "chartSize"),
-		STATS(4, "statsX", "statsY", "statsSize"),
+		// Height before width: the panel's narrowest width follows the text size its height
+		// sets, so a drag that changes both wants the height of the event it is answering.
+		STATS(4, "statsX", "statsY", "statsHeight", "statsWidth"),
 		BAR_SPEEDOMETER(5, "barSpeedoX", "barSpeedoY", "barSpeedoHeight"),
 		DIAL_SPEEDOMETER(6, "dialSpeedoX", "dialSpeedoY", "dialSpeedoRadius");
 
 		final int page;
 		final String xKey;
 		final String yKey;
-		/** The one setting the module's size is a function of; see {@link #growth}. */
-		final String sizeKey;
+		/** The settings the module's size is a function of; see {@link #growth}. */
+		final List<String> sizeKeys;
 
-		Module(int page, String xKey, String yKey, String sizeKey) {
+		Module(int page, String xKey, String yKey, String... sizeKeys) {
 			this.page = page;
 			this.xKey = xKey;
 			this.yKey = yKey;
-			this.sizeKey = sizeKey;
+			this.sizeKeys = List.of(sizeKeys);
 		}
 	}
 
 	/**
 	 * A corner grip, named for the corner it holds rather than the one it pins.
 	 *
-	 * <p>Corners and not edges, because no module has a nonuniform resize to offer: each one's
-	 * box is a function of a single size setting, so an edge would have nothing to drag that a
-	 * corner does not already drag.
+	 * <p>Corners and not edges. Three of the modules are a single size setting, so an edge would
+	 * have nothing to drag that a corner does not already drag; the stats panel's two settings
+	 * are solved one per axis, so its corner already follows the pointer in width and in height
+	 * independently, which is the same thing two edges would do one at a time.
 	 */
 	enum Corner {
 		TOP_LEFT(true, true),
@@ -90,7 +93,9 @@ final class ModulePositionEditor {
 		List<Bounds> result = new ArrayList<>();
 		if (!VarioConfig.enabled) return result;
 
-		boolean stats = VarioInstrument.STATS.visible(gliding) && VarioHudElement.statsHeight() > 0;
+		// The same test the HUD makes: a panel with every row switched off is not drawn, and
+		// so is not there to be dragged either.
+		boolean stats = VarioInstrument.STATS.visible(gliding) && VarioHudElement.panelRows() > 0;
 		boolean chart = VarioInstrument.CHART.visible(gliding);
 		int statsWidth = VarioHudElement.statsWidth();
 		int statsHeight = VarioHudElement.statsHeight();
@@ -281,26 +286,46 @@ final class ModulePositionEditor {
 	record Sizing(Growth growth, double min, double max, boolean integral) { }
 
 	/**
-	 * How the module's box grows with its size setting.
+	 * How the module's box grows with one of its size settings.
 	 *
-	 * <p>Every module's box is affine in that one setting, so this slope and the size the module
-	 * is currently drawn at describe it exactly: whatever the box carries that the setting does
-	 * not pay for — a label column, the dial's rim — falls out as the offset between them. The
-	 * resize therefore never has to predict a size it could measure instead.
+	 * <p>Every module's box is affine in its settings, so these slopes and the size the module is
+	 * currently drawn at describe it exactly: whatever the box carries that the settings do not
+	 * pay for — a label column, the dial's rim — falls out as the offset between them. The resize
+	 * therefore never has to predict a size it could measure instead.
+	 *
+	 * <p>Where a module has two settings they are orthogonal, one slope each, which is what lets
+	 * each of them be solved on its own axis by the same arithmetic that solves a single one.
 	 */
-	static Growth growth(Module module) {
-		return switch (module) {
-			// Size is the exact width; height follows the module's aspect ratio.
-			case CHART -> new Growth(1, (VarioConfig.chartMaxVy - VarioConfig.chartMinVy)
+	static Growth growth(String sizeKey) {
+		return switch (sizeKey) {
+			// Size is the exact width; height follows the chart's aspect ratio.
+			case "chartSize" -> new Growth(1, (VarioConfig.chartMaxVy - VarioConfig.chartMinVy)
 					/ (VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz));
-			case STATS -> new Growth(1,
-					(double) VarioHudElement.panelHeight() / VarioConfig.panelWidth);
+			// The panel's two settings are its two dimensions, each on its own.
+			case "statsWidth" -> new Growth(1, 0);
+			case "statsHeight" -> new Growth(0, 1);
 			// The bar chart is as wide as its bars and its scale labels, and neither is the
 			// setting: only the plot's height follows the pointer.
-			case BAR_SPEEDOMETER -> new Growth(0, 1);
+			case "barSpeedoHeight" -> new Growth(0, 1);
 			// A semicircle is two radii across and one tall.
-			case DIAL_SPEEDOMETER -> new Growth(2, 1);
+			case "dialSpeedoRadius" -> new Growth(2, 1);
+			default -> throw new IllegalArgumentException(sizeKey);
 		};
+	}
+
+	/**
+	 * The smallest a grip may drag this setting to: the setting's own range, or what the module
+	 * will actually draw where that is larger.
+	 *
+	 * <p>The stats panel is drawn no narrower than its rows need at the text size its height is
+	 * asking for, so the grip stops where the panel stops rather than writing widths that would
+	 * leave the box sitting still while the number under it kept falling. A text size extreme
+	 * enough to need more than the setting can hold leaves the drag at the top of its range
+	 * rather than out of it.
+	 */
+	static double smallest(String sizeKey, double min, double max) {
+		if (!sizeKey.equals("statsWidth")) return min;
+		return Math.clamp(VarioHudElement.minStatsWidth(), min, max);
 	}
 
 	/**
@@ -309,6 +334,9 @@ final class ModulePositionEditor {
 	 *
 	 * <p>One setting has to answer a pointer that moves in two dimensions, so the answer is the
 	 * least-squares one: the value whose box comes closest to the box the pointer is asking for.
+	 * A module carrying two settings is solved a setting at a time, which is the same arithmetic
+	 * and not an approximation of a joint solve: the two are orthogonal, so each least-squares
+	 * solve falls entirely on its own axis and neither can move what the other answers.
 	 * Where both axes grow that is the pointer projected onto the box's diagonal, which is what
 	 * dragging a locked-aspect corner looks like anywhere else; for a module whose width is not
 	 * a setting, the same expression collapses to following the pointer vertically.

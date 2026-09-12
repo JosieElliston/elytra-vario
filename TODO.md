@@ -1,24 +1,41 @@
 # TODO
 
-josie's todo/notes, don't edit this, tho you can include it in commits
+josie's todo/notes, don't edit this, tho you should include it in commits
 
 - should we expose rules for when to switch?
 - rename vel graph to energy field
 - some other rename i wanted?
-- rename markers to ladder(?) markers, bc we have markers for multiple things. but i kinda want the configs to stay separate, which is inconsistent with the other markers. maybe rename to bugs?
 - new module: the dxz, dy, dpe, dke, dte against pitch plots
 - maybe remove true pos dnd outline? also nudge with wasd (or maybe player controls? but what if you have walk bound to left click? stuff like that is scary)
 - energy grid contours for 0 and ridges
 - better ladder marker aesthetics
-    - pixel art isn't great
-    - 45 deg point
-    - size differentiated by truncating the base
-    - truncate from the inside or outside?
-    - or have them the same size, but translated in/out
+    - configurable n:1 pixel step down
+        - 1:1 pixel step down is a 90 deg point
+        - 2:1 pixel step down is a 45 deg point
+    - configurable length ("height")
+        - aligned to outside?
+        - absorb < step n at the base, not the tip
+        - actually idk where you should absorb it, maybe this is configurable???
+        - actually instead of height, it's the inset. so we have [start, end] rather than [start, length]? actually i don't like this.
+    - configurable inset
+    - configurable base radius (must have odd base size) actually no we don't have base radius, this is implied by length
+        - lines are expressible as 0 rad and (special case i think) 0 step down
+    - build a gui editor for this
+- better color picker
 - make modules more unobtrusive
     - translucent
 - not fixed module render order?
 - if you are dragging a corner, the center comes into radius before the edge, so the center is draw without the edge, so we sometimes snap to an edge without it getting drawn. ig this is correct tho.
+- ehop/ebounce
+    - should we use ehop or ebounce
+    - number of ticks between last ground touch and last elytra deploy
+    - ground touch
+        - speed
+    - last elytra deploy
+        - speed
+        - distance delta from ground touch
+- sort the stats panel so it's speed/accel y, xz, xyz rather than xz, xyz, y
+- make the panel hover text hide when dragging (not hovering) a panel. rn the hover text obscures elements to the right you might be trying to align to.
 
 ## myopic metrics
 

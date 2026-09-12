@@ -116,12 +116,6 @@ public final class VarioConfig {
 	public static int statsY = 4;
 
 	/**
-	 * Width of the readout panel. Values are right-aligned against this, so it has to be
-	 * wide enough for the longest one plus its label.
-	 */
-	public static int panelWidth = 132;
-
-	/**
 	 * Chart bounds in blocks/<em>tick</em>, matching the units elytrasim plots in, so the
 	 * in-game chart and the sim's screenshots can be compared directly. Axis labels are
 	 * rendered in blocks/second like the rest of the HUD.
@@ -154,7 +148,7 @@ public final class VarioConfig {
 	 * <p>The default matches the readout panel above it. Unlike the former pixels-per-block/tick
 	 * scale, this is the exact on-screen width the setting names.
 	 */
-	public static int chartSize = panelWidth;
+	public static int chartSize = 132;
 	public static int chartTrailTicks = 100;
 
 	/**
@@ -394,8 +388,25 @@ public final class VarioConfig {
 	public static boolean showAxisLabels = true;
 	public static boolean showPanelBorder = true;
 	public static double panelOpacity = 176.0 / 255.0;
-	/** Exact on-screen width of Flight Stats in scaled GUI pixels. */
-	public static int statsSize = panelWidth;
+	/**
+	 * Exact on-screen size of Flight Stats in scaled GUI pixels, each dimension its own.
+	 *
+	 * <p>The height sets the text size: the rows are laid out at a fixed line height and the
+	 * whole panel is scaled to the height asked for, so the panel is always exactly as tall as
+	 * its rows need and never has a gap at the bottom. The width is then free, and buys nothing
+	 * but the distance between a label and the value right-aligned against the far edge — which
+	 * is the only dead space on the panel, and the only thing the old single size setting could
+	 * not shrink without shrinking the text with it.
+	 *
+	 * <p>Below {@link jealoustone.elytravario.hud.VarioHudElement#MIN_PANEL_WIDTH} scaled up by
+	 * the text size, a width is drawn at that minimum instead: past there the columns have met
+	 * and there is no dead space left to take.
+	 *
+	 * <p>The default height is the twelve default rows at their natural size, so a default
+	 * panel is drawn exactly as it was before the two settings were split.
+	 */
+	public static int statsWidth = 132;
+	public static int statsHeight = 138;
 	public static int energyReference = 2;
 	public static int positiveColor = 0xFF66DD77;
 	public static int negativeColor = 0xFFE2685F;

@@ -143,7 +143,8 @@ public final class ConfigOptions {
 		add("statsGlidingOnly", 4, 0, 1, 1, 0, false, false);
 		add("statsX", 4, -4096, 4096, 1, 0, false, false);
 		add("statsY", 4, -4096, 4096, 1, 0, false, false);
-		add("statsSize", 4, 66, 1200, 1, 0, false, false);
+		add("statsWidth", 4, 32, 1200, 1, 0, false, false);
+		add("statsHeight", 4, 16, 1200, 1, 0, false, false);
 		add("panelOpacity", 4, 0, 100, 100, 0, false, false);
 		add("showPanelBorder", 4, 0, 1, 1, 0, false, false);
 		add("showPitch", 4, 0, 1, 1, 0, false, false);
@@ -161,7 +162,6 @@ public final class ConfigOptions {
 		add("energyReference", 4, 0, 1, 1, 3, false, false);
 		add("positiveColor", 4, 0, 1, 1, 0, true, false);
 		add("negativeColor", 4, 0, 1, 1, 0, true, false);
-		add("panelWidth", 4, 132, 400, 1, 0, false, true);
 
 		add("showBarSpeedo", 5, 0, 1, 1, 0, false, false);
 		add("barSpeedoGlidingOnly", 5, 0, 1, 1, 0, false, false);
