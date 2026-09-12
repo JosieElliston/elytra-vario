@@ -181,7 +181,7 @@ public final class DialSpeedometerElement implements HudElement {
 	}
 
 	/** One steady state read off all three components, in the needles' own order. */
-	private static void markerSet(GuiGraphicsExtractor graphics, DialSpeedometer dial, int hubX,
+	private static void markerSet(GuiGraphics graphics, DialSpeedometer dial, int hubX,
 			int hubY, ToDoubleFunction<ReferenceSpeeds> speed, int color) {
 		if (VarioConfig.showDialSpeedoTotal) {
 			marker(graphics, dial, hubX, hubY, speed.applyAsDouble(ReferenceSpeeds.TOTAL),
