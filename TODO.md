@@ -9,6 +9,15 @@ josie's todo/notes, don't edit this
 - new module: the dxz, dy, dpe, dke, dte against pitch plots
 - maybe remove true pos dnd outline? also nudge with wasd (or maybe player controls? but what if you have walk bound to left click? stuff like that is scary)
 - energy grid contours for 0 and ridges
+- better ladder marker aesthetics
+    - pixel art isn't great
+    - 45 deg point
+    - size differentiated by truncating the base
+    - truncate from the inside or outside?
+    - or have them the same size, but translated in/out
+- make modules more unobtrusive
+    - translucent
+- not fixed module render order?
 
 ## myopic metrics
 
