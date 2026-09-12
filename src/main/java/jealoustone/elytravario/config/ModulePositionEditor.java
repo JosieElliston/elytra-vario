@@ -9,6 +9,7 @@ import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.hud.HudPosition;
 import jealoustone.elytravario.hud.BarSpeedometerChart;
 import jealoustone.elytravario.hud.DialSpeedometer;
+import jealoustone.elytravario.hud.StatsPanel;
 import jealoustone.elytravario.hud.VarioHudElement;
 
 import net.minecraft.client.gui.Font;
@@ -17,23 +18,58 @@ import net.minecraft.client.gui.Font;
 final class ModulePositionEditor {
 	enum Module {
 		CHART(3, "chartX", "chartY", "chartSize"),
-		// Height before width: the panel's narrowest width follows the text size its height
-		// sets, so a drag that changes both wants the height of the event it is answering.
-		STATS(4, "statsX", "statsY", "statsHeight", "statsWidth"),
+		STATS_OTHER(StatsPanel.OTHER),
+		STATS_SPEED(StatsPanel.SPEED),
+		STATS_ACCEL(StatsPanel.ACCEL),
+		STATS_ENERGY(StatsPanel.ENERGY),
 		BAR_SPEEDOMETER(5, "barSpeedoX", "barSpeedoY", "barSpeedoHeight"),
 		DIAL_SPEEDOMETER(6, "dialSpeedoX", "dialSpeedoY", "dialSpeedoRadius");
 
+		/** The Flight Stats page, whose four modules are its four subpages. */
+		private static final int STATS_PAGE = 4;
+
 		final int page;
+		/**
+		 * The subpage this module's settings are on, or null where its page carries only it.
+		 *
+		 * <p>It is what lets a page hold more than one module: the screen selects the module
+		 * whose subpage is showing, so arrow-key nudges and the quiet selected outline follow
+		 * the dropdown, and clicking a module in the world moves the dropdown to match.
+		 */
+		final String group;
 		final String xKey;
 		final String yKey;
 		/** The settings the module's size is a function of; see {@link #growth}. */
 		final List<String> sizeKeys;
+		/** The stats panel this module is, or null for the modules that are not one. */
+		final StatsPanel panel;
 
 		Module(int page, String xKey, String yKey, String... sizeKeys) {
+			this(page, null, null, xKey, yKey, sizeKeys);
+		}
+
+		// Height before width: a panel's narrowest width follows the text size its height sets,
+		// so a drag that changes both wants the height of the event it is answering.
+		Module(StatsPanel panel) {
+			this(STATS_PAGE, panel.group(), panel, panel.xKey(), panel.yKey(),
+					new String[] { panel.heightKey(), panel.widthKey() });
+		}
+
+		Module(int page, String group, StatsPanel panel, String xKey, String yKey,
+				String[] sizeKeys) {
 			this.page = page;
+			this.group = group;
+			this.panel = panel;
 			this.xKey = xKey;
 			this.yKey = yKey;
 			this.sizeKeys = List.of(sizeKeys);
+		}
+
+		static Module of(StatsPanel panel) {
+			for (Module module : values()) {
+				if (module.panel == panel) return module;
+			}
+			throw new IllegalArgumentException(panel.name());
 		}
 	}
 
@@ -95,20 +131,22 @@ final class ModulePositionEditor {
 
 		// The same test the HUD makes: a panel with every row switched off is not drawn, and
 		// so is not there to be dragged either.
-		boolean stats = VarioInstrument.STATS.visible(gliding) && VarioHudElement.panelRows() > 0;
-		boolean chart = VarioInstrument.CHART.visible(gliding);
-		int statsWidth = VarioHudElement.statsWidth();
-		int statsHeight = VarioHudElement.statsHeight();
+		for (StatsPanel panel : StatsPanel.values()) {
+			if (!panel.visible(gliding)) continue;
+			int width = panel.width();
+			int height = panel.height();
+			HudPosition position = HudPosition.clamp(panel.x(), panel.y(),
+					width, height, screenWidth, screenHeight);
+			result.add(new Bounds(Module.of(panel), position.x(), position.y(), width, height));
+		}
 		int chartWidth = VarioHudElement.chartWidth();
 		int chartHeight = VarioHudElement.chartHeight();
-		HudPosition statsPosition = HudPosition.clamp(VarioConfig.statsX, VarioConfig.statsY,
-				statsWidth, statsHeight, screenWidth, screenHeight);
 		HudPosition chartPosition = HudPosition.clamp(VarioConfig.chartX, VarioConfig.chartY,
 				chartWidth, chartHeight, screenWidth, screenHeight);
-		if (stats) result.add(new Bounds(Module.STATS, statsPosition.x(), statsPosition.y(),
-				statsWidth, statsHeight));
-		if (chart) result.add(new Bounds(Module.CHART, chartPosition.x(), chartPosition.y(),
-				chartWidth, chartHeight));
+		if (VarioInstrument.CHART.visible(gliding)) {
+			result.add(new Bounds(Module.CHART, chartPosition.x(), chartPosition.y(),
+					chartWidth, chartHeight));
+		}
 
 		if (VarioInstrument.BAR_SPEEDOMETER.visible(gliding)) {
 			BarSpeedometerChart speedometerChart = BarSpeedometerChart.of(font);
@@ -181,8 +219,26 @@ final class ModulePositionEditor {
 	}
 
 	/**
-	 * Snaps a drag independently on each axis. Equal edges align directly; opposing edges keep
-	 * {@code margin} pixels between the modules. Screen edges use the same margin.
+	 * How far a module's near edge is set back from the far edge it is butting against, so that
+	 * the two borders land on one column of pixels instead of two.
+	 *
+	 * <p>Minus one rather than zero. Every panelled module draws a one-pixel border, so setting
+	 * two of them down edge to edge puts two identical gray lines side by side — a two-pixel
+	 * rule that reads as a seam rather than as a division. Overlapped by one they share a
+	 * column, and a row of butted panels is ruled exactly the way the single stats panel used
+	 * to rule between its own halves: one line, the same weight as the outline around the pair.
+	 *
+	 * <p>Nothing is lost to the overlap. The column belongs to both borders, and a border is
+	 * chrome rather than a reading, so the only pixel either module gives up is one it was
+	 * spending on saying where it ends — which is what the shared line now says for both.
+	 */
+	static final int OVERLAP = 1;
+
+	/**
+	 * Snaps a drag independently on each axis. Equal edges align directly; opposing edges either
+	 * keep {@code margin} pixels between the modules or butt together with their borders sharing
+	 * a column, {@link #OVERLAP} pixels inside each other. Screen edges use the margin only,
+	 * having no border to share.
 	 */
 	static Snap snap(Module moving, int x, int y, int width, int height,
 			List<Bounds> bounds, int screenWidth, int screenHeight, int margin, int distance) {
@@ -205,6 +261,9 @@ final class ModulePositionEditor {
 			addIfVisible(xs, other.x + other.width - width, maxX, right);
 			addIfVisible(xs, other.x + other.width + margin, maxX, right);
 			addIfVisible(xs, other.x - margin - width, maxX, left);
+			// Butted, sharing the column the two borders land on.
+			addIfVisible(xs, other.x + other.width - OVERLAP, maxX, right);
+			addIfVisible(xs, other.x + OVERLAP - width, maxX, left);
 			Guide top = new Guide(other.y, other.x, other.x + other.width);
 			Guide bottom = Guide.farEdge(other.y + other.height,
 					other.x, other.x + other.width);
@@ -212,6 +271,8 @@ final class ModulePositionEditor {
 			addIfVisible(ys, other.y + other.height - height, maxY, bottom);
 			addIfVisible(ys, other.y + other.height + margin, maxY, bottom);
 			addIfVisible(ys, other.y - margin - height, maxY, top);
+			addIfVisible(ys, other.y + other.height - OVERLAP, maxY, bottom);
+			addIfVisible(ys, other.y + OVERLAP - height, maxY, top);
 		}
 		AxisSnap snappedX = nearest(rawX, xs, distance);
 		AxisSnap snappedY = nearest(rawY, ys, distance);
@@ -286,13 +347,13 @@ final class ModulePositionEditor {
 	 * each of them be solved on its own axis by the same arithmetic that solves a single one.
 	 */
 	static Growth growth(String sizeKey) {
+		// A stats panel's two settings are its two dimensions, each on its own.
+		if (StatsPanel.byWidthKey(sizeKey) != null) return new Growth(1, 0);
+		if (StatsPanel.byHeightKey(sizeKey) != null) return new Growth(0, 1);
 		return switch (sizeKey) {
 			// Size is the exact width; height follows the chart's aspect ratio.
 			case "chartSize" -> new Growth(1, (VarioConfig.chartMaxVy - VarioConfig.chartMinVy)
 					/ (VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz));
-			// The panel's two settings are its two dimensions, each on its own.
-			case "statsWidth" -> new Growth(1, 0);
-			case "statsHeight" -> new Growth(0, 1);
 			// The bar chart is as wide as its bars and its scale labels, and neither is the
 			// setting: only the plot's height follows the pointer.
 			case "barSpeedoHeight" -> new Growth(0, 1);
@@ -313,8 +374,9 @@ final class ModulePositionEditor {
 	 * rather than out of it.
 	 */
 	static double smallest(String sizeKey, double min, double max) {
-		if (!sizeKey.equals("statsWidth")) return min;
-		return Math.clamp(VarioHudElement.minStatsWidth(), min, max);
+		StatsPanel panel = StatsPanel.byWidthKey(sizeKey);
+		if (panel == null) return min;
+		return Math.clamp(panel.minWidth(), min, max);
 	}
 
 	/**
@@ -453,13 +515,14 @@ final class ModulePositionEditor {
 	 * ought to land in the same places whether it was carried there or grown there, and a rest
 	 * that only one of the two operations knows about is a rest nobody can predict.
 	 *
-	 * <p>A move relates two whole boxes — edge to like edge or a margin's clearance between
-	 * them — so what a resize can take is that same list restricted
-	 * to the lines it actually moves. For the dragged edge, that is the other module's edge of
-	 * the same kind, the far side of the other module plus a margin, and the screen's own margin
-	 * on the side the edge is: an edge dragged rightwards rests flush on a right edge or a
-	 * margin short of a left edge, and never flush against the left edge itself, because a move
-	 * would never put two modules together with nothing between them either.
+	 * <p>A move relates two whole boxes — edge to like edge, a margin's clearance between them,
+	 * or butted with their borders sharing a column — so what a resize can take is that same
+	 * list restricted to the lines it actually moves. For the dragged edge, that is the other
+	 * module's edge of the same kind, the far side of the other module plus a margin or less
+	 * {@link #OVERLAP}, and the screen's own margin on the side the edge is: an edge dragged
+	 * rightwards rests flush on a right edge, a margin short of a left edge, or one pixel past
+	 * it, and never flush against the left edge itself, because a move would never put two
+	 * modules together with two borders abreast either.
 	 *
 	 * <p>{@code vertical} asks for the columns a line in x can rest on, and {@code lower} says
 	 * the dragged edge is the box's near edge — its left or top — rather than its far one. The
@@ -484,10 +547,13 @@ final class ModulePositionEditor {
 				candidates.add(new Candidate(near, new Guide(near, from, to)));
 				candidates.add(new Candidate(near + size + margin,
 						Guide.farEdge(near + size, from, to)));
+				candidates.add(new Candidate(near + size - OVERLAP,
+						Guide.farEdge(near + size, from, to)));
 			} else {
 				candidates.add(new Candidate(near + size,
 						Guide.farEdge(near + size, from, to)));
 				candidates.add(new Candidate(near - margin, new Guide(near, from, to)));
+				candidates.add(new Candidate(near + OVERLAP, new Guide(near, from, to)));
 			}
 		}
 		return candidates;

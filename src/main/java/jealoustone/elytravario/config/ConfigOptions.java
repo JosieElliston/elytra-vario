@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import jealoustone.elytravario.VarioConfig;
+import jealoustone.elytravario.hud.StatsPanel;
 
 /** One schema for screen controls, disk validation, defaults, and runtime application. */
 public final class ConfigOptions {
@@ -139,29 +140,29 @@ public final class ConfigOptions {
 		add("forwardAccelerationArrowColor", 3, 0, 1, 1, 0, true, false);
 		add("chartFieldScale", 3, 0.001, 10, 1, 0, false, true);
 
+		// The instrument's own switch, its gliding-only companion and the palette are the whole
+		// page's; everything else belongs to one panel and follows the subpage selector.
 		add("showStats", 4, 0, 1, 1, 0, false, false);
 		add("statsGlidingOnly", 4, 0, 1, 1, 0, false, false);
-		add("statsX", 4, -4096, 4096, 1, 0, false, false);
-		add("statsY", 4, -4096, 4096, 1, 0, false, false);
-		add("statsWidth", 4, 32, 1200, 1, 0, false, false);
-		add("statsHeight", 4, 16, 1200, 1, 0, false, false);
-		add("panelOpacity", 4, 0, 100, 100, 0, false, false);
-		add("showPanelBorder", 4, 0, 1, 1, 0, false, false);
-		add("showPitch", 4, 0, 1, 1, 0, false, false);
-		add("showGlideRatio", 4, 0, 1, 1, 0, false, false);
-		add("showHorizontalSpeed", 4, 0, 1, 1, 0, false, false);
-		add("showTotalSpeed", 4, 0, 1, 1, 0, false, false);
-		add("showVerticalSpeed", 4, 0, 1, 1, 0, false, false);
-		add("showHorizontalAcceleration", 4, 0, 1, 1, 0, false, false);
-		add("showTotalAcceleration", 4, 0, 1, 1, 0, false, false);
-		add("showVerticalAcceleration", 4, 0, 1, 1, 0, false, false);
-		add("showKineticEnergy", 4, 0, 1, 1, 0, false, false);
-		add("showPotentialEnergy", 4, 0, 1, 1, 0, false, false);
-		add("showTotalEnergy", 4, 0, 1, 1, 0, false, false);
-		add("showCycleGain", 4, 0, 1, 1, 0, false, false);
-		add("energyReference", 4, 0, 1, 1, 3, false, false);
 		add("positiveColor", 4, 0, 1, 1, 0, true, false);
 		add("negativeColor", 4, 0, 1, 1, 0, true, false);
+
+		for (StatsPanel panel : StatsPanel.values()) {
+			String group = panel.group();
+			add(panel.showKey(), 4, group, 0, 1, 1, 0, false, false);
+			add(panel.xKey(), 4, group, -4096, 4096, 1, 0, false, false);
+			add(panel.yKey(), 4, group, -4096, 4096, 1, 0, false, false);
+			add(panel.widthKey(), 4, group, 32, 1200, 1, 0, false, false);
+			add(panel.heightKey(), 4, group, 16, 1200, 1, 0, false, false);
+			add(panel.opacityKey(), 4, group, 0, 100, 100, 0, false, false);
+			add(panel.borderKey(), 4, group, 0, 1, 1, 0, false, false);
+			for (String row : panel.rowKeys()) add(row, 4, group, 0, 1, 1, 0, false, false);
+			// The reference is the energy rows' own question: it is what PE and TE are measured
+			// from, and it is what makes that panel's widest row two columns rather than one.
+			if (panel == StatsPanel.ENERGY) {
+				add("energyReference", 4, group, 0, 1, 1, 3, false, false);
+			}
+		}
 
 		add("showBarSpeedo", 5, 0, 1, 1, 0, false, false);
 		add("barSpeedoGlidingOnly", 5, 0, 1, 1, 0, false, false);

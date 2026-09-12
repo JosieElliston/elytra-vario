@@ -15,22 +15,22 @@ class ModulePositionEditorTest {
 	@Test
 	void preferredModuleWinsOverPaintOrderWhenBoundsOverlap() {
 		var stats = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 10, 10, 40, 40);
+				ModulePositionEditor.Module.STATS_SPEED, 10, 10, 40, 40);
 		var speedometer = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 20, 20, 40, 40);
 		var bounds = List.of(stats, speedometer);
 
 		assertEquals(speedometer, ModulePositionEditor.at(bounds, 25, 25));
 		assertEquals(stats, ModulePositionEditor.at(bounds, 25, 25,
-				ModulePositionEditor.Module.STATS));
+				ModulePositionEditor.Module.STATS_SPEED));
 		assertEquals(speedometer, ModulePositionEditor.at(bounds, 55, 25,
-				ModulePositionEditor.Module.STATS));
+				ModulePositionEditor.Module.STATS_SPEED));
 	}
 
 	@Test
 	void snapAlignsEdgesAndAdjacentEdgesOnEachAxis() {
 		var other = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 100, 70, 40, 30);
+				ModulePositionEditor.Module.STATS_SPEED, 100, 70, 40, 30);
 		var bounds = List.of(other);
 
 		assertEquals(new ModulePositionEditor.Position(100, 70),
@@ -63,7 +63,7 @@ class ModulePositionEditorTest {
 	@Test
 	void snapReportsTheTargetEdgesThatCausedIt() {
 		var other = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 100, 70, 40, 30);
+				ModulePositionEditor.Module.STATS_SPEED, 100, 70, 40, 30);
 		var snap = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 				146, 106, 20, 10, List.of(other), 320, 240, 4, 4);
 
@@ -94,7 +94,7 @@ class ModulePositionEditorTest {
 	@Test
 	void snapReportsEveryGuideThatProducesTheWinningPosition() {
 		var stats = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 4, 20, 40, 30);
+				ModulePositionEditor.Module.STATS_SPEED, 4, 20, 40, 30);
 		var speedometer = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 4, 80, 40, 30);
 		var snap = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
@@ -110,7 +110,7 @@ class ModulePositionEditorTest {
 	@Test
 	void snapDoesNotOfferModuleOrScreenCenters() {
 		var other = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 100, 20, 40, 30);
+				ModulePositionEditor.Module.STATS_SPEED, 100, 20, 40, 30);
 		var moduleCenter = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 				108, 80, 20, 10, List.of(other), 320, 240, 4, 4);
 		var screenCenter = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
@@ -232,7 +232,7 @@ class ModulePositionEditorTest {
 	void twoOrthogonalSettingsEachFollowTheirOwnAxisOfTheSameCorner() {
 		// The stats panel carries a width and a height, solved one at a time from one pointer.
 		var bounds = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 100, 100, 60, 40);
+				ModulePositionEditor.Module.STATS_SPEED, 100, 100, 60, 40);
 		var width = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(1, 0), 32, 1200, true);
 		var height = new ModulePositionEditor.Sizing(
@@ -317,7 +317,7 @@ class ModulePositionEditorTest {
 		var height = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
 		var bounds = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 120, 100, 60, 40);
+				ModulePositionEditor.Module.STATS_SPEED, 120, 100, 60, 40);
 		int pinnedRight = bounds.x() + bounds.width();
 		int pinnedBottom = bounds.y() + bounds.height();
 		double pointerX = bounds.x();
@@ -333,7 +333,7 @@ class ModulePositionEditorTest {
 					bounds, boxHeight, height, pointerX, pointerY, List.of(), 320, 240, 4, 0);
 			var position = ModulePositionEditor.anchored(ModulePositionEditor.Corner.TOP_LEFT,
 					bounds, boxWidth, boxHeight);
-			bounds = new ModulePositionEditor.Bounds(ModulePositionEditor.Module.STATS,
+			bounds = new ModulePositionEditor.Bounds(ModulePositionEditor.Module.STATS_SPEED,
 					position.x(), position.y(), boxWidth, boxHeight);
 			assertEquals(pinnedRight, bounds.x() + bounds.width());
 			assertEquals(pinnedBottom, bounds.y() + bounds.height());
@@ -364,7 +364,7 @@ class ModulePositionEditorTest {
 		// To the right, spanning y 20 to 100, and clear of the screen's center line so that
 		// only the dragged edge has anything to land on.
 		var other = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 150, 20, 60, 80);
+				ModulePositionEditor.Module.STATS_SPEED, 150, 20, 60, 80);
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 40, 60, 60, 40);
 		var sizing = new ModulePositionEditor.Sizing(
@@ -383,7 +383,7 @@ class ModulePositionEditorTest {
 	void resizeSnapsTheNearerOfTheLinesItMoves() {
 		// Right edge at 200, one pixel out from where the drag leaves the dragged edge.
 		var right = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 160, 20, 40, 40);
+				ModulePositionEditor.Module.STATS_SPEED, 160, 20, 40, 40);
 		// Bottom edge at 196, three pixels short of it.
 		var below = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 176, 30, 20);
@@ -411,7 +411,7 @@ class ModulePositionEditorTest {
 		// The right-edge rest four pixels away proposes radius 42. The bottom-edge rest only
 		// three pixels away proposes radius 43, but moves the full corner farther from the mouse.
 		var right = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 155, 20, 40, 40);
+				ModulePositionEditor.Module.STATS_SPEED, 155, 20, 40, 40);
 		var below = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 129, 30, 20);
 
@@ -423,7 +423,7 @@ class ModulePositionEditorTest {
 	@Test
 	void resizeDoesNotSnapTheCenterTheDraggedEdgeTrails() {
 		var other = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 150, 100, 40, 60);
+				ModulePositionEditor.Module.STATS_SPEED, 150, 100, 40, 60);
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 100);
 		var sizing = new ModulePositionEditor.Sizing(
@@ -449,10 +449,11 @@ class ModulePositionEditorTest {
 				ModulePositionEditor.Module.DIAL_SPEEDOMETER, 10, 60, 91, 46);
 		var sizing = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(2, 1), 12, 200, true);
-		// Offers a left edge to stop a margin short of, three pixels in from the dial's right
-		// edge, which would want a width of 88 and so a radius of 38.5.
+		// Offers a left edge to stop a margin short of, at 102, one pixel in from the dial's
+		// right edge, which would want a width of 92 and so a radius of 40.5. Its other rest,
+		// a pixel past that left edge, is six away and so out of reach at this snap distance.
 		var beside = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 102, 30, 40, 40);
+				ModulePositionEditor.Module.STATS_SPEED, 106, 30, 40, 40);
 		// Offers a top edge to stop a margin short of, three pixels below the dial's bottom.
 		var under = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 200, 113, 30, 30);
@@ -467,27 +468,92 @@ class ModulePositionEditorTest {
 	@Test
 	void aResizedEdgeRestsWhereAMovedBoxWould() {
 		var other = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 100, 20, 40, 60);
+				ModulePositionEditor.Module.STATS_SPEED, 104, 20, 40, 60);
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 10, 100, 89, 89);
 		var sizing = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
 
 		// Grown towards the other module's left edge, the resized edge stops a margin short of
-		// it at 96, rather than butting flush against it: a width of 86 from a left edge at 10.
-		assertEquals(86, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+		// it at 100, rather than butting flush against it: a width of 90 from a left edge at 10.
+		assertEquals(90, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				bounds, 89, sizing, 99, 189, List.of(other), 320, 240, 4, 4));
-		// Which is where a move of the same box comes to rest too: x 6 with a width of 90 is a
-		// right edge at 96, the same relationship reached the other way round.
-		assertEquals(new ModulePositionEditor.Position(6, 100),
-				ModulePositionEditor.snap(ModulePositionEditor.Module.CHART, 10, 100, 90, 90,
+		// Which is where a move of the same box comes to rest too: x 10 with a width of 90 is a
+		// right edge at 100, the same relationship reached the other way round.
+		assertEquals(new ModulePositionEditor.Position(10, 100),
+				ModulePositionEditor.snap(ModulePositionEditor.Module.CHART, 12, 100, 90, 90,
+						List.of(other), 320, 240, 4, 4).position());
+	}
+
+	@Test
+	void aMoveButtsAgainstAnotherModuleWithTheirBordersSharingAColumn() {
+		var other = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS_SPEED, 100, 70, 40, 30);
+		var bounds = List.of(other);
+
+		// Set down past the other module's right edge, the moving box's left edge takes the
+		// other's last column rather than the one after it: one gray line between them, not two.
+		var right = ModulePositionEditor.snap(ModulePositionEditor.Module.STATS_ACCEL,
+				138, 200, 20, 10, bounds, 320, 240, 4, 4);
+		assertEquals(new ModulePositionEditor.Position(139, 200), right.position());
+		assertEquals(List.of(new ModulePositionEditor.Guide(140, 70, 100, 139)),
+				right.verticalGuides());
+
+		// And approaching from the other side, its right edge takes the other's first column.
+		var left = ModulePositionEditor.snap(ModulePositionEditor.Module.STATS_ACCEL,
+				82, 200, 20, 10, bounds, 320, 240, 4, 4);
+		assertEquals(new ModulePositionEditor.Position(81, 200), left.position());
+		assertEquals(List.of(new ModulePositionEditor.Guide(100, 70, 100)), left.verticalGuides());
+
+		// Stacked, which is how the four stats panels sit by default.
+		var below = ModulePositionEditor.snap(ModulePositionEditor.Module.STATS_ACCEL,
+				200, 98, 20, 10, bounds, 320, 240, 4, 4);
+		assertEquals(new ModulePositionEditor.Position(200, 99), below.position());
+		assertEquals(List.of(new ModulePositionEditor.Guide(100, 100, 140, 99)),
+				below.horizontalGuides());
+	}
+
+	@Test
+	void theButtedRestAndTheMarginRestAreBothOnOffer() {
+		var other = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS_SPEED, 100, 70, 40, 30);
+		var bounds = List.of(other);
+
+		// Nearer the far side of the margin gap, a move still takes the margin.
+		assertEquals(new ModulePositionEditor.Position(144, 200),
+				ModulePositionEditor.snap(ModulePositionEditor.Module.STATS_ACCEL,
+						143, 200, 20, 10, bounds, 320, 240, 4, 4).position());
+		// Nearer the overlap, it takes the overlap. The two are five pixels apart, so with the
+		// default snap distance there is no position from which neither is reachable.
+		assertEquals(new ModulePositionEditor.Position(139, 200),
+				ModulePositionEditor.snap(ModulePositionEditor.Module.STATS_ACCEL,
+						141, 200, 20, 10, bounds, 320, 240, 4, 4).position());
+	}
+
+	@Test
+	void aResizedEdgeButtsWhereAMovedBoxWould() {
+		var other = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS_SPEED, 100, 20, 40, 60);
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS_ACCEL, 10, 100, 89, 89);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(1, 0), 4, 200, true);
+
+		// The dragged right edge is two pixels short of the other module's first column, and
+		// three short of a margin's clearance, so it grows onto the column: width 91 from a
+		// left edge at 10 puts the right edge at 101, one pixel inside the other module.
+		assertEquals(91, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 89, sizing, 99, 189, List.of(other), 320, 240, 4, 4));
+		// Which is where a move of that same 91-wide box comes to rest too.
+		assertEquals(new ModulePositionEditor.Position(10, 100),
+				ModulePositionEditor.snap(ModulePositionEditor.Module.STATS_ACCEL, 12, 100, 91, 91,
 						List.of(other), 320, 240, 4, 4).position());
 	}
 
 	@Test
 	void resizeGuidesDrawOnlyMarkersThatGiveTheWinningAnswerAndActuallyLanded() {
 		var other = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 30, 20, 70, 60);
+				ModulePositionEditor.Module.STATS_SPEED, 30, 20, 70, 60);
 		var before = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 40, 40, 59, 39);
 		var sizing = new ModulePositionEditor.Sizing(
@@ -517,7 +583,7 @@ class ModulePositionEditorTest {
 	@Test
 	void resizeMarkersNeverCombineDifferentAnswers() {
 		var right = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 160, 20, 40, 40);
+				ModulePositionEditor.Module.STATS_SPEED, 160, 20, 40, 40);
 		var below = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 176, 30, 20);
 		var bounds = new ModulePositionEditor.Bounds(

@@ -25,7 +25,6 @@ josie's todo/notes, don't edit this, tho you should include it in commits
 - make modules more unobtrusive
     - translucent
 - not fixed module render order?
-- if you are dragging a corner, the center comes into radius before the edge, so the center is draw without the edge, so we sometimes snap to an edge without it getting drawn. ig this is correct tho.
 - e-bounce
     - ground touch
         - vel
@@ -48,8 +47,6 @@ josie's todo/notes, don't edit this, tho you should include it in commits
 | delta xz    | .     |       |        |
 | delta xyz   | .     |       |        |
 | delta ticks | .     |       |        |
-
-- make the panel hover text hide when dragging (not hovering) a panel. rn the hover text obscures elements to the right you might be trying to align to.
 
 ## myopic metrics
 

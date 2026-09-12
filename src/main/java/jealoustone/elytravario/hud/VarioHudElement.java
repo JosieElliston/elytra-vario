@@ -27,7 +27,10 @@ import net.minecraft.util.Mth;
 import org.joml.Matrix3x2fStack;
 
 /**
- * Draws the readout panel and the velocity-space chart.
+ * Draws the four readout panels and the velocity-space chart.
+ *
+ * <p>Which rows each panel carries, how wide and how tall it is, and whether it is drawn at all
+ * are {@link StatsPanel}'s; this draws them.
  *
  * <p>In 26.2 the HUD is built by extracting a render state rather than by issuing draw calls
  * directly, hence {@code extractRenderState} rather than a {@code render} method — but the
@@ -40,22 +43,9 @@ public final class VarioHudElement implements HudElement {
 	/** Ticks per second, the factor between internal blocks/tick and displayed blocks/second. */
 	private static final double TPS = 20.0;
 
-	private static final int LINE = 10;
-	private static final int PAD = 4;
+	private static final int LINE = StatsPanel.LINE;
+	private static final int PAD = StatsPanel.PAD;
 
-	/**
-	 * The narrowest the panel is laid out, in unscaled layout pixels, before its width setting
-	 * is scaled up by whatever text size the height asks for.
-	 *
-	 * <p>Every row is a label on the left and a figure right-aligned on the right, so narrowing
-	 * the panel spends the dead space between the two columns and nothing else, and this is where
-	 * the widest row runs out of it: {@code ACCEL XYZ} is 52 pixels of label, an acceleration
-	 * like {@code +5.09 b/s²} is 54 of figure, the padding takes eight, and two are left over.
-	 * Narrower than this and the columns would begin to stack rather than to sit apart, so there
-	 * is nothing left to gain by it — a figure that runs long anyway, a two-digit acceleration
-	 * or a glide ratio in the hundreds, encroaches on its label here as it does anywhere.
-	 */
-	public static final int MIN_PANEL_WIDTH = 116;
 	private static final double ACCELERATION_ARROW_SECONDS = 1.0;
 
 	/**
@@ -111,29 +101,32 @@ public final class VarioHudElement implements HudElement {
 			return;
 		}
 
-		boolean stats = VarioInstrument.STATS.visible(sample.gliding()) && panelRows() > 0;
 		boolean chart = VarioInstrument.CHART.visible(sample.gliding());
-		int boxWidth = statsWidth();
-		int boxHeight = statsHeight();
 		int screenWidth = graphics.guiWidth();
 		int screenHeight = graphics.guiHeight();
 
-		HudPosition panel = HudPosition.clamp(VarioConfig.statsX, VarioConfig.statsY,
-				boxWidth, boxHeight, screenWidth, screenHeight);
 		HudPosition position = HudPosition.clamp(VarioConfig.chartX, VarioConfig.chartY,
 				chartWidth(), chartHeight(), screenWidth, screenHeight);
 
-		if (stats) {
+		// In declaration order, which is the order the panels stack in by default. Nothing here
+		// depends on it: each panel is placed on its own and any two may overlap, in which case
+		// the later one wins, exactly as the module editor's hit test says it will.
+		for (StatsPanel panel : StatsPanel.values()) {
+			if (!panel.visible(sample.gliding())) continue;
+			int boxWidth = panel.width();
+			int boxHeight = panel.height();
+			HudPosition at = HudPosition.clamp(panel.x(), panel.y(),
+					boxWidth, boxHeight, screenWidth, screenHeight);
 			graphics.pose().pushMatrix();
-			graphics.pose().translate(panel.x(), panel.y());
+			graphics.pose().translate(at.x(), at.y());
 			// Each dimension is scaled onto exactly the box the settings name rather than by one
 			// shared factor. The two factors differ only by the pixel the layout width was
-			// rounded to — under half a percent apart even at the narrowest the panel goes — so
+			// rounded to — under half a percent apart even at the narrowest a panel goes — so
 			// this is a rounding remainder rather than a stretch, and it keeps the drawn border
 			// on the same box the position editor puts its grips around.
-			graphics.pose().scale((float) boxWidth / panelWidth(),
-					(float) boxHeight / panelHeight());
-			drawPanel(graphics, minecraft.font, sample, 0, 0);
+			graphics.pose().scale((float) boxWidth / panel.layoutWidth(),
+					(float) boxHeight / panel.layoutHeight());
+			drawPanel(graphics, minecraft.font, panel, sample, 0, 0);
 			graphics.pose().popMatrix();
 		}
 		if (chart) {
@@ -141,124 +134,73 @@ public final class VarioHudElement implements HudElement {
 		}
 	}
 
-	private static int speedRows() {
-		return (VarioConfig.showPitch ? 1 : 0) + (VarioConfig.showGlideRatio ? 1 : 0)
-				+ (VarioConfig.showHorizontalSpeed ? 1 : 0)
-				+ (VarioConfig.showTotalSpeed ? 1 : 0) + (VarioConfig.showVerticalSpeed ? 1 : 0)
-				+ (VarioConfig.showHorizontalAcceleration ? 1 : 0)
-				+ (VarioConfig.showTotalAcceleration ? 1 : 0)
-				+ (VarioConfig.showVerticalAcceleration ? 1 : 0);
-	}
-
-	private static int energyRows() {
-		return (VarioConfig.showKineticEnergy ? 1 : 0) + (VarioConfig.showPotentialEnergy ? 1 : 0)
-				+ (VarioConfig.showTotalEnergy ? 1 : 0) + (VarioConfig.showCycleGain ? 1 : 0);
-	}
-
-	/** How many rows the panel is showing, which is whether there is a panel at all. */
-	public static int panelRows() { return speedRows() + energyRows(); }
-
-	/** The stats panel's unscaled height, shared with the settings screen's resize grips. */
-	public static int panelHeight() {
-		return panelHeight(speedRows(), energyRows());
-	}
-
-	/** The unscaled height of a panel showing these many rows of each kind. */
-	public static int panelHeight(int speedRows, int energyRows) {
-		return (speedRows + energyRows + (speedRows > 0 && energyRows > 0 ? 1 : 0)) * LINE
-				+ PAD * 2;
-	}
-
-	/**
-	 * The stats panel's on-screen width, shared with the settings screen's drag target.
-	 *
-	 * <p>Never narrower than the rows need at the text size the height is asking for. The grips
-	 * stop there too, so only a width typed into the box can ask for less, and it is drawn at
-	 * the minimum rather than refused.
-	 */
-	public static int statsWidth() {
-		return Math.max(VarioConfig.statsWidth, minStatsWidth());
-	}
-
-	/** The narrowest the panel may be drawn at its current text size. */
-	public static int minStatsWidth() {
-		return (int) Math.ceil(MIN_PANEL_WIDTH * statsScale());
-	}
-
-	/** The stats panel's on-screen height, shared with the settings screen's drag target. */
-	public static int statsHeight() {
-		return VarioConfig.statsHeight;
-	}
-
-	/**
-	 * The width the panel lays its two columns out in, before the height's text size scales it
-	 * back up to the width that was asked for.
-	 */
-	public static int panelWidth() {
-		return (int) Math.round(statsWidth() / statsScale());
-	}
-
-	/** The text size, set by the height: the rows are drawn to exactly fill it. */
-	private static double statsScale() {
-		return (double) VarioConfig.statsHeight / panelHeight();
-	}
-
-	/** Returns the y coordinate just past the bottom of the panel. */
-	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
-		int width = panelWidth();
-		int height = panelHeight();
-		int background = ((int) Math.round(VarioConfig.panelOpacity * 255) << 24) | (PANEL_BG & 0xFFFFFF);
-		if (VarioConfig.panelOpacity > 0) graphics.fill(x, y, x + width, y + height, background);
-		if (VarioConfig.showPanelBorder) graphics.outline(x, y, width, height, BORDER);
+	private void drawPanel(GuiGraphicsExtractor graphics, Font font, StatsPanel panel,
+			Sample sample, int x, int y) {
+		int width = panel.layoutWidth();
+		int height = panel.layoutHeight();
+		double opacity = panel.opacity();
+		int background = ((int) Math.round(opacity * 255) << 24) | (PANEL_BG & 0xFFFFFF);
+		if (opacity > 0) graphics.fill(x, y, x + width, y + height, background);
+		if (panel.border()) graphics.outline(x, y, width, height, BORDER);
 
 		int row = y + PAD;
-		double glide = sample.glideRatio();
 		Sample previous = recorder.ago(1);
 
-		if (VarioConfig.showPitch) row = row(graphics, font, x, row, "PITCH", fmt("%.1f°", sample.pitch()), VALUE);
-		if (VarioConfig.showGlideRatio) row = row(graphics, font, x, row, "GLIDE",
-				Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
-		// Color on displayed blocks/second, with a small neutral deadband.
-		if (VarioConfig.showVerticalSpeed) row = row(graphics, font, x, row, "SPEED Y", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
-		if (VarioConfig.showHorizontalSpeed) row = row(graphics, font, x, row, "SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
-		if (VarioConfig.showTotalSpeed) row = row(graphics, font, x, row, "SPEED XYZ", speed(sample.speed()), VALUE);
-
-		if (VarioConfig.showVerticalAcceleration) row = accelerationRow(graphics, font, x, row,
-				"ACCEL Y", verticalAcceleration(sample, previous));
-		if (VarioConfig.showHorizontalAcceleration) row = accelerationRow(graphics, font, x, row,
-				"ACCEL XZ", horizontalAcceleration(sample, previous));
-		if (VarioConfig.showTotalAcceleration) row = accelerationRow(graphics, font, x, row,
-				"ACCEL XYZ", totalAcceleration(sample, previous));
-
-		if (speedRows() > 0 && energyRows() > 0) {
-			graphics.fill(x + PAD, row + LINE / 2 - 1, x + width - PAD, row + LINE / 2, BORDER);
-			row += LINE;
+		// Each arm draws exactly the rows StatsPanel counts for that panel, in the order it
+		// names them: a row drawn here and not counted there would run off the bottom of a
+		// panel sized for the rows that were counted.
+		switch (panel) {
+			case OTHER -> {
+				double glide = sample.glideRatio();
+				if (VarioConfig.showPitch) row = row(graphics, font, panel, x, row,
+						"PITCH", fmt("%.1f°", sample.pitch()), VALUE);
+				if (VarioConfig.showGlideRatio) row = row(graphics, font, panel, x, row, "GLIDE",
+						Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
+			}
+			case SPEED -> {
+				// Vertical speed is colored on displayed blocks/second, with a small neutral
+				// deadband; the two magnitudes beside it have no sign to color.
+				if (VarioConfig.showVerticalSpeed) row = row(graphics, font, panel, x, row,
+						"SPEED Y", signedSpeed(sample.vy()), rateColor(sample.vy() * TPS));
+				if (VarioConfig.showHorizontalSpeed) row = row(graphics, font, panel, x, row,
+						"SPEED XZ", speed(sample.horizontalSpeed()), VALUE);
+				if (VarioConfig.showTotalSpeed) row = row(graphics, font, panel, x, row,
+						"SPEED XYZ", speed(sample.speed()), VALUE);
+			}
+			case ACCEL -> {
+				if (VarioConfig.showVerticalAcceleration) row = accelerationRow(graphics, font,
+						panel, x, row, "ACCEL Y", verticalAcceleration(sample, previous));
+				if (VarioConfig.showHorizontalAcceleration) row = accelerationRow(graphics, font,
+						panel, x, row, "ACCEL XZ", horizontalAcceleration(sample, previous));
+				if (VarioConfig.showTotalAcceleration) row = accelerationRow(graphics, font,
+						panel, x, row, "ACCEL XYZ", totalAcceleration(sample, previous));
+			}
+			case ENERGY -> {
+				if (VarioConfig.showKineticEnergy) row = row(graphics, font, panel, x, row,
+						"KE", fmt("%.1f b", sample.kineticHeight()), VALUE);
+				if (VarioConfig.showPotentialEnergy) row = sinceApexRow(graphics, font, panel,
+						x, row, "PE", sample.potentialHeight(), recorder.peakPotentialHeight());
+				if (VarioConfig.showTotalEnergy) row = sinceApexRow(graphics, font, panel,
+						x, row, "TE", sample.totalHeight(), recorder.peakTotalHeight());
+				double gain = recorder.lastCycleGain();
+				if (VarioConfig.showCycleGain) row = row(graphics, font, panel, x, row, "GAIN",
+						Double.isFinite(gain) ? fmt("%+.1f b", gain) : "--", rateColor(gain));
+			}
 		}
-
-		if (VarioConfig.showKineticEnergy) row = row(graphics, font, x, row, "KE", fmt("%.1f b", sample.kineticHeight()), VALUE);
-		if (VarioConfig.showPotentialEnergy) row = sinceApexRow(graphics, font, x, row, "PE", sample.potentialHeight(),
-				recorder.peakPotentialHeight());
-		if (VarioConfig.showTotalEnergy) row = sinceApexRow(graphics, font, x, row, "TE", sample.totalHeight(),
-				recorder.peakTotalHeight());
-
-		double gain = recorder.lastCycleGain();
-		if (VarioConfig.showCycleGain) row = row(graphics, font, x, row, "GAIN",
-				Double.isFinite(gain) ? fmt("%+.1f b", gain) : "--", rateColor(gain));
-
-		return y + height;
 	}
 
-	private int row(GuiGraphicsExtractor graphics, Font font, int x, int y, String label, String value, int color) {
+	private int row(GuiGraphicsExtractor graphics, Font font, StatsPanel panel, int x, int y,
+			String label, String value, int color) {
 		graphics.text(font, label, x + PAD, y, LABEL, true);
-		graphics.text(font, value, x + panelWidth() - PAD - font.width(value), y, color, true);
+		graphics.text(font, value, x + panel.layoutWidth() - PAD - font.width(value), y, color, true);
 		return y + LINE;
 	}
 
-	private int accelerationRow(GuiGraphicsExtractor graphics, Font font, int x, int y,
-			String label, double acceleration) {
+	private int accelerationRow(GuiGraphicsExtractor graphics, Font font, StatsPanel panel,
+			int x, int y, String label, double acceleration) {
 		String value = Double.isFinite(acceleration)
 				? fmt("%+.2f b/s²", acceleration) : "--";
-		return row(graphics, font, x, y, label, value,
+		return row(graphics, font, panel, x, y, label, value,
 				Double.isFinite(acceleration) ? rateColor(acceleration) : VALUE);
 	}
 
@@ -382,13 +324,13 @@ public final class VarioHudElement implements HudElement {
 	 *
 	 * <p>The raw figure stays, dimmed, because it is what matches F3 and a map.
 	 */
-	private int sinceApexRow(GuiGraphicsExtractor graphics, Font font, int x, int y, String label,
-			double current, double peak) {
+	private int sinceApexRow(GuiGraphicsExtractor graphics, Font font, StatsPanel panel,
+			int x, int y, String label, double current, double peak) {
 		if (VarioConfig.energyReference == 0) {
-			return row(graphics, font, x, y, label, fmt("%.1f b", current), VALUE);
+			return row(graphics, font, panel, x, y, label, fmt("%.1f b", current), VALUE);
 		}
 		if (VarioConfig.energyReference == 1) {
-			return row(graphics, font, x, y, label,
+			return row(graphics, font, panel, x, y, label,
 					Double.isFinite(peak) ? fmt("%+.1f b", current - peak) : "--",
 					Double.isFinite(peak) ? rateColor(current - peak) : VALUE);
 		}
@@ -399,7 +341,7 @@ public final class VarioHudElement implements HudElement {
 		String delta = known ? fmt("%+.1f b", change) : "--";
 		String absolute = fmt("%.1f", current);
 
-		int deltaRight = x + panelWidth() - PAD;
+		int deltaRight = x + panel.layoutWidth() - PAD;
 		int absoluteRight = deltaRight - font.width(DELTA_COLUMN) - PAD;
 
 		// Coloured like the rate readouts, and for the same reason: below the last apex is

@@ -32,19 +32,24 @@ The heatmap shows the maximum one-tick total-energy gain for each velocity.
 
 ## Flight Stats
 
-Some metrics are shown relative to the previous cycle's apex. Energy assumes unit mass and is divided by gravity, giving units of blocks of height.
+Four panels, each placed, sized and switched on its own. Some metrics are shown relative to the previous cycle's apex. Energy assumes unit mass and is divided by gravity, giving units of blocks of height.
 
-| Row         | Meaning                                         |
-| ----------- | ----------------------------------------------- |
-| `PITCH`     | pitch; negative is up                           |
-| `SPEED XZ`  | horizontal speed                                |
-| `SPEED XYZ` | total speed                                     |
-| `SPEED Y`   | vertical speed                                  |
-| `GLIDE`     | blocks forward per block down                   |
-| `KE`        | kinetic energy                                  |
-| `PE`        | potential energy                                |
-| `TE`        | total energy                                    |
-| `GAIN`      | total energy gained between the last two apexes |
+| Panel          | Row         | Meaning                                         |
+| -------------- | ----------- | ----------------------------------------------- |
+| Other          | `PITCH`     | pitch; negative is up                           |
+| Other          | `GLIDE`     | blocks forward per block down                   |
+| Speed          | `SPEED Y`   | vertical speed                                  |
+| Speed          | `SPEED XZ`  | horizontal speed                                |
+| Speed          | `SPEED XYZ` | total speed                                     |
+| Acceleration   | `ACCEL Y`   | rate of change of vertical speed                |
+| Acceleration   | `ACCEL XZ`  | rate of change of horizontal speed              |
+| Acceleration   | `ACCEL XYZ` | rate of change of total speed                   |
+| Energy         | `KE`        | kinetic energy                                  |
+| Energy         | `PE`        | potential energy                                |
+| Energy         | `TE`        | total energy                                    |
+| Energy         | `GAIN`      | total energy gained between the last two apexes |
+
+Each panel has its own width, so the two-row Other panel need not be as wide as the speed rows. By default they are stacked flush down the left, each overlapping the one above it by a pixel so that their borders share a column and the four read as one panel ruled into sections.
 
 ## Bar Speedometer
 

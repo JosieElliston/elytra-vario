@@ -62,21 +62,49 @@ build identifier and released feature for feature; see its own changelog.
   actual post-layout size, so a secondary dimension rounded from the module's aspect ratio
   cannot walk that corner sideways over a long drag.
 
+- Flight Stats is now four panels — **Other** (pitch, glide), **Speed**, **Acceleration** and
+  **Energy** — each placed, sized, and switched on or off on its own, in place of the single
+  panel that carried all twelve rows. Each has its own subpage under a selector on the Flight
+  Stats page; the instrument's switch, its only-while-gliding companion, its toggle key, and the
+  positive and negative colors stay shared above that selector, since the switch is what the key
+  binds to and the colors are a palette rather than a layout. Every row means exactly what it
+  meant and is still switched on or off individually; it has only moved subpage.
+
+  **The widths are independent, which is the point.** A row wants the width its widest label and
+  figure need, so one shared width had to satisfy the widest row on the panel: `SPEED XYZ`
+  against a speed is 106 pixels of content, `GLIDE` against a ratio is 76, and the thirty
+  between them was dead gap on every attitude row. The narrow panel can now be narrow. Each
+  panel keeps its own floor — 86, 116, 116 and 106 layout pixels — below which its own columns
+  would meet, every figure in those measured through the font.
+
+  The defaults stack the four down the left in the order the single panel read in, at the width
+  it had, so a default HUD is the panel it was plus one rule.
+
+- Modules snap butted together as well as a margin apart, overlapping by one pixel so that their
+  two borders land on one column and the pair reads as a single panel with a rule between it.
+  Edge to edge would put two identical gray lines side by side — a two-pixel seam rather than a
+  division — and the pixel each module gives up is one it was spending on saying where it ends,
+  which the shared line now says for both. Moves and corner resizes both offer it, as they offer
+  every other rest, and the guide is drawn on the shared column. It is what the four stats panels
+  are stacked with by default, and it is available between any two modules and on either axis.
+
 ### Changed
 
 - Drag snapping no longer uses module or screen center lines. Moves and corner resizes now snap
   only to edges, removing the competing middle guide when boxes are already edge-aligned.
-- Flight Stats is now sized by a width and a height that move independently, replacing its
-  single size setting and the advanced content width behind it. The height sets the text size:
-  the rows are laid out at a fixed line height and scaled to fill exactly the height asked for,
+- Each Flight Stats panel is sized by a width and a height that move independently, replacing
+  the single panel's one size setting and the advanced content width behind it. The height sets
+  the text size: its rows are laid out at a fixed line height and scaled to fill exactly the
+  height asked for,
   so the panel is never left with a gap at the bottom. The width then buys one thing only, the
   distance between a label and the value right-aligned against the far edge — the panel's only
   dead space, and something the single setting could not close without shrinking the reading
   along with it. A width narrower than the rows need at the current text size is drawn at that
-  minimum rather than refused, so a panel never becomes an overlap. Existing panels migrate to
-  the exact size they were being drawn at. The cost of the split is that switching a row off no
-  longer shortens the panel: it keeps the height it was given and draws the rows that remain
-  larger.
+  minimum rather than refused, so a panel never becomes an overlap. An existing panel migrates
+  to four panels drawn at the text size it was drawn at, stacked from where it sat with their
+  borders sharing a column, so a migrated HUD reads at the size and in the order it read in. The
+  cost of the split is that switching a row off no longer shortens the panel it is on: that
+  panel keeps the height it was given and draws the rows that remain larger.
 - Velocity Graph and Flight Stats now expose their exact integer pixel widths instead of
   floating-point scale factors, matching the speedometers' pixel size settings. Existing scale
   settings migrate to the widths they rendered at, and resizing now changes a whole-pixel size.

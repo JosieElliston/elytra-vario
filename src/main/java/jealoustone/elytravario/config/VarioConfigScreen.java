@@ -144,8 +144,7 @@ public final class VarioConfigScreen extends Screen {
 			top += 24;
 		}
 		List<String> groups = ConfigOptions.groups(page);
-		final String group = groups.isEmpty() ? null
-				: groups.get(Math.min(subpages.getOrDefault(page, 0), groups.size() - 1));
+		final String group = selectedGroup(page);
 		List<ConfigRow> rows = new ArrayList<>();
 		// Shared settings precede the selector; only the selected subpage's settings follow it.
 		// Keeping all three in one list matters on pages such as the speedometer, whose shared
@@ -348,10 +347,7 @@ public final class VarioConfigScreen extends Screen {
 			ModulePositionEditor.Bounds target = moduleAt(
 					event.x(), event.y(), selectedModule());
 			if (target != null) {
-				if (page != target.module().page) {
-					page = target.module().page;
-					rebuildWidgets();
-				}
+				select(target.module());
 				clearFocus();
 				draggingModule = target.module();
 				draggingCorner = ModulePositionEditor.grip(target, event.x(), event.y());
@@ -423,11 +419,49 @@ public final class VarioConfigScreen extends Screen {
 		return ModulePositionEditor.at(moduleBounds(), x, y, preferred);
 	}
 
+	/** The subpage this page is showing, or null where the page is not divided. */
+	private static String selectedGroup(int page) {
+		List<String> groups = ConfigOptions.groups(page);
+		return groups.isEmpty() ? null
+				: groups.get(Math.min(subpages.getOrDefault(page, 0), groups.size() - 1));
+	}
+
+	/**
+	 * The module the arrow keys move and the quiet outline marks, which is the one whose
+	 * settings are on screen.
+	 *
+	 * <p>A page carrying several modules — Flight Stats, one per panel — names each of them on
+	 * its own subpage, so the selection follows the dropdown. A page carrying one leaves its
+	 * module's group null, and it stays selected whichever subpage is showing; the
+	 * speedometers, whose subpages are one bar or needle each, are that case.
+	 */
 	private ModulePositionEditor.Module selectedModule() {
+		String group = selectedGroup(page);
 		for (ModulePositionEditor.Module module : ModulePositionEditor.Module.values()) {
-			if (module.page == page) return module;
+			if (module.page != page) continue;
+			if (module.group == null || module.group.equals(group)) return module;
 		}
 		return null;
+	}
+
+	/** Opens this module's settings: its page, and its subpage where it has one. */
+	private void select(ModulePositionEditor.Module module) {
+		boolean wrongPage = page != module.page;
+		boolean wrongSubpage = module.group != null
+				&& !module.group.equals(selectedGroup(module.page));
+		if (!wrongPage && !wrongSubpage) return;
+		page = module.page;
+		if (wrongSubpage) {
+			subpages.put(module.page, ConfigOptions.groups(module.page).indexOf(module.group));
+		}
+		rebuildWidgets();
+	}
+
+	/** A module's name for a tooltip: its page, and its subpage where it has one. */
+	private static Component moduleName(ModulePositionEditor.Module module) {
+		Component name = text("page." + module.page);
+		return module.group == null ? name
+				: name.copy().append(": ").append(text("group." + module.group));
 	}
 
 	private void move(ModulePositionEditor.Module module, int dx, int dy) {
@@ -689,7 +723,7 @@ public final class VarioConfigScreen extends Screen {
 			int tooltipWidth = Math.max(40, Math.min(240, width - 24));
 			graphics.setTooltipForNextFrame(font,
 					font.split(text("positionEditor.tooltip",
-							text("page." + hovered.module().page)), tooltipWidth), mouseX, mouseY);
+							moduleName(hovered.module())), tooltipWidth), mouseX, mouseY);
 		}
 	}
 

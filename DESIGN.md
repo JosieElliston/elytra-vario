@@ -634,18 +634,26 @@ not.
 
 ## Placing the modules
 
-Four modules carry a position: the velocity graph, the flight stats panel, and the two
+Seven modules carry a position: the velocity graph, the four flight stats panels, and the two
 speedometers. Each is an absolute top-left in scaled GUI pixels, clamped so that it stays on
-screen, and each can be set from its own page as a pair of numbers or moved in the world with
-the settings screen open. Clicking a module opens its page; dragging its middle moves it;
-dragging a corner resizes it; the arrow keys move the selected module a pixel at a time.
+screen, and each can be set from its own page — or, for the stats panels, its own subpage — as a
+pair of numbers, or moved in the world with the settings screen open. Clicking a module opens
+its settings; dragging its middle moves it; dragging a corner resizes it; the arrow keys move
+the selected module a pixel at a time.
+
+**A page may carry more than one module, and then its subpage selector chooses between them.**
+Flight Stats is the case: one subpage per panel, so the selection the arrow keys and the quiet
+outline follow is whichever panel's settings are on screen, and clicking a panel in the world
+moves the dropdown to it. A page carrying one module leaves its group unset and keeps that
+module selected whatever subpage is showing, which is what the speedometers want — their
+subpages are one bar or needle each, not one module each.
 
 **Corners resize, edges do not.** Three of these modules are a single size setting — the
 graph's width, the bar speedometer's plot height, the dial's radius — so there is no such thing
 as a nonuniform resize to offer, and an edge would have nothing to drag that a corner does not
-already drag. The stats panel is the exception with a width and a height of its own, and its
-corner drags them separately: pull it sideways and only the width moves. That is what a pair of
-edges would do one at a time, so it still does not need them.
+already drag. The stats panels are the exception, each with a width and a height of its own, and
+a corner drags them separately: pull it sideways and only the width moves. That is what a pair
+of edges would do one at a time, so it still does not need them.
 
 **One setting, a pointer with two dimensions, so the answer is least squares.** The size chosen
 is the one whose box comes closest to the box the pointer is asking for. Where both axes follow
@@ -654,14 +662,14 @@ locked-aspect corner looks like anywhere else; for the bar speedometer, whose wi
 and labels rather than a setting, the same expression collapses to following the pointer
 vertically and ignoring the rest.
 
-**Two settings are solved one at a time, which is exact rather than approximate.** The stats
+**Two settings are solved one at a time, which is exact rather than approximate.** A stats
 panel's width and height are orthogonal — one slope each, on its own axis — so each
 least-squares solve falls entirely on the axis its setting grows, and neither can move what the
 other answers. It is the same arithmetic run twice, with the same rests, and not a joint solve
 simplified.
 
 **The box is affine in its settings, and the constant is measured rather than modelled.** A
-slope — the graph's aspect ratio, one per axis for the panel, two for the dial's diameter —
+slope — the graph's aspect ratio, one per axis for a stats panel, two for the dial's diameter —
 plus the size the module is currently drawn at pins the whole relationship, so whatever the box
 carries that the settings do not pay for, like the label column or the dial's rim, falls out as
 the difference between them. After the setting is applied the module is measured again and the
@@ -676,18 +684,34 @@ against another module:
 
 - near edges flush or far edges flush;
 - the box set down a margin clear of the other, on whichever side it is approaching from;
+- the box butted against the other, overlapping it by one pixel, on that same side;
 
 and against the screen: the near edge a margin in or the far edge a margin in.
 
 A resize holds one edge still, so it can only take the rests its moving lines can reach, which is
 that same list read line by line. The dragged edge takes the rest of its own kind — a right edge
-on a right edge, a left edge on a left edge — and the margin clearance on its own side, and the
-screen margin on its own side. The pinned edge takes nothing, because it is not going anywhere.
+on a right edge, a left edge on a left edge — the margin clearance and the butt on its own side,
+and the screen margin on its own side. The pinned edge takes nothing, because it is not going
+anywhere.
 
-So an edge dragged rightwards rests flush on a right edge, or a margin short of a left edge, and
-never flush against a left edge: a move would not put two modules together with nothing between
-them either. Centers are deliberately not snap targets: when boxes share an edge and a center,
-the edge is the single visible explanation for where the drag came to rest.
+So an edge dragged rightwards rests flush on a right edge, a margin short of a left edge, or one
+pixel past it, and never flush against a left edge: a move would not put two modules together
+with two borders abreast either. Centers are deliberately not snap targets: when boxes share an
+edge and a center, the edge is the single visible explanation for where the drag came to rest.
+
+**The butt overlaps by one pixel rather than meeting at zero.** Every panelled module draws a
+one-pixel border, so setting two of them down edge to edge puts two identical gray lines side by
+side — a two-pixel rule that reads as a seam rather than as a division. Overlapped by one they
+share a column, and a row or stack of butted panels is ruled exactly the way the single stats
+panel used to rule between its own halves: one line, the same weight as the outline around the
+pair. Nothing is lost to it. The shared column belongs to both borders, and a border is chrome
+rather than a reading, so the only pixel either module gives up is one it was spending on saying
+where it ends — which is what the shared line now says for both.
+
+The butt and the margin are five pixels apart, so at the default snap distance of four there is
+no position between them from which neither is reachable; the drag lands on whichever it is
+nearer. This is what the four stats panels are stacked with by default, and it is offered
+between any two modules and on either axis, not only between panels.
 
 Only one answer can win, because one setting may place both moving edges. Every reachable rest
 proposes a size, and the size whose resulting corner is closest to the mouse in both dimensions
@@ -781,7 +805,9 @@ Needs JDK 25.
 Open Mod Menu's configuration button for Elytra Vario. Seven pages separate Global, Pitch Ladder,
 Ladder Markers, Velocity Graph, Flight Stats, Bar Speedometer, and Dial Speedometer. Global holds the
 HUD master switch; each instrument’s
-visibility control stays on its own page. Ladder-marker names identify the displayed quantities;
+visibility control stays on its own page, and a page may divide into subpages under a selector —
+one per marker on Ladder Markers, one per bar or needle on the speedometers, one per panel on
+Flight Stats. Ladder-marker names identify the displayed quantities;
 tooltips define their calculations and describe possible uses. Edits take effect in the HUD as
 you make them and save themselves to `config/elytra-vario.json`, so there is nothing to confirm
 on the way out: Close and Escape simply close. A half-typed number is held back from both the
@@ -790,34 +816,64 @@ right-side settings panel leaves the HUD visible without blur. Each page has a r
 common controls are under Advanced. The screen reopens on the page, subpage and scroll position
 you left, with the Advanced switch as you left it, for the rest of the session.
 
-Position is an absolute top-left in scaled GUI pixels for each of the four placed modules,
+Position is an absolute top-left in scaled GUI pixels for each of the seven placed modules,
 clamped to the screen; the anchors and the graph-to-stats attachment this paragraph used to
 describe are gone. With the settings screen open the modules are editable in the world: click
-one to open its page, drag its middle to move it, drag a corner to resize it, or use the arrow
-keys for a pixel at a time. Moves and resizes both snap to the other modules and to the screen,
-and the coordinate and size fields on each page stay in step with whatever the drag does. See
-*Placing the modules* above. Both horizontal and vertical chart bounds are editable, and Flight
-Stats carries a width and a height of its own. Visibility is independent for all four
-instruments, and stats rows are selectable. Energy rate has been removed; cycle gain and apex
-differences remain.
+one to open its settings, drag its middle to move it, drag a corner to resize it, or use the
+arrow keys for a pixel at a time. Moves and resizes both snap to the other modules and to the
+screen, and the coordinate and size fields stay in step with whatever the drag does. See
+*Placing the modules* above. Both horizontal and vertical chart bounds are editable, and each
+Flight Stats panel carries a width and a height of its own. Visibility is independent for all
+four instruments, each stats panel switches on and off on its own, and stats rows are
+selectable. Energy rate has been removed; cycle gain and apex differences remain.
 
-## The readout panel
+## The readout panels
+
+**One panel per kind of reading, not one panel for all of them.** Flight Stats is four boxes —
+*Other* (pitch, glide), *Speed*, *Acceleration*, *Energy* — each placed, sized and switched on
+its own, each a module of the position editor, each a subpage of the Flight Stats page.
+
+The reason is the width. A row wants the width its widest label and figure need, and one panel
+had to give every row the same one, so the panel was as wide as its widest row and every
+narrower row carried the difference as gap: `SPEED XYZ` against a speed is 106 pixels of
+content, `GLIDE` against a ratio is 76, and thirty pixels of nothing sat between the label and
+the figure on every attitude row. Split, the narrow panel can be narrow. What is shared is what
+is genuinely shared: the instrument's switch — which is what the toggle key binds to — its
+only-while-gliding companion, and the positive and negative colors, which are a palette rather
+than a layout.
+
+They are still meant to read as one instrument, which is what the editor's one-pixel butt is
+for: stacked with their borders sharing a column, four panels look like one panel ruled into
+sections, and that rule is the one the single panel drew between its own halves. The defaults
+are exactly that stack, down the left, in the order the single panel read in and at the width
+it had.
 
 **Width and height are set separately, and the height is the one that sets the text size.** The
-rows are laid out at a fixed line height and the whole panel is scaled to the height asked for,
-so it is always exactly as tall as its rows need and never carries a gap at the bottom. The
-width then buys one thing only: the distance between a label and the value right-aligned
-against the far edge. That gap is the panel's only dead space, and a single size setting could
-not close it — narrowing the panel shrank the reading along with it. The cost of the split is
-that switching a row off no longer makes the panel shorter; it keeps the height it was given
-and draws the rows that remain larger.
+rows are laid out at a fixed line height and the panel is scaled to the height asked for, so it
+is always exactly as tall as its rows need and never carries a gap at the bottom. The width then
+buys one thing only: the distance between a label and the value right-aligned against the far
+edge. That gap is a panel's only dead space, and a single size setting could not close it —
+narrowing the panel shrank the reading along with it. The cost of the split is that switching a
+row off no longer makes its panel shorter; that panel keeps the height it was given and draws
+the rows that remain larger.
 
-**A width narrower than the rows need is drawn at the width they need.** At 116 layout pixels
-the widest row the panel draws has met itself: `ACCEL XYZ` is 52 pixels of label, an
-acceleration like `+5.09 b/s²` is 54 of figure, and the padding takes eight. There is no dead
-space left to take there, and narrowing further would only stack one column on the other. The
-grips stop there, and a narrower width typed into the box is drawn at the minimum rather than
-refused, so the reading never turns into an overlap.
+**A width narrower than the rows need is drawn at the width they need**, and each panel has its
+own floor, where its own widest row has met itself. Every figure below was measured through the
+font rather than guessed at, and each is a representative reading rather than the worst
+imaginable one — a figure that runs longer than its column encroaches on its label, here as
+anywhere else on these panels.
+
+| Panel | Floor | Widest row |
+| --- | --- | --- |
+| Other | 86 | `GLIDE` at 28, a ratio like `-12.34 : 1` at 48, eight of padding, two over |
+| Speed | 116 | `SPEED XYZ` at 52, `-78.40 b/s` — straight-down terminal velocity — at 54, eight, two |
+| Acceleration | 116 | `ACCEL XYZ` measures the same 52, and an acceleration much the same as a speed |
+| Energy | 106 | `TE` at 12, then the two columns: 38, a pad, 42, and the panel's padding either side |
+
+Energy's floor is measured in the two-column mode, the widest of the three energy references
+and the default, so that changing the reference never moves the floor under a width already set.
+The grips stop at these, and a narrower width typed into the box is drawn at the minimum rather
+than refused, so a reading never turns into an overlap.
 
 | Row | Meaning |
 | --- | --- |
