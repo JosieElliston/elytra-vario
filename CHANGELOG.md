@@ -17,15 +17,16 @@ build identifier and released feature for feature; see its own changelog.
   jumping. A grip is the outer five pixels of a corner, and never more than a third of the
   module's shorter side, so a small module keeps a middle to pick it up by.
 
-  Corners and not edges, because none of these modules has a nonuniform resize to offer. Each
-  one's box is a function of a single setting — the velocity graph's width, the flight stats
-  panel's width, the bar speedometer's plot height, the dial's radius — so an edge would have
-  nothing to drag that a corner does not. Where both axes follow that setting the corner tracks
-  the pointer down the box's diagonal, which is what dragging a locked-aspect corner looks like
-  anywhere else. The bar speedometer is the exception worth knowing about: its width is its bars
-  and its scale labels rather than a setting, so its corners follow the pointer vertically and
-  ignore the rest. A drag cannot push a module off the screen past its pinned corner, and stops
-  at each setting's own range.
+  Corners and not edges. Three of these modules are a function of a single setting — the velocity
+  graph's width, the bar speedometer's plot height, the dial's radius — so an edge would have
+  nothing to drag that a corner does not. The flight stats panel's width and height are settings
+  of their own, and its corner drags them separately: pulled sideways, only the width moves, which
+  is what a pair of edges would do one at a time. Where both axes follow one setting the corner
+  tracks the pointer down the box's diagonal, which is what dragging a locked-aspect corner looks
+  like anywhere else. The bar speedometer is the exception worth knowing about: its width is its
+  bars and its scale labels rather than a setting, so its corners follow the pointer vertically
+  and ignore the rest. A drag cannot push a module off the screen past its pinned corner, and
+  stops at each setting's own range.
 
   A resize snaps to the rests a move snaps to and to no others, with the same guides drawn: a
   module should come to rest in the same places whether it was carried there or grown there. A
@@ -39,14 +40,16 @@ build identifier and released feature for feature; see its own changelog.
 
   Only one answer can win, since one setting places all four lines. Every reachable rest proposes
   a size, and the size whose resulting corner is closest to the mouse in both dimensions chooses
-  the answer. Every marker that independently produces that same answer appears with it;
-  constraints proposing another size do not. The snap-distance gate is measured at the dragged
-  edge: a center moves half as fast, and measuring its own gap would let it pull the corner twice
-  the configured distance. A rest the setting cannot actually reach — the dial's
-  diameter comes in steps of two, so half its widths do not exist, and a center moves only half a
-  pixel per unit of size — is passed over for one it can. The guides are drawn from the module as
-  it ends up rather than from the size that was aimed at, so a line appears only where an edge or
-  a center genuinely lies on it.
+  the answer. A module carrying two settings is solved a setting at a time and so has an answer
+  for each; that is exact rather than approximate, because the two are orthogonal and each solve
+  falls entirely on the axis its own setting grows. Every marker that independently produces that
+  same answer appears with it; constraints proposing another size do not. The snap-distance gate
+  is measured at the dragged edge: a center moves half as fast, and measuring its own gap would
+  let it pull the corner twice the configured distance. A rest the setting cannot actually reach —
+  the dial's diameter comes in steps of two, so half its widths do not exist, and a center moves
+  only half a pixel per unit of size — is passed over for one it can. The guides are drawn from
+  the module as it ends up rather than from the size that was aimed at, so a line appears only
+  where an edge or a center genuinely lies on it.
 
   The module under the pointer draws its four grips as thickened corners on the outline it
   already had, and the grip the pointer has found is drawn longer, thicker and white. At the
@@ -64,6 +67,17 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Changed
 
+- Flight Stats is now sized by a width and a height that move independently, replacing its
+  single size setting and the advanced content width behind it. The height sets the text size:
+  the rows are laid out at a fixed line height and scaled to fill exactly the height asked for,
+  so the panel is never left with a gap at the bottom. The width then buys one thing only, the
+  distance between a label and the value right-aligned against the far edge — the panel's only
+  dead space, and something the single setting could not close without shrinking the reading
+  along with it. A width narrower than the rows need at the current text size is drawn at that
+  minimum rather than refused, so a panel never becomes an overlap. Existing panels migrate to
+  the exact size they were being drawn at. The cost of the split is that switching a row off no
+  longer shortens the panel: it keeps the height it was given and draws the rows that remain
+  larger.
 - Velocity Graph and Flight Stats now expose their exact integer pixel widths instead of
   floating-point scale factors, matching the speedometers' pixel size settings. Existing scale
   settings migrate to the widths they rendered at, and resizing now changes a whole-pixel size.

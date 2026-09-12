@@ -42,6 +42,20 @@ public final class VarioHudElement implements HudElement {
 
 	private static final int LINE = 10;
 	private static final int PAD = 4;
+
+	/**
+	 * The narrowest the panel is laid out, in unscaled layout pixels, before its width setting
+	 * is scaled up by whatever text size the height asks for.
+	 *
+	 * <p>Every row is a label on the left and a figure right-aligned on the right, so narrowing
+	 * the panel spends the dead space between the two columns and nothing else, and this is where
+	 * the widest row runs out of it: {@code ACCEL XYZ} is 52 pixels of label, an acceleration
+	 * like {@code +5.09 b/s²} is 54 of figure, the padding takes eight, and two are left over.
+	 * Narrower than this and the columns would begin to stack rather than to sit apart, so there
+	 * is nothing left to gain by it — a figure that runs long anyway, a two-digit acceleration
+	 * or a glide ratio in the hundreds, encroaches on its label here as it does anywhere.
+	 */
+	public static final int MIN_PANEL_WIDTH = 116;
 	private static final double ACCELERATION_ARROW_SECONDS = 1.0;
 
 	/**
@@ -99,21 +113,26 @@ public final class VarioHudElement implements HudElement {
 
 		boolean stats = VarioInstrument.STATS.visible(sample.gliding()) && panelRows() > 0;
 		boolean chart = VarioInstrument.CHART.visible(sample.gliding());
-		int panelHeight = statsHeight();
-		int panelWidth = statsWidth();
+		int boxWidth = statsWidth();
+		int boxHeight = statsHeight();
 		int screenWidth = graphics.guiWidth();
 		int screenHeight = graphics.guiHeight();
 
 		HudPosition panel = HudPosition.clamp(VarioConfig.statsX, VarioConfig.statsY,
-				panelWidth, panelHeight, screenWidth, screenHeight);
+				boxWidth, boxHeight, screenWidth, screenHeight);
 		HudPosition position = HudPosition.clamp(VarioConfig.chartX, VarioConfig.chartY,
 				chartWidth(), chartHeight(), screenWidth, screenHeight);
 
 		if (stats) {
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(panel.x(), panel.y());
-			float scale = (float) statsScale();
-			graphics.pose().scale(scale, scale);
+			// Each dimension is scaled onto exactly the box the settings name rather than by one
+			// shared factor. The two factors differ only by the pixel the layout width was
+			// rounded to — under half a percent apart even at the narrowest the panel goes — so
+			// this is a rounding remainder rather than a stretch, and it keeps the drawn border
+			// on the same box the position editor puts its grips around.
+			graphics.pose().scale((float) boxWidth / panelWidth(),
+					(float) boxHeight / panelHeight());
 			drawPanel(graphics, minecraft.font, sample, 0, 0);
 			graphics.pose().popMatrix();
 		}
@@ -136,30 +155,57 @@ public final class VarioHudElement implements HudElement {
 				+ (VarioConfig.showTotalEnergy ? 1 : 0) + (VarioConfig.showCycleGain ? 1 : 0);
 	}
 
-	private static int panelRows() { return speedRows() + energyRows(); }
+	/** How many rows the panel is showing, which is whether there is a panel at all. */
+	public static int panelRows() { return speedRows() + energyRows(); }
 
 	/** The stats panel's unscaled height, shared with the settings screen's resize grips. */
 	public static int panelHeight() {
-		return (panelRows() + (speedRows() > 0 && energyRows() > 0 ? 1 : 0)) * LINE + PAD * 2;
+		return panelHeight(speedRows(), energyRows());
 	}
 
-	/** The stats panel's on-screen width, shared with the settings screen's drag target. */
+	/** The unscaled height of a panel showing these many rows of each kind. */
+	public static int panelHeight(int speedRows, int energyRows) {
+		return (speedRows + energyRows + (speedRows > 0 && energyRows > 0 ? 1 : 0)) * LINE
+				+ PAD * 2;
+	}
+
+	/**
+	 * The stats panel's on-screen width, shared with the settings screen's drag target.
+	 *
+	 * <p>Never narrower than the rows need at the text size the height is asking for. The grips
+	 * stop there too, so only a width typed into the box can ask for less, and it is drawn at
+	 * the minimum rather than refused.
+	 */
 	public static int statsWidth() {
-		return VarioConfig.statsSize;
+		return Math.max(VarioConfig.statsWidth, minStatsWidth());
+	}
+
+	/** The narrowest the panel may be drawn at its current text size. */
+	public static int minStatsWidth() {
+		return (int) Math.ceil(MIN_PANEL_WIDTH * statsScale());
 	}
 
 	/** The stats panel's on-screen height, shared with the settings screen's drag target. */
 	public static int statsHeight() {
-		return Math.ceilDiv(panelHeight() * VarioConfig.statsSize, VarioConfig.panelWidth);
+		return VarioConfig.statsHeight;
 	}
 
+	/**
+	 * The width the panel lays its two columns out in, before the height's text size scales it
+	 * back up to the width that was asked for.
+	 */
+	public static int panelWidth() {
+		return (int) Math.round(statsWidth() / statsScale());
+	}
+
+	/** The text size, set by the height: the rows are drawn to exactly fill it. */
 	private static double statsScale() {
-		return (double) VarioConfig.statsSize / VarioConfig.panelWidth;
+		return (double) VarioConfig.statsHeight / panelHeight();
 	}
 
 	/** Returns the y coordinate just past the bottom of the panel. */
 	private int drawPanel(GuiGraphicsExtractor graphics, Font font, Sample sample, int x, int y) {
-		int width = VarioConfig.panelWidth;
+		int width = panelWidth();
 		int height = panelHeight();
 		int background = ((int) Math.round(VarioConfig.panelOpacity * 255) << 24) | (PANEL_BG & 0xFFFFFF);
 		if (VarioConfig.panelOpacity > 0) graphics.fill(x, y, x + width, y + height, background);
@@ -204,7 +250,7 @@ public final class VarioHudElement implements HudElement {
 
 	private int row(GuiGraphicsExtractor graphics, Font font, int x, int y, String label, String value, int color) {
 		graphics.text(font, label, x + PAD, y, LABEL, true);
-		graphics.text(font, value, x + VarioConfig.panelWidth - PAD - font.width(value), y, color, true);
+		graphics.text(font, value, x + panelWidth() - PAD - font.width(value), y, color, true);
 		return y + LINE;
 	}
 
@@ -353,7 +399,7 @@ public final class VarioHudElement implements HudElement {
 		String delta = known ? fmt("%+.1f b", change) : "--";
 		String absolute = fmt("%.1f", current);
 
-		int deltaRight = x + VarioConfig.panelWidth - PAD;
+		int deltaRight = x + panelWidth() - PAD;
 		int absoluteRight = deltaRight - font.width(DELTA_COLUMN) - PAD;
 
 		// Coloured like the rate readouts, and for the same reason: below the last apex is

@@ -109,9 +109,46 @@ class ConfigStoreTest {
 	@Test void retiredModuleScalesBecomeExactPixelWidths() {
 		var values = ConfigStore.decode("{\"chartScale\":37.714286,\"panelScale\":1.25}");
 		assertEquals("132", values.get("chartSize"));
-		assertEquals("165", values.get("statsSize"));
+		// The panel was 132 layout pixels wide and, with every row on, 138 tall.
+		assertEquals("165", values.get("statsWidth"));
+		assertEquals("173", values.get("statsHeight"));
 		assertFalse(ConfigStore.encode(values).contains("chartScale"));
 		assertFalse(ConfigStore.encode(values).contains("panelScale"));
+	}
+
+	@Test void theRetiredSingleStatsSizeBecomesTheSizeItWasDrawnAt() {
+		var values = ConfigStore.decode("{\"statsSize\":198,\"panelWidth\":132}");
+		// The width it named exactly, and the height its scale of 1.5 gave it.
+		assertEquals("198", values.get("statsWidth"));
+		assertEquals("207", values.get("statsHeight"));
+		assertFalse(ConfigStore.encode(values).contains("statsSize"));
+		assertFalse(ConfigStore.encode(values).contains("panelWidth"));
+	}
+
+	@Test void theRetiredStatsSizeIsReadAgainstTheRowsThatWereOn() {
+		// Four rows and no separator: 48 layout pixels, at the same scale of 1.5.
+		var values = ConfigStore.decode("{\"statsSize\":198,\"showPitch\":\"false\","
+				+ "\"showGlideRatio\":\"false\",\"showHorizontalSpeed\":\"false\","
+				+ "\"showTotalSpeed\":\"false\",\"showVerticalSpeed\":\"false\","
+				+ "\"showHorizontalAcceleration\":\"false\","
+				+ "\"showTotalAcceleration\":\"false\","
+				+ "\"showVerticalAcceleration\":\"false\"}");
+		assertEquals("72", values.get("statsHeight"));
+	}
+
+	@Test void theRetiredContentWidthSetsTheHeightItGaveTheDefaultPanel() {
+		// Only the layout width was ever changed: the panel stayed 132 pixels wide on screen and
+		// was drawn at two thirds size to fit 198 pixels of layout into them.
+		var values = ConfigStore.decode("{\"panelWidth\":198}");
+		assertEquals("132", values.get("statsWidth"));
+		assertEquals("92", values.get("statsHeight"));
+	}
+
+	@Test void aStatsHeightOfItsOwnIsLeftAlone() {
+		var values = ConfigStore.decode("{\"statsSize\":198,\"statsWidth\":90,"
+				+ "\"statsHeight\":120}");
+		assertEquals("90", values.get("statsWidth"));
+		assertEquals("120", values.get("statsHeight"));
 	}
 
 	@Test void savingReplacesTheFileAndPreservesDisplayUnits() throws Exception {

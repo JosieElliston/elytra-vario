@@ -8,8 +8,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Map;
 import jealoustone.elytravario.ElytraVario;
+import jealoustone.elytravario.hud.VarioHudElement;
 import net.fabricmc.loader.api.FabricLoader;
 
 /** Validates before applying and replaces the saved file atomically. */
@@ -37,6 +39,18 @@ public final class ConfigStore {
 	private static final Map<String, String> RETIRED_POSITIONS = Map.of(
 			"originX", "statsX",
 			"originY", "statsY");
+
+	/**
+	 * The Flight Stats rows, in the two groups the panel rules a line between. Only the size
+	 * migration below needs them; the panel itself draws from the settings in order.
+	 */
+	private static final List<String> SPEED_ROWS = List.of("showPitch", "showGlideRatio",
+			"showHorizontalSpeed", "showTotalSpeed", "showVerticalSpeed",
+			"showHorizontalAcceleration", "showTotalAcceleration", "showVerticalAcceleration");
+	private static final List<String> ENERGY_ROWS = List.of("showKineticEnergy",
+			"showPotentialEnergy", "showTotalEnergy", "showCycleGain");
+	/** The layout width Flight Stats was scaled from, and the on-screen width it defaulted to. */
+	private static final long RETIRED_PANEL_WIDTH = 132;
 
 	private static Path path() {
 		return FabricLoader.getInstance().getConfigDir().resolve("elytra-vario.json");
@@ -99,13 +113,41 @@ public final class ConfigStore {
 			values.put("chartSize", Long.toString(Math.round(
 					horizontalRange * root.get("chartScale").getAsDouble())));
 		}
-		if (root.has("panelScale") && !root.has("statsSize")) {
-			values.put("statsSize", Long.toString((long) Math.ceil(
-					number(values, "panelWidth")
-							* root.get("panelScale").getAsDouble())));
+		// Flight Stats was an on-screen width and, behind Advanced, the layout width it was
+		// scaled from; before that it was a scale. Any of the three fixed the height as well,
+		// at the rows it was showing times that scale, so the height is worked out here the way
+		// the panel used to work it out and a migrated panel is drawn at exactly the size it
+		// was. One save replaces the retired keys.
+		if (!root.has("statsHeight") && (root.has("statsSize") || root.has("panelWidth")
+				|| root.has("panelScale"))) {
+			long layoutWidth = root.has("panelWidth")
+					? root.get("panelWidth").getAsLong() : RETIRED_PANEL_WIDTH;
+			long onScreenWidth;
+			if (root.has("statsSize")) {
+				onScreenWidth = root.get("statsSize").getAsLong();
+			} else if (root.has("panelScale")) {
+				onScreenWidth = (long) Math.ceil(layoutWidth * root.get("panelScale").getAsDouble());
+			} else {
+				// Both defaulted to the same 132, so a file naming only the layout width was
+				// drawing the panel at the default width and at whatever scale that came to.
+				onScreenWidth = RETIRED_PANEL_WIDTH;
+			}
+			values.put("statsWidth", Long.toString(onScreenWidth));
+			values.put("statsHeight", Long.toString(Math.ceilDiv(
+					onScreenWidth * VarioHudElement.panelHeight(rows(values, SPEED_ROWS),
+							rows(values, ENERGY_ROWS)), layoutWidth)));
 		}
 		if (ConfigOptions.error(values) != null) throw new IllegalArgumentException("Invalid config values");
 		return values;
+	}
+
+	/** How many of these rows the file leaves switched on. */
+	private static int rows(Map<String, String> values, List<String> keys) {
+		int count = 0;
+		for (String key : keys) {
+			if (Boolean.parseBoolean(values.get(key))) count++;
+		}
+		return count;
 	}
 
 	/** Parses a displayed config value through the same unit conversion as normal loading. */

@@ -73,7 +73,8 @@ public final class VarioConfigScreen extends Screen {
 	private ModulePositionEditor.Corner draggingCorner;
 	/** Immutable geometry at the start of a resize, so rounding cannot feed one frame into the next. */
 	private ModulePositionEditor.Bounds resizeOrigin;
-	private double resizeOriginValue;
+	/** The size settings as they stood when the resize began, one per key the module carries. */
+	private final Map<String, Double> resizeOriginValues = new HashMap<>();
 	/** The unsnapped box requested by the pointer, shared by move and resize rendering. */
 	private ModulePositionEditor.Bounds trueDragBounds;
 	/** Pointer-driven position before snapping, retained so a snapped module can pull free.
@@ -357,9 +358,13 @@ public final class VarioConfigScreen extends Screen {
 				resizeOrigin = null;
 				trueDragBounds = null;
 				if (draggingCorner != null) {
-					ConfigOptions.Option size = option(draggingModule.sizeKey);
+					resizeOriginValues.clear();
 					try {
-						resizeOriginValue = Double.parseDouble(settings.get(size.key())) / size.factor();
+						for (String key : draggingModule.sizeKeys) {
+							ConfigOptions.Option size = option(key);
+							resizeOriginValues.put(key,
+									Double.parseDouble(settings.get(key)) / size.factor());
+						}
 						resizeOrigin = target;
 					} catch (RuntimeException ignored) {
 						// A half-typed size cannot normally be reached through a module, but if it is,
@@ -483,19 +488,38 @@ public final class VarioConfigScreen extends Screen {
 			double pointerX, double pointerY) {
 		if (resizeOrigin == null) return;
 		List<ModulePositionEditor.Bounds> bounds = moduleBounds();
-		ConfigOptions.Option size = option(module.sizeKey);
-		ModulePositionEditor.Resize resize = ModulePositionEditor.resizeWithMarkers(
-				corner, resizeOrigin, resizeOriginValue,
-				new ModulePositionEditor.Sizing(ModulePositionEditor.growth(module),
-						size.min() / size.factor(), size.max() / size.factor(), size.integral()),
-				pointerX, pointerY, bounds, width, height,
-				VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
-		trueDragBounds = resize.trueBounds();
-		String next = size.format(resize.value());
-		if (!next.equals(settings.get(size.key()))) {
-			settings.put(size.key(), next);
-			editorWrote(size.key());
+		List<ModulePositionEditor.Resize> resizes = new ArrayList<>();
+		int trueWidth = resizeOrigin.width();
+		int trueHeight = resizeOrigin.height();
+		// A module with two settings takes them one at a time. Each is solved against the same
+		// immutable origin and answers only the axis it grows, so neither can move what the
+		// other decides; the module lists them in the order a drag wants them applied.
+		for (String key : module.sizeKeys) {
+			ConfigOptions.Option size = option(key);
+			ModulePositionEditor.Growth growth = ModulePositionEditor.growth(key);
+			ModulePositionEditor.Resize resize = ModulePositionEditor.resizeWithMarkers(
+					corner, resizeOrigin, resizeOriginValues.get(key),
+					new ModulePositionEditor.Sizing(growth,
+							ModulePositionEditor.smallest(key, size.min() / size.factor(),
+									size.max() / size.factor()),
+							size.max() / size.factor(), size.integral()),
+					pointerX, pointerY, bounds, width, height,
+					VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
+			resizes.add(resize);
+			if (growth.width() > 0) trueWidth = resize.trueBounds().width();
+			if (growth.height() > 0) trueHeight = resize.trueBounds().height();
+			String next = size.format(resize.value());
+			if (!next.equals(settings.get(key))) {
+				settings.put(key, next);
+				editorWrote(key);
+			}
 		}
+		ModulePositionEditor.Position truePosition = ModulePositionEditor.anchored(corner,
+				resizeOrigin, trueWidth, trueHeight);
+		trueDragBounds = new ModulePositionEditor.Bounds(module,
+				Math.clamp(truePosition.x(), 0, Math.max(0, width - trueWidth)),
+				Math.clamp(truePosition.y(), 0, Math.max(0, height - trueHeight)),
+				trueWidth, trueHeight);
 		ModulePositionEditor.Bounds after = renderedBounds(module);
 		if (after == null) return;
 		ModulePositionEditor.Position position = ModulePositionEditor.anchored(corner, resizeOrigin,
@@ -512,10 +536,18 @@ public final class VarioConfigScreen extends Screen {
 		}
 		// Asked of the module as it ended up, so a guide is drawn only where an edge is
 		// genuinely on it. The others have not moved, so the rests they offer are unchanged.
-		ModulePositionEditor.Guides guides = ModulePositionEditor.resizeGuides(resize,
-				new ModulePositionEditor.Bounds(module, x, y, after.width(), after.height()), corner);
-		snapVerticalGuides = guides.vertical();
-		snapHorizontalGuides = guides.horizontal();
+		ModulePositionEditor.Bounds landed =
+				new ModulePositionEditor.Bounds(module, x, y, after.width(), after.height());
+		List<ModulePositionEditor.Guide> vertical = new ArrayList<>();
+		List<ModulePositionEditor.Guide> horizontal = new ArrayList<>();
+		for (ModulePositionEditor.Resize resize : resizes) {
+			ModulePositionEditor.Guides guides =
+					ModulePositionEditor.resizeGuides(resize, landed, corner);
+			vertical.addAll(guides.vertical());
+			horizontal.addAll(guides.horizontal());
+		}
+		snapVerticalGuides = List.copyOf(vertical);
+		snapHorizontalGuides = List.copyOf(horizontal);
 	}
 
 	/** Shows what the in-world editor wrote in the boxes that show the same settings. */
@@ -560,8 +592,12 @@ public final class VarioConfigScreen extends Screen {
 		}
 		if (isCoordinate(option.key())) {
 			body = body.copy().append("\n").append(text("positionEditor.controls"));
-		} else if (isSize(option.key())) {
-			body = body.copy().append("\n").append(text("positionEditor.sizeControls"));
+		} else {
+			ModulePositionEditor.Module sized = sizedModule(option.key());
+			if (sized != null) {
+				body = body.copy().append("\n").append(text(sized.sizeKeys.size() > 1
+						? "positionEditor.sizeControlsBothAxes" : "positionEditor.sizeControls"));
+			}
 		}
 		return text(option.key()).copy().append("\n").append(body);
 	}
@@ -573,12 +609,12 @@ public final class VarioConfigScreen extends Screen {
 		return false;
 	}
 
-	/** Whether the setting is the one a module's resize grips write. */
-	private static boolean isSize(String key) {
+	/** The module whose resize grips write this setting, if any. */
+	private static ModulePositionEditor.Module sizedModule(String key) {
 		for (ModulePositionEditor.Module module : ModulePositionEditor.Module.values()) {
-			if (key.equals(module.sizeKey)) return true;
+			if (module.sizeKeys.contains(key)) return module;
 		}
-		return false;
+		return null;
 	}
 
 	/** Advanced rows hide; rows belonging to another subpage are not part of this page's view. */
@@ -899,7 +935,7 @@ public final class VarioConfigScreen extends Screen {
 					if (!updatingEditorBoxes) changed();
 				});
 				box.setTextColor(valid(box.getValue()) ? 0xFFE0E0E0 : 0xFFFF7777);
-				if (isCoordinate(option.key()) || isSize(option.key())) {
+				if (isCoordinate(option.key()) || sizedModule(option.key()) != null) {
 					editorBoxes.put(option.key(), box);
 				}
 				control = box;
