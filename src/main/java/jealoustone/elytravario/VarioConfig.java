@@ -111,10 +111,6 @@ public final class VarioConfig {
 	 */
 	public static int lookaheadTicks = 20;
 
-	/** Top-left corner of Flight Stats, in scaled GUI pixels. */
-	public static int statsX = 4;
-	public static int statsY = 4;
-
 	/**
 	 * Chart bounds in blocks/<em>tick</em>, matching the units elytrasim plots in, so the
 	 * in-game chart and the sim's screenshots can be compared directly. Axis labels are
@@ -386,27 +382,65 @@ public final class VarioConfig {
 	public static boolean showForwardCursor = true;
 	public static boolean showGrid = true;
 	public static boolean showAxisLabels = true;
-	public static boolean showPanelBorder = true;
-	public static double panelOpacity = 176.0 / 255.0;
 	/**
-	 * Exact on-screen size of Flight Stats in scaled GUI pixels, each dimension its own.
+	 * The four Flight Stats panels, each placed, sized and switched on its own. See
+	 * {@link jealoustone.elytravario.hud.StatsPanel}, which names every one of these settings
+	 * and is the only thing that reads them.
 	 *
-	 * <p>The height sets the text size: the rows are laid out at a fixed line height and the
-	 * whole panel is scaled to the height asked for, so the panel is always exactly as tall as
-	 * its rows need and never has a gap at the bottom. The width is then free, and buys nothing
-	 * but the distance between a label and the value right-aligned against the far edge — which
-	 * is the only dead space on the panel, and the only thing the old single size setting could
-	 * not shrink without shrinking the text with it.
+	 * <p><b>The height sets the text size.</b> The rows are laid out at a fixed line height and
+	 * the panel is scaled to the height asked for, so a panel is always exactly as tall as its
+	 * rows need and never has a gap at the bottom. The width is then free, and buys nothing but
+	 * the distance between a label and the value right-aligned against the far edge — which is
+	 * the only dead space on a panel. Below {@link jealoustone.elytravario.hud.StatsPanel#minWidth()}
+	 * a width is drawn at that minimum instead: past there the columns have met.
 	 *
-	 * <p>Below {@link jealoustone.elytravario.hud.VarioHudElement#MIN_PANEL_WIDTH} scaled up by
-	 * the text size, a width is drawn at that minimum instead: past there the columns have met
-	 * and there is no dead space left to take.
+	 * <p><b>The widths are independent, and the defaults are all 132 anyway.</b> A shared width
+	 * is what a single panel had to give every row, and it is the thing worth being able to
+	 * give up — the speed rows want 116 layout pixels and the pitch and glide rows want 86, so
+	 * one width for both is thirty pixels of gap on the narrower one. The defaults match
+	 * because a set of panels wants to line up until you have a reason to break it, and 132 is
+	 * what the single panel was.
 	 *
-	 * <p>The default height is the twelve default rows at their natural size, so a default
-	 * panel is drawn exactly as it was before the two settings were split.
+	 * <p><b>The default positions stack the four with their borders sharing a column.</b> Each
+	 * panel's top is its predecessor's bottom less one, which is the editor's overlap snap
+	 * written out: four boxes butted together read as one panel ruled into sections, and that
+	 * rule is the one the old single panel drew between its speed and energy halves.
 	 */
-	public static int statsWidth = 132;
-	public static int statsHeight = 138;
+	public static boolean showStatsOther = true;
+	public static int statsOtherX = 4;
+	public static int statsOtherY = 4;
+	public static int statsOtherWidth = 132;
+	/** The pitch and glide rows at their natural size. */
+	public static int statsOtherHeight = 28;
+	public static double statsOtherOpacity = 176.0 / 255.0;
+	public static boolean showStatsOtherBorder = true;
+
+	public static boolean showStatsSpeed = true;
+	public static int statsSpeedX = 4;
+	public static int statsSpeedY = 31;
+	public static int statsSpeedWidth = 132;
+	/** The three speed rows at their natural size. */
+	public static int statsSpeedHeight = 38;
+	public static double statsSpeedOpacity = 176.0 / 255.0;
+	public static boolean showStatsSpeedBorder = true;
+
+	public static boolean showStatsAccel = true;
+	public static int statsAccelX = 4;
+	public static int statsAccelY = 68;
+	public static int statsAccelWidth = 132;
+	/** The three acceleration rows at their natural size. */
+	public static int statsAccelHeight = 38;
+	public static double statsAccelOpacity = 176.0 / 255.0;
+	public static boolean showStatsAccelBorder = true;
+
+	public static boolean showStatsEnergy = true;
+	public static int statsEnergyX = 4;
+	public static int statsEnergyY = 105;
+	public static int statsEnergyWidth = 132;
+	/** The four energy rows at their natural size. */
+	public static int statsEnergyHeight = 48;
+	public static double statsEnergyOpacity = 176.0 / 255.0;
+	public static boolean showStatsEnergyBorder = true;
 	public static int energyReference = 2;
 	public static int positiveColor = 0xFF66DD77;
 	public static int negativeColor = 0xFFE2685F;

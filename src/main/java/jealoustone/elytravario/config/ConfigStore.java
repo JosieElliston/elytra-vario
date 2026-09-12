@@ -11,7 +11,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import jealoustone.elytravario.ElytraVario;
-import jealoustone.elytravario.hud.VarioHudElement;
+import jealoustone.elytravario.hud.StatsPanel;
 import net.fabricmc.loader.api.FabricLoader;
 
 /** Validates before applying and replaces the saved file atomically. */
@@ -35,14 +35,10 @@ public final class ConfigStore {
 	private static final Map<String, String> RETIRED_MARKER_KEYS = Map.of(
 			"showMarkers", "showLadderMarkers",
 			"markersGlidingOnly", "ladderMarkersGlidingOnly");
-	/** Flight Stats used to call its coordinates an origin. */
-	private static final Map<String, String> RETIRED_POSITIONS = Map.of(
-			"originX", "statsX",
-			"originY", "statsY");
-
 	/**
-	 * The Flight Stats rows, in the two groups the panel rules a line between. Only the size
-	 * migration below needs them; the panel itself draws from the settings in order.
+	 * The rows the retired single Flight Stats panel drew, in the two groups it ruled a line
+	 * between. Only {@link #splitStatsPanel} needs them now, to work out how tall that panel
+	 * was; each row's own setting survived the split untouched and merely moved subpage.
 	 */
 	private static final List<String> SPEED_ROWS = List.of("showPitch", "showGlideRatio",
 			"showHorizontalSpeed", "showTotalSpeed", "showVerticalSpeed",
@@ -51,6 +47,9 @@ public final class ConfigStore {
 			"showPotentialEnergy", "showTotalEnergy", "showCycleGain");
 	/** The layout width Flight Stats was scaled from, and the on-screen width it defaulted to. */
 	private static final long RETIRED_PANEL_WIDTH = 132;
+	/** Where the retired panel sat, before either coordinate had a setting of its own. */
+	private static final long RETIRED_PANEL_X = 4;
+	private static final long RETIRED_PANEL_Y = 4;
 
 	private static Path path() {
 		return FabricLoader.getInstance().getConfigDir().resolve("elytra-vario.json");
@@ -89,11 +88,6 @@ public final class ConfigStore {
 				values.put(speedometer.glidingOnly(), Boolean.toString(mode.equals("1")));
 			}
 		}
-		for (var entry : RETIRED_POSITIONS.entrySet()) {
-			if (root.has(entry.getKey()) && !root.has(entry.getValue())) {
-				values.put(entry.getValue(), root.get(entry.getKey()).getAsString());
-			}
-		}
 		for (var entry : RETIRED_MARKER_KEYS.entrySet()) {
 			if (root.has(entry.getKey()) && !root.has(entry.getValue())) {
 				values.put(entry.getValue(), root.get(entry.getKey()).getAsString());
@@ -113,32 +107,91 @@ public final class ConfigStore {
 			values.put("chartSize", Long.toString(Math.round(
 					horizontalRange * root.get("chartScale").getAsDouble())));
 		}
-		// Flight Stats was an on-screen width and, behind Advanced, the layout width it was
-		// scaled from; before that it was a scale. Any of the three fixed the height as well,
-		// at the rows it was showing times that scale, so the height is worked out here the way
-		// the panel used to work it out and a migrated panel is drawn at exactly the size it
-		// was. One save replaces the retired keys.
-		if (!root.has("statsHeight") && (root.has("statsSize") || root.has("panelWidth")
-				|| root.has("panelScale"))) {
-			long layoutWidth = root.has("panelWidth")
-					? root.get("panelWidth").getAsLong() : RETIRED_PANEL_WIDTH;
-			long onScreenWidth;
-			if (root.has("statsSize")) {
-				onScreenWidth = root.get("statsSize").getAsLong();
-			} else if (root.has("panelScale")) {
-				onScreenWidth = (long) Math.ceil(layoutWidth * root.get("panelScale").getAsDouble());
-			} else {
-				// Both defaulted to the same 132, so a file naming only the layout width was
-				// drawing the panel at the default width and at whatever scale that came to.
-				onScreenWidth = RETIRED_PANEL_WIDTH;
-			}
-			values.put("statsWidth", Long.toString(onScreenWidth));
-			values.put("statsHeight", Long.toString(Math.ceilDiv(
-					onScreenWidth * VarioHudElement.panelHeight(rows(values, SPEED_ROWS),
-							rows(values, ENERGY_ROWS)), layoutWidth)));
-		}
+		splitStatsPanel(root, values);
 		if (ConfigOptions.error(values) != null) throw new IllegalArgumentException("Invalid config values");
 		return values;
+	}
+
+	/**
+	 * Turns the retired single Flight Stats panel into the four it became, drawn where it was.
+	 *
+	 * <p>The whole of what that panel was is a position, a width and a height — the rows it
+	 * carried are unchanged settings that merely moved subpage — so the split is a matter of
+	 * dividing its box rather than of inventing anything. Each new panel keeps the old
+	 * position's x and the old width, takes the height its own rows want at the <em>old
+	 * panel's text size</em>, and is stacked under the one before it with their borders sharing
+	 * a column, which is the overlap the editor now snaps to. So a migrated HUD reads at the
+	 * size it read at, in the order it read in, with one extra rule where there was one before.
+	 *
+	 * <p>Finding that text size is the only arithmetic here, and it is the retired layout run
+	 * backwards: the old panel laid its rows out at a fixed line height, added a rule between
+	 * its halves when both had rows, and scaled the lot onto the height it was given.
+	 *
+	 * <p>The height itself was, in turn, three different retired settings — an on-screen width
+	 * and, behind Advanced, the layout width it was scaled from; before that a scale. Each of
+	 * them fixed the height too, so each is read here the way the panel used to read it.
+	 *
+	 * <p>A panel whose rows are all switched off is given the size its rows <em>would</em> want
+	 * and is not stacked, since it is not drawn: it is the size it would appear at if one of
+	 * them were switched back on, rather than a box left at some default.
+	 *
+	 * <p>One save replaces every retired key. This can go once no config file predates the split.
+	 */
+	private static void splitStatsPanel(JsonObject root, Map<String, String> values) {
+		// A file naming the panels was written after the split and says what it means.
+		if (root.has(StatsPanel.OTHER.yKey())) return;
+		long layoutWidth = root.has("panelWidth")
+				? root.get("panelWidth").getAsLong() : RETIRED_PANEL_WIDTH;
+		long width;
+		if (root.has("statsWidth")) {
+			width = root.get("statsWidth").getAsLong();
+		} else if (root.has("statsSize")) {
+			width = root.get("statsSize").getAsLong();
+		} else if (root.has("panelScale")) {
+			width = (long) Math.ceil(layoutWidth * root.get("panelScale").getAsDouble());
+		} else {
+			// Both defaulted to the same 132, so a file naming only the layout width was
+			// drawing the panel at the default width and at whatever scale that came to.
+			width = RETIRED_PANEL_WIDTH;
+		}
+		int retiredLayoutHeight = retiredLayoutHeight(values);
+		long height = root.has("statsHeight") ? root.get("statsHeight").getAsLong()
+				: Math.ceilDiv(width * retiredLayoutHeight, layoutWidth);
+		double scale = (double) height / retiredLayoutHeight;
+		long x = number(root, "statsX", "originX", RETIRED_PANEL_X);
+		long top = number(root, "statsY", "originY", RETIRED_PANEL_Y);
+		for (StatsPanel panel : StatsPanel.values()) {
+			int rows = rows(values, panel.rowKeys());
+			int drawn = rows > 0 ? rows : panel.rowKeys().size();
+			long panelHeight = Math.clamp(
+					Math.round((drawn * StatsPanel.LINE + StatsPanel.PAD * 2) * scale), 16, 1200);
+			values.put(panel.xKey(), Long.toString(Math.clamp(x, -4096, 4096)));
+			values.put(panel.yKey(), Long.toString(Math.clamp(top, -4096, 4096)));
+			values.put(panel.widthKey(), Long.toString(Math.clamp(width, 32, 1200)));
+			values.put(panel.heightKey(), Long.toString(panelHeight));
+			if (root.has("panelOpacity")) {
+				values.put(panel.opacityKey(), root.get("panelOpacity").getAsString());
+			}
+			if (root.has("showPanelBorder")) {
+				values.put(panel.borderKey(), root.get("showPanelBorder").getAsString());
+			}
+			if (rows > 0) top += panelHeight - ModulePositionEditor.OVERLAP;
+		}
+	}
+
+	/** How tall the retired panel laid itself out, rows and the rule between its halves. */
+	private static int retiredLayoutHeight(Map<String, String> values) {
+		int speed = rows(values, SPEED_ROWS);
+		int energy = rows(values, ENERGY_ROWS);
+		return (speed + energy + (speed > 0 && energy > 0 ? 1 : 0)) * StatsPanel.LINE
+				+ StatsPanel.PAD * 2;
+	}
+
+	/** The first of these keys the file names, or {@code fallback} where it names none. */
+	private static long number(JsonObject root, String key, String retiredKey, long fallback) {
+		if (root.has(key)) return root.get(key).getAsLong();
+		if (root.has(retiredKey)) return root.get(retiredKey).getAsLong();
+		return fallback;
 	}
 
 	/** How many of these rows the file leaves switched on. */
