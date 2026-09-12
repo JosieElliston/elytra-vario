@@ -10,6 +10,8 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-09-12
+
 ### Added
 
 - Reference markers on the dial speedometer, matching the bar speedometer's two sets: white
@@ -223,7 +225,8 @@ First release, for Minecraft 26.2 on Fabric. Client-side only.
 - Screen anchoring for the stats panel, graph and speedometer. The graph can instead attach to
   an edge of the stats panel, and an attached pair anchors and moves as one block.
 
-[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.2.0...v1.3.0
