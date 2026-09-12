@@ -227,6 +227,14 @@ remain legible over a filled bar without competing with it.
 as a limit being exceeded, so its bar reaches the top and turns gray to say its height is no
 longer an exact reading.
 
+**The panel is measured around what it shows.** Every part that can be switched off takes its
+space with it: the scale labels' column and the half line of clearance the topmost label needs
+above the plot, and each bar's slot. A panel with its labels off is narrower rather than
+emptier, and the labels the scale drops on its own — when the major step is too fine for them
+to sit clear of one another — take their column with them for the same reason. The bars keep
+their fixed order but not fixed positions; hiding one closes its gap, because the panel is the
+readings shown side by side rather than a frame with three places in it.
+
 ### Dial speedometer
 
 The semicircular dial trades aligned heights for angles that can be caught in peripheral

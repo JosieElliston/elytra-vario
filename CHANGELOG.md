@@ -13,6 +13,12 @@ and key-registration APIs, not behavior.
 
 ### Changed
 
+- The bar speedometer's panel is now measured around what it actually shows. Turning off the
+  scale labels takes their column and the half line of clearance above the plot with them,
+  fourteen pixels narrower and four shorter, and turning off one of the three bars closes its
+  gap rather than leaving a hole in a panel of unchanged size. The margin to the right of the
+  bars is now the same four pixels as the one to the left of the labels, where it used to be
+  eleven.
 - The selection and hover outlines in the position editor now stroke inside a module's
   bounds rather than one pixel outside them. The outline used to add a pixel on every side,
   so a module appeared to grow as the pointer crossed it and modules that were in fact flush
