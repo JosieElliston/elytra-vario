@@ -685,7 +685,9 @@ public final class VarioConfigScreen extends Screen {
 	/**
 	 * Thickened corners, marking where a module can be taken hold of to resize it. The
 	 * {@code active} corner is the one the pointer has found, or the one being dragged, and is
-	 * drawn longer and thicker than the rest.
+	 * drawn longer, thicker and white: the white the outline gives up when the drag stops being
+	 * a move goes to the grip that has taken the drag over, so there is one white thing on the
+	 * screen at a time and it is always the thing the next click will act on.
 	 */
 	private static void drawGrips(GuiGraphicsExtractor graphics, ModulePositionEditor.Bounds bounds,
 			int color, ModulePositionEditor.Corner active) {
@@ -695,12 +697,13 @@ public final class VarioConfigScreen extends Screen {
 			boolean grown = corner == active;
 			int reach = ModulePositionEditor.gripReach(bounds, grown);
 			int thickness = Math.min(grown ? GRIP_THICKNESS + 1 : GRIP_THICKNESS, reach);
+			int paint = grown ? 0xFFFFFFFF : color;
 			int x = corner.left ? bounds.x() : right - reach;
 			int y = corner.top ? bounds.y() : bottom - reach;
 			int column = corner.left ? bounds.x() : right - thickness;
 			int row = corner.top ? bounds.y() : bottom - thickness;
-			graphics.fill(x, row, x + reach, row + thickness, color);
-			graphics.fill(column, y, column + thickness, y + reach, color);
+			graphics.fill(x, row, x + reach, row + thickness, paint);
+			graphics.fill(column, y, column + thickness, y + reach, paint);
 		}
 	}
 

@@ -277,37 +277,40 @@ class ModulePositionEditorTest {
 
 	@Test
 	void resizeSnapsAMovingEdgeFlushWithAnotherModule() {
-		// Below and to the right, spanning y 60 to 140.
+		// To the right, spanning y 20 to 100, and clear of the screen's center line so that
+		// only the dragged edge has anything to land on.
 		var other = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 150, 60, 60, 80);
+				ModulePositionEditor.Module.STATS, 150, 20, 60, 80);
 		var bounds = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.BAR_SPEEDOMETER, 40, 100, 60, 40);
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 40, 60, 60, 40);
 		var sizing = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
 
-		// Pinned at the top, the bottom edge is dragged to 137 and finds the other module's
+		// Pinned at the top, the bottom edge is dragged to 97 and finds the other module's
 		// bottom edge three pixels further down.
 		assertEquals(40, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
-				bounds, 40, sizing, 200, 137, List.of(other), 320, 240, 4, 4));
+				bounds, 40, sizing, 200, 97, List.of(other), 320, 240, 4, 4));
 		// Out of reach of anything, the pointer is followed exactly.
 		assertEquals(30, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
-				bounds, 40, sizing, 200, 130, List.of(other), 320, 240, 4, 4));
+				bounds, 40, sizing, 200, 90, List.of(other), 320, 240, 4, 4));
 	}
 
 	@Test
-	void resizeSnapsTheNearerOfTheTwoEdgesItMoves() {
+	void resizeSnapsTheNearerOfTheLinesItMoves() {
+		// Right edge at 200, one pixel out from where the drag leaves the dragged edge.
 		var right = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 200, 20, 40, 40);
+				ModulePositionEditor.Module.STATS, 160, 20, 40, 40);
+		// Bottom edge at 196, three pixels short of it.
 		var below = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 196, 30, 20);
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 176, 30, 20);
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 100, 100, 40, 40);
 		var sizing = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
 
-		// Both edges move together, so only one of them can land. Dragged to (199, 199), the
-		// right edge is a pixel from the left edge at 200 and the bottom is three from the top
-		// edge at 196, and the width that makes the right edge flush is what the drag takes.
+		// Every line moves off the one setting, so only one of them can land: dragged to
+		// (199, 199) the right edge is a pixel from a right edge and the bottom edge three from
+		// a bottom edge, and the width that makes the nearer one flush is what the drag takes.
 		assertEquals(100, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				bounds, 40, sizing, 199, 199, List.of(right, below), 320, 240, 4, 4));
 		// Without the nearer rest to beat it, the same drag lands the bottom edge instead.
@@ -316,32 +319,73 @@ class ModulePositionEditorTest {
 	}
 
 	@Test
+	void resizeSnapsTheCenterTheDraggedEdgeTrails() {
+		var other = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS, 150, 100, 40, 60);
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 100);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
+
+		// Nothing is near the dragged edge at 199, but the center it trails is a pixel off the
+		// screen's own center line, and a height of 160 puts it exactly on it.
+		assertEquals(160, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 100, sizing, 200, 199, List.of(other), 320, 240, 4, 4));
+		var landed = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 160);
+		assertEquals(List.of(new ModulePositionEditor.Guide(120, 0, 320)),
+				ModulePositionEditor.resizeGuides(landed,
+						ModulePositionEditor.Corner.BOTTOM_RIGHT, List.of(other), 320, 240, 4)
+						.horizontal());
+	}
+
+	@Test
 	void resizePassesOverARestTheSettingCannotReach() {
 		// The dial is two radii and two rims across, so it has only odd widths: a rest that
 		// asks for an even one cannot be taken however near it is.
 		var bounds = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.DIAL_SPEEDOMETER, 10, 100, 91, 46);
+				ModulePositionEditor.Module.DIAL_SPEEDOMETER, 10, 60, 91, 46);
 		var sizing = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(2, 1), 12, 200, true);
-		// Offers a left edge one pixel out from the dial's right edge, which would want a
-		// radius of 40.5, and nothing else within reach.
+		// Offers a left edge to stop a margin short of, three pixels in from the dial's right
+		// edge, which would want a width of 88 and so a radius of 38.5.
 		var beside = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS, 102, 30, 40, 40);
 		// Offers a top edge to stop a margin short of, three pixels below the dial's bottom.
 		var under = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.CHART, 200, 153, 30, 30);
+				ModulePositionEditor.Module.CHART, 200, 113, 30, 30);
 
 		assertEquals(43, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
-				bounds, 40, sizing, 101, 146, List.of(beside, under), 320, 240, 4, 4));
+				bounds, 40, sizing, 101, 106, List.of(beside, under), 320, 240, 4, 4));
 		// On its own the unreachable rest changes nothing, and the pointer is followed.
 		assertEquals(40, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
-				bounds, 40, sizing, 101, 146, List.of(beside), 320, 240, 4, 4));
+				bounds, 40, sizing, 101, 106, List.of(beside), 320, 240, 4, 4));
+	}
+
+	@Test
+	void aResizedEdgeRestsWhereAMovedBoxWould() {
+		var other = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS, 100, 20, 40, 60);
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 10, 100, 89, 89);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
+
+		// Grown towards the other module's left edge, the resized edge stops a margin short of
+		// it at 96, rather than butting flush against it: a width of 86 from a left edge at 10.
+		assertEquals(86, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 89, sizing, 99, 189, List.of(other), 320, 240, 4, 4));
+		// Which is where a move of the same box comes to rest too: x 6 with a width of 90 is a
+		// right edge at 96, the same relationship reached the other way round.
+		assertEquals(new ModulePositionEditor.Position(6, 100),
+				ModulePositionEditor.snap(ModulePositionEditor.Module.CHART, 10, 100, 90, 90,
+						List.of(other), 320, 240, 4, 4).position());
 	}
 
 	@Test
 	void resizeGuidesDrawOnlyWhereAnEdgeHasLanded() {
 		var other = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS, 40, 20, 60, 60);
+				ModulePositionEditor.Module.STATS, 30, 20, 70, 60);
 		var landed = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 40, 40, 60, 40);
 
@@ -350,7 +394,7 @@ class ModulePositionEditorTest {
 		var guides = ModulePositionEditor.resizeGuides(landed,
 				ModulePositionEditor.Corner.BOTTOM_RIGHT, List.of(other), 320, 240, 4);
 		assertEquals(List.of(new ModulePositionEditor.Guide(100, 20, 80)), guides.vertical());
-		assertEquals(List.of(new ModulePositionEditor.Guide(80, 40, 100)), guides.horizontal());
+		assertEquals(List.of(new ModulePositionEditor.Guide(80, 30, 100)), guides.horizontal());
 
 		var shorter = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 40, 40, 60, 37);

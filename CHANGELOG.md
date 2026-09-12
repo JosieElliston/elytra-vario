@@ -27,20 +27,31 @@ build identifier and released feature for feature; see its own changelog.
   ignore the rest. A drag cannot push a module off the screen past its pinned corner, and stops
   at each setting's own range.
 
-  A resize snaps to the same rests a move does: flush with another module's edge or center, a
-  margin clear of it, or against the screen's margins or center, with the same guides drawn.
-  Only one edge can win, since both edges of a corner are the same number, so the nearer rest
-  takes it; and a rest the setting cannot actually reach — the dial's diameter comes in steps of
-  two, so half its widths do not exist — is passed over for one it can. The guides are drawn
-  from the module as it ends up rather than from the size that was aimed at, so a line appears
-  only where an edge genuinely lies on it.
+  A resize snaps to the rests a move snaps to and to no others, with the same guides drawn: a
+  module should come to rest in the same places whether it was carried there or grown there. A
+  move relates two whole boxes — like edge to like edge, center to center, or the box set down a
+  margin clear of the other — so a resize takes that same list read line by line. The dragged
+  edge takes the rest of its own kind and the margin clearance on its own side; the center line,
+  which the drag carries along at half the edge's rate, takes another module's center or the
+  screen's; the pinned edge takes nothing, since it does not move. An edge dragged rightwards
+  therefore rests flush on a right edge or a margin short of a left edge, and never flush against
+  the left edge itself, because a move would not shove two modules together either.
+
+  Only one line can win, since one setting places all four of them, so the nearest rest takes it
+  and the guide that appears says which. A rest the setting cannot actually reach — the dial's
+  diameter comes in steps of two, so half its widths do not exist, and a center moves only half a
+  pixel per unit of size — is passed over for one it can. The guides are drawn from the module as
+  it ends up rather than from the size that was aimed at, so a line appears only where an edge or
+  a center genuinely lies on it.
 
   The module under the pointer draws its four grips as thickened corners on the outline it
-  already had, and the grip the pointer has found is drawn longer and thicker than the others.
-  At the same moment the white hover outline goes, because that outline means the module is
-  what a drag would pick up and carry, and over a grip it no longer is. The grown grip is drawn
-  larger than the area it answers to, which is safe in the direction that matters: the pointer
-  is inside the plain reach whenever the larger mark is showing.
+  already had, and the grip the pointer has found is drawn longer, thicker and white. At the
+  same moment the white hover outline goes, because that outline means the module is what a drag
+  would pick up and carry, and over a grip it no longer is: the white moves from the box to the
+  grip that has taken the drag over, so there is one white thing on screen at a time and it is
+  always what the next click will act on. The grown grip is drawn larger than the area it
+  answers to, which is safe in the direction that matters: the pointer is inside the plain reach
+  whenever the larger mark is showing.
 
   A resize writes the same setting the module's page does, so its box follows the drag, and that
   box's tooltip now says the corners are there. The new size is measured off the module after
