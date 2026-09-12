@@ -549,8 +549,7 @@ public final class VarioConfigScreen extends Screen {
 			boolean isHovered = hovered != null && bounds.module() == hovered.module();
 			if (bounds.module() == selected || isHovered) {
 				int color = isHovered ? 0xFFFFFFFF : 0xFF66CCFF;
-				graphics.outline(bounds.x() - 1, bounds.y() - 1,
-						bounds.width() + 2, bounds.height() + 2, color);
+				graphics.outline(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
 			}
 		}
 		if (draggingModule == null) return;
@@ -562,8 +561,7 @@ public final class VarioConfigScreen extends Screen {
 			int ghostY = Math.clamp((int) Math.round(dragY), 0,
 					Math.max(0, height - bounds.height()));
 			if (ghostX != bounds.x() || ghostY != bounds.y()) {
-				graphics.outline(ghostX - 1, ghostY - 1,
-						bounds.width() + 2, bounds.height() + 2, 0xA0FFFFFF);
+				graphics.outline(ghostX, ghostY, bounds.width(), bounds.height(), 0xA0FFFFFF);
 			}
 		}
 	}
