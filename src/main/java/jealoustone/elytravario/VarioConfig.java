@@ -121,15 +121,6 @@ public final class VarioConfig {
 	 */
 	public static int panelWidth = 132;
 
-
-	/**
-	 * Chart size, in pixels per block/tick. Both the width and the height are derived from
-	 * this and the axis ranges, so a pixel is always worth the same change in speed on both
-	 * axes, and widening a range grows the chart rather than rescaling it.
-	 */
-	public static double chartScale = 34.0;
-	public static int chartTrailTicks = 100;
-
 	/**
 	 * Chart bounds in blocks/<em>tick</em>, matching the units elytrasim plots in, so the
 	 * in-game chart and the sim's screenshots can be compared directly. Axis labels are
@@ -155,6 +146,24 @@ public final class VarioConfig {
 	public static double chartMaxVxz = 3.0;
 	public static double chartMinVy = -1.5;
 	public static double chartMaxVy = 2.0;
+
+	/**
+	 * Chart size, in pixels per block/tick. Both the width and the height are derived from
+	 * this and the axis ranges, so a pixel is always worth the same change in speed on both
+	 * axes, and widening a range grows the chart rather than rescaling it.
+	 *
+	 * <p>Declared after the bounds so the default can be the scale that makes the chart exactly
+	 * as wide as the readout panel, which sits directly above it in the default layout: two
+	 * stacked panels whose edges nearly line up read as a mistake rather than as a choice. It
+	 * is not a round number and has no reason to be one — the scale is a consequence of the
+	 * width you want and the domain you want inside it. Only the default is tied to
+	 * {@code panelWidth}; either can be set from the config screen without dragging the other.
+	 *
+	 * <p>The vertical domain happens to span the same 3.5 blocks/tick as the horizontal one, so
+	 * the default chart is square.
+	 */
+	public static double chartScale = panelWidth / (chartMaxVxz - chartMinVxz);
+	public static int chartTrailTicks = 100;
 
 	/**
 	 * The heatmap's ramp. Energy being lost runs from {@code chartFieldZeroColor} to
