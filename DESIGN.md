@@ -142,6 +142,14 @@ filtered on the way to the screen. Three costs with three separate triggers: the
 on a domain or gravity change, the pixels repaint on a colour or scale change, and the texture
 object is reallocated only when the chart changes size.
 
+One exception, and it is the reason the blit takes a destination rectangle at all: a chart
+being resized by a drag asks for a new size every pixel the pointer moves, and each of those
+would be a rebuild. For the length of the drag the field it already has is stretched over the
+chart instead. Only the scale changes under a drag, never the domain, so the stretched field
+describes exactly the velocities the chart is drawing — it is wrong in resolution and in
+nothing else, and nearest sampling showing its cells as blocks is the honest picture of that.
+The exact field is built once, on release.
+
 ### Its colors
 
 **Opaque, unlike everything else on the HUD.** The panels are translucent because they are
@@ -230,10 +238,16 @@ longer an exact reading.
 **The panel is measured around what it shows.** Every part that can be switched off takes its
 space with it: the scale labels' column and the half line of clearance the topmost label needs
 above the plot, and each bar's slot. A panel with its labels off is narrower rather than
-emptier, and the labels the scale drops on its own — when the major step is too fine for them
-to sit clear of one another — take their column with them for the same reason. The bars keep
-their fixed order but not fixed positions; hiding one closes its gap, because the panel is the
-readings shown side by side rather than a frame with three places in it.
+emptier. The bars keep their fixed order but not fixed positions; hiding one closes its gap,
+because the panel is the readings shown side by side rather than a frame with three places in
+it.
+
+**Only the switch decides whether the labels are there.** The panel used to drop them on its
+own once the major step was too fine for them to sit clear of one another, which made the
+panel's width depend on its height: dragging the plot shorter made the label column vanish and
+the whole panel jump sideways under the pointer. Labels that crowd at a fine step are the
+step's problem and are visibly so, which is better than a panel that changes shape for reasons
+the person resizing it cannot see.
 
 ### Dial speedometer
 
@@ -618,6 +632,50 @@ Vanilla allows the clash too; what it does is fire both actions, which is occasi
 wanted, and refusing it here would mean this screen enforcing a rule the Controls screen does
 not.
 
+## Placing the modules
+
+Four modules carry a position: the velocity graph, the flight stats panel, and the two
+speedometers. Each is an absolute top-left in scaled GUI pixels, clamped so that it stays on
+screen, and each can be set from its own page as a pair of numbers or moved in the world with
+the settings screen open. Clicking a module opens its page; dragging its middle moves it;
+dragging a corner resizes it; the arrow keys move the selected module a pixel at a time.
+
+**Corners resize, edges do not.** Every one of these modules is a single size setting — the
+graph's scale, the stats panel's scale, the bar speedometer's plot height, the dial's radius —
+so there is no such thing as a nonuniform resize to offer, and an edge would have nothing to
+drag that a corner does not already drag.
+
+**One setting, a pointer with two dimensions, so the answer is least squares.** The size chosen
+is the one whose box comes closest to the box the pointer is asking for. Where both axes follow
+the setting that is the pointer projected onto the box's diagonal, which is what dragging a
+locked-aspect corner looks like anywhere else; for the bar speedometer, whose width is its bars
+and labels rather than a setting, the same expression collapses to following the pointer
+vertically and ignoring the rest.
+
+**The box is affine in its setting, and the constant is measured rather than modelled.** A
+slope — the chart's domains, the panel's unscaled size, two for the dial's diameter — plus the
+size the module is currently drawn at pins the whole relationship, so whatever the box carries
+that the setting does not pay for, like the label column or the dial's rim, falls out as the
+difference between them. After the setting is applied the module is measured again and the
+pinned corner recomputed from that, rather than from what the arithmetic predicted: a scale is
+a real number and a box is a whole number of pixels, and over a long drag the rounding would
+otherwise walk the corner it is supposed to be holding still.
+
+**A resize snaps to the same rests a move does** — flush with another module's edge or center,
+a margin clear of it, or against the screen's margins or center. Only one edge can win, because
+both edges of a corner are the same number: the nearer rest takes it. A rest the setting cannot
+actually reach is passed over for one it can, which happens whenever a module's size comes in
+steps, as the dial's diameter does. The guides are drawn from the module as it ends up rather
+than from the size that was aimed at, so a line appears only where an edge genuinely lies on it.
+
+**The grips say which drag is armed.** The four corners are drawn as thickened corners on the
+outline, and the one under the pointer is drawn longer and thicker than the others. At the same
+moment the white hover outline — which means *this is what a drag would pick up and carry* —
+goes, leaving the quieter outline of the module whose page is open. The grown grip is drawn
+larger than the area it answers to, which is safe in the one direction that matters: the
+pointer is inside the plain reach whenever the larger mark is showing, so the mark never claims
+ground a click would not.
+
 ## Minecraft 26.2 notes
 
 26.2 moved several things. Verify against the actual jars rather than recalling — `javap` the
@@ -693,14 +751,15 @@ right-side settings panel leaves the HUD visible without blur. Each page has a r
 common controls are under Advanced. The screen reopens on the page, subpage and scroll position
 you left, with the Advanced switch as you left it, for the rest of the session.
 
-The graph's anchor is one setting: five screen corners, or one of the four sides of the stats
-panel. Below is the default. Attaching boxes the pair and anchors that box, so both instruments
-move together and the pair as a whole is what gets clamped; a side facing a screen edge pushes
-the panel in from that edge rather than taking the graph off it. Across the attachment the two
-are flush with the edge the anchor names, and centered under the center anchor. Offsets default
-to zero and become a nudge away from the panel while attached. Both horizontal and vertical
-bounds are editable. Visibility is independent for all four instruments, and stats
-rows are selectable. Energy rate has been removed; cycle gain and apex differences remain.
+Position is an absolute top-left in scaled GUI pixels for each of the four placed modules,
+clamped to the screen; the anchors and the graph-to-stats attachment this paragraph used to
+describe are gone. With the settings screen open the modules are editable in the world: click
+one to open its page, drag its middle to move it, drag a corner to resize it, or use the arrow
+keys for a pixel at a time. Moves and resizes both snap to the other modules and to the screen,
+and the coordinate and size fields on each page stay in step with whatever the drag does. See
+*Placing the modules* above. Both horizontal and vertical chart bounds are editable. Visibility
+is independent for all four instruments, and stats rows are selectable. Energy rate has been
+removed; cycle gain and apex differences remain.
 
 ## The readout panel
 
@@ -748,7 +807,10 @@ and the map is then optimistic by however far apart the two cursors are.
 It costs about a third of a second to build, once, on the first frame it is drawn — and again
 only if gravity or the chart's bounds change. After that it is free. Most of that is the JIT
 seeing the physics for the first time, so gliding for a few seconds before opening the chart
-makes it roughly ten times cheaper. Turn it off with `showEnergyField`.
+makes it roughly ten times cheaper. Resizing the chart by dragging a corner stretches the map
+it has for the length of the drag and builds the exact one when the mouse comes up, so a drag
+costs one build rather than one per pixel; the map goes blocky while it is being dragged, which
+is what a stretched map honestly looks like. Turn it off with `showEnergyField`.
 
 ## The pitch ladder
 
@@ -872,7 +934,10 @@ cursors.
 
 ## Known limitations
 
-- Positioning uses screen anchors and numeric offsets; a visual position editor is still pending.
+- Positioning is absolute pixel coordinates plus an in-world editor: click, drag to move,
+  drag a corner to resize, arrow keys to nudge, with snapping to the other modules and to the
+  screen. What it does not have is a way back to a default arrangement other than the page's
+  own reset, and nothing stops two modules from being dragged on top of one another.
 - At small GUI sizes — below roughly 400 scaled pixels wide — the ladder's left-hand labels
   reach into the readout panel. Nothing checks for the collision.
 - The ladder does not turn. Once yaw matters, rungs become conic sections and straight ticks
@@ -893,7 +958,9 @@ cursors.
   physics it describes does not apply. Turn on the graph's Only while gliding to suppress it there.
 - Building the heatmap blocks the frame it happens on. It is one hitch of roughly a third of a
   second and then never again, and it is deliberately not spread across frames: a half-built
-  map that disagreed with its own axes would be worse than a stutter.
+  map that disagreed with its own axes would be worse than a stutter. Changing the graph's
+  scale pays it again, once, which is why a resize drag stretches the old map until it ends
+  rather than paying it on every pixel.
 - **A cursor outside the chart's bounds is clamped to the edge, with no cue that it has
   happened.** The vertical axis reaches 40 b/s of climb, which covers a good pump cycle's peak
   of about 35, but a rocket will go past it. A domain that slid to keep the cursor inside is a

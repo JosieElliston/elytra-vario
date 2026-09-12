@@ -94,6 +94,17 @@ public final class EnergyField {
 	}
 
 	/**
+	 * The field as it stands, whatever domain it was built for, or null before the first build.
+	 *
+	 * <p>For the one caller that wants a field more than it wants the right field: a chart
+	 * being resized by a drag stretches this rather than building one a frame, and asks for the
+	 * right one again when the drag ends.
+	 */
+	public static EnergyField cached() {
+		return cached;
+	}
+
+	/**
 	 * Energy change per cell in blocks/tick, row-major, {@code width} entries a row, starting
 	 * at the top left of the chart. Floats rather than doubles because the values are on their
 	 * way to eight bits a channel and the array is the largest thing the mod holds.
