@@ -104,6 +104,8 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Fixed
 
+- Position-editor module tooltips now disappear during move and resize drags, so they do not
+  cover modules and alignment guides to the right of the pointer.
 - Resize candidates are now evaluated from the immutable geometry at the start of the drag and
   ranked by the resulting corner's full two-dimensional distance from the mouse. Recomputing
   from each previous rounded result could make equivalent edge alignments trade places from
