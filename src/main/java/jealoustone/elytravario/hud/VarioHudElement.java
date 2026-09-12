@@ -124,7 +124,8 @@ public final class VarioHudElement implements HudElement {
 
 	private static int panelRows() { return speedRows() + energyRows(); }
 
-	private static int panelHeight() {
+	/** The stats panel's unscaled height, shared with the settings screen's resize grips. */
+	public static int panelHeight() {
 		return (panelRows() + (speedRows() > 0 && energyRows() > 0 ? 1 : 0)) * LINE + PAD * 2;
 	}
 

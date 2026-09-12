@@ -16,19 +16,44 @@ import net.minecraft.client.gui.Font;
 /** Geometry and coordinate changes for the in-world module position editor. */
 final class ModulePositionEditor {
 	enum Module {
-		CHART(3, "chartX", "chartY"),
-		STATS(4, "statsX", "statsY"),
-		BAR_SPEEDOMETER(5, "barSpeedoX", "barSpeedoY"),
-		DIAL_SPEEDOMETER(6, "dialSpeedoX", "dialSpeedoY");
+		CHART(3, "chartX", "chartY", "chartScale"),
+		STATS(4, "statsX", "statsY", "panelScale"),
+		BAR_SPEEDOMETER(5, "barSpeedoX", "barSpeedoY", "barSpeedoHeight"),
+		DIAL_SPEEDOMETER(6, "dialSpeedoX", "dialSpeedoY", "dialSpeedoRadius");
 
 		final int page;
 		final String xKey;
 		final String yKey;
+		/** The one setting the module's size is a function of; see {@link #growth}. */
+		final String sizeKey;
 
-		Module(int page, String xKey, String yKey) {
+		Module(int page, String xKey, String yKey, String sizeKey) {
 			this.page = page;
 			this.xKey = xKey;
 			this.yKey = yKey;
+			this.sizeKey = sizeKey;
+		}
+	}
+
+	/**
+	 * A corner grip, named for the corner it holds rather than the one it pins.
+	 *
+	 * <p>Corners and not edges, because no module has a nonuniform resize to offer: each one's
+	 * box is a function of a single size setting, so an edge would have nothing to drag that a
+	 * corner does not already drag.
+	 */
+	enum Corner {
+		TOP_LEFT(true, true),
+		TOP_RIGHT(false, true),
+		BOTTOM_LEFT(true, false),
+		BOTTOM_RIGHT(false, false);
+
+		final boolean left;
+		final boolean top;
+
+		Corner(boolean left, boolean top) {
+			this.left = left;
+			this.top = top;
 		}
 	}
 
@@ -80,6 +105,34 @@ final class ModulePositionEditor {
 					dial.width(), dial.height()));
 		}
 		return result;
+	}
+
+	/** How far into a corner a resize grip reaches, before a small module shrinks it. */
+	static final int GRIP = 5;
+
+	/**
+	 * The reach of this module's grips. Never more than a third of its shorter side, so that a
+	 * small module keeps a middle to pick it up by.
+	 */
+	static int gripReach(Bounds bounds) {
+		return Math.clamp(Math.min(bounds.width, bounds.height) / 3, 1, GRIP);
+	}
+
+	/**
+	 * The corner grip under the pointer, or null where the pointer is asking to move the module
+	 * rather than to resize it.
+	 */
+	static Corner grip(Bounds bounds, double x, double y) {
+		if (!bounds.contains(x, y)) return null;
+		int reach = gripReach(bounds);
+		boolean left = x < bounds.x + reach;
+		boolean right = x >= bounds.x + bounds.width - reach;
+		boolean top = y < bounds.y + reach;
+		boolean bottom = y >= bounds.y + bounds.height - reach;
+		if (!left && !right) return null;
+		if (!top && !bottom) return null;
+		if (top) return left ? Corner.TOP_LEFT : Corner.TOP_RIGHT;
+		return left ? Corner.BOTTOM_LEFT : Corner.BOTTOM_RIGHT;
 	}
 
 	static Bounds at(List<Bounds> bounds, double x, double y) {
@@ -200,6 +253,82 @@ final class ModulePositionEditor {
 		draft.put(module.xKey, Integer.toString(nextX));
 		draft.put(module.yKey, Integer.toString(nextY));
 		return true;
+	}
+
+	/** How many pixels of width and of height one unit of a module's size setting buys. */
+	record Growth(double width, double height) { }
+
+	/**
+	 * How the module's box grows with its size setting.
+	 *
+	 * <p>Every module's box is affine in that one setting, so this slope and the size the module
+	 * is currently drawn at describe it exactly: whatever the box carries that the setting does
+	 * not pay for — a label column, the dial's rim — falls out as the offset between them. The
+	 * resize therefore never has to predict a size it could measure instead.
+	 */
+	static Growth growth(Module module) {
+		return switch (module) {
+			// One scale in pixels per block/tick serves both of the chart's axes, so it grows
+			// by its domains, and keeps its aspect only where the two domains are equal.
+			case CHART -> new Growth(VarioConfig.chartMaxVxz - VarioConfig.chartMinVxz,
+					VarioConfig.chartMaxVy - VarioConfig.chartMinVy);
+			case STATS -> new Growth(VarioConfig.panelWidth, VarioHudElement.panelHeight());
+			// The bar chart is as wide as its bars and its scale labels, and neither is the
+			// setting: only the plot's height follows the pointer.
+			case BAR_SPEEDOMETER -> new Growth(0, 1);
+			// A semicircle is two radii across and one tall.
+			case DIAL_SPEEDOMETER -> new Growth(2, 1);
+		};
+	}
+
+	/**
+	 * The size setting that puts the dragged corner as near the pointer as the module's shape
+	 * allows, with the opposite corner pinned.
+	 *
+	 * <p>One setting has to answer a pointer that moves in two dimensions, so the answer is the
+	 * least-squares one: the value whose box comes closest to the box the pointer is asking for.
+	 * Where both axes grow that is the pointer projected onto the box's diagonal, which is what
+	 * dragging a locked-aspect corner looks like anywhere else; for the bar chart, whose width
+	 * is not a setting, the same expression collapses to following the pointer vertically.
+	 *
+	 * <p>The value is capped so that a module cannot be grown off the screen past its pinned
+	 * corner, and clamped to the setting's own range. Values are in the setting's own units, not
+	 * the screen's displayed ones.
+	 */
+	static double resize(Corner corner, Bounds rendered, double value, Growth growth,
+			double pointerX, double pointerY, double min, double max, boolean integral,
+			int screenWidth, int screenHeight) {
+		double width = growth.width();
+		double height = growth.height();
+		if (width <= 0 && height <= 0) return value;
+		int anchorX = corner.left ? rendered.x + rendered.width : rendered.x;
+		int anchorY = corner.top ? rendered.y + rendered.height : rendered.y;
+		double widthOffset = rendered.width - width * value;
+		double heightOffset = rendered.height - height * value;
+		double wantedWidth = Math.abs(Math.clamp(pointerX, 0, screenWidth) - anchorX);
+		double wantedHeight = Math.abs(Math.clamp(pointerY, 0, screenHeight) - anchorY);
+		double solved = (width * (wantedWidth - widthOffset)
+				+ height * (wantedHeight - heightOffset)) / (width * width + height * height);
+		double limit = Math.min(max, Math.min(
+				fits(corner.left ? anchorX : screenWidth - anchorX, width, widthOffset),
+				fits(corner.top ? anchorY : screenHeight - anchorY, height, heightOffset)));
+		if (integral) limit = Math.floor(limit);
+		// Where even the smallest size does not fit, the setting's own range wins over the
+		// screen: the drag can still reach the minimum, which is the best the module can do.
+		limit = Math.max(min, limit);
+		double capped = Math.clamp(solved, min, limit);
+		return integral ? Math.clamp(Math.rint(capped), min, limit) : capped;
+	}
+
+	/** The largest setting whose axis still fits in {@code available} pixels. */
+	private static double fits(double available, double slope, double offset) {
+		return slope > 0 ? (available - offset) / slope : Double.MAX_VALUE;
+	}
+
+	/** The top-left a resized module takes when the corner opposite the grip is pinned. */
+	static Position anchored(Corner corner, Bounds before, int width, int height) {
+		return new Position(corner.left ? before.x + before.width - width : before.x,
+				corner.top ? before.y + before.height - height : before.y);
 	}
 
 	private ModulePositionEditor() { }

@@ -37,9 +37,12 @@ public final class VarioConfigScreen extends Screen {
 	private static final int PAGE_COUNT = 7;
 	/** The page whose switch and key are the whole mod's rather than one instrument's. */
 	private static final int GLOBAL_PAGE = 0;
+	/** How thick a resize grip's arms are drawn, over the outline they thicken. */
+	private static final int GRIP_THICKNESS = 2;
 	private final Screen parent;
 	private final Map<String, String> settings = ConfigOptions.snapshot();
-	private final Map<String, EditBox> coordinateBoxes = new HashMap<>();
+	/** The boxes for the settings the in-world editor also writes: positions and sizes. */
+	private final Map<String, EditBox> editorBoxes = new HashMap<>();
 	// Where you were reading is not a setting, but losing it is felt like one: the screen is
 	// opened and closed repeatedly while flying, to try one number and watch the HUD. Page,
 	// subpage, scroll and the Advanced switch therefore outlive the screen, and are remembered
@@ -65,12 +68,15 @@ public final class VarioConfigScreen extends Screen {
 	private int panelWidth;
 	private int panelCenter;
 	private ModulePositionEditor.Module draggingModule;
-	/** Pointer-driven position before snapping, retained so a snapped module can pull free. */
+	/** The grip being dragged, when the drag is a resize rather than a move. */
+	private ModulePositionEditor.Corner draggingCorner;
+	/** Pointer-driven position before snapping, retained so a snapped module can pull free.
+	 * A move drags the module's top-left; a resize drags the grabbed corner. */
 	private double dragX;
 	private double dragY;
 	private List<ModulePositionEditor.Guide> snapVerticalGuides = List.of();
 	private List<ModulePositionEditor.Guide> snapHorizontalGuides = List.of();
-	private boolean updatingCoordinates;
+	private boolean updatingEditorBoxes;
 
 	public VarioConfigScreen(Screen parent) {
 		super(text("title"));
@@ -87,7 +93,7 @@ public final class VarioConfigScreen extends Screen {
 		capturing = null;
 		keyControls.clear();
 		optionList = null;
-		coordinateBoxes.clear();
+		editorBoxes.clear();
 		int span = Math.min(width - 16, minecraft.level != null ? 320 : 600);
 		int left = minecraft.level != null ? width - span - 8 : (width - span) / 2;
 		panelLeft = left;
@@ -338,8 +344,11 @@ public final class VarioConfigScreen extends Screen {
 				}
 				clearFocus();
 				draggingModule = target.module();
-				dragX = target.x();
-				dragY = target.y();
+				draggingCorner = ModulePositionEditor.grip(target, event.x(), event.y());
+				dragX = draggingCorner != null && !draggingCorner.left
+						? target.x() + target.width() : target.x();
+				dragY = draggingCorner != null && !draggingCorner.top
+						? target.y() + target.height() : target.y();
 				snapVerticalGuides = List.of();
 				snapHorizontalGuides = List.of();
 				return true;
@@ -353,7 +362,11 @@ public final class VarioConfigScreen extends Screen {
 		if (draggingModule == null) return super.mouseDragged(event, deltaX, deltaY);
 		dragX += deltaX;
 		dragY += deltaY;
-		drag(draggingModule, (int) Math.round(dragX), (int) Math.round(dragY));
+		if (draggingCorner == null) {
+			drag(draggingModule, (int) Math.round(dragX), (int) Math.round(dragY));
+		} else {
+			resize(draggingModule, draggingCorner, dragX, dragY);
+		}
 		return true;
 	}
 
@@ -361,6 +374,7 @@ public final class VarioConfigScreen extends Screen {
 	public boolean mouseReleased(MouseButtonEvent event) {
 		if (draggingModule == null) return super.mouseReleased(event);
 		draggingModule = null;
+		draggingCorner = null;
 		snapVerticalGuides = List.of();
 		snapHorizontalGuides = List.of();
 		return true;
@@ -384,12 +398,19 @@ public final class VarioConfigScreen extends Screen {
 	}
 
 	private void move(ModulePositionEditor.Module module, int dx, int dy) {
-		ModulePositionEditor.Bounds rendered = null;
-		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
-			if (bounds.module() == module) rendered = bounds;
+		if (!ModulePositionEditor.nudge(module, dx, dy, settings, renderedBounds(module),
+				width, height)) {
+			return;
 		}
-		if (!ModulePositionEditor.nudge(module, dx, dy, settings, rendered, width, height)) return;
-		coordinatesChanged(module);
+		editorWrote(module.xKey, module.yKey);
+	}
+
+	/** The module as it is currently drawn, or null while it is hidden. */
+	private ModulePositionEditor.Bounds renderedBounds(ModulePositionEditor.Module module) {
+		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
+			if (bounds.module() == module) return bounds;
+		}
+		return null;
 	}
 
 	private void drag(ModulePositionEditor.Module module, int x, int y) {
@@ -410,16 +431,62 @@ public final class VarioConfigScreen extends Screen {
 		if (nextX.equals(settings.get(module.xKey)) && nextY.equals(settings.get(module.yKey))) return;
 		settings.put(module.xKey, nextX);
 		settings.put(module.yKey, nextY);
-		coordinatesChanged(module);
+		editorWrote(module.xKey, module.yKey);
 	}
 
-	private void coordinatesChanged(ModulePositionEditor.Module module) {
-		updatingCoordinates = true;
-		EditBox xBox = coordinateBoxes.get(module.xKey);
-		EditBox yBox = coordinateBoxes.get(module.yKey);
-		if (xBox != null) xBox.setValue(settings.get(module.xKey));
-		if (yBox != null) yBox.setValue(settings.get(module.yKey));
-		updatingCoordinates = false;
+	/**
+	 * Scales the module so that the grabbed corner follows the pointer and the corner opposite
+	 * it stays where it is.
+	 *
+	 * <p>The new size is measured off the module after the setting has been applied rather than
+	 * predicted from it, so that the pinned corner survives whatever rounding the module does
+	 * when it lays itself out: a scale is a real number and a box is a whole number of pixels.
+	 */
+	private void resize(ModulePositionEditor.Module module, ModulePositionEditor.Corner corner,
+			double pointerX, double pointerY) {
+		ModulePositionEditor.Bounds before = renderedBounds(module);
+		if (before == null) return;
+		ConfigOptions.Option size = option(module.sizeKey);
+		double value;
+		try {
+			value = Double.parseDouble(settings.get(size.key())) / size.factor();
+		} catch (RuntimeException e) {
+			// A size box may temporarily contain incomplete input.
+			return;
+		}
+		double resized = ModulePositionEditor.resize(corner, before, value,
+				ModulePositionEditor.growth(module), pointerX, pointerY,
+				size.min() / size.factor(), size.max() / size.factor(), size.integral(),
+				width, height);
+		String next = size.format(resized);
+		if (!next.equals(settings.get(size.key()))) {
+			settings.put(size.key(), next);
+			editorWrote(size.key());
+		}
+		ModulePositionEditor.Bounds after = renderedBounds(module);
+		if (after == null) return;
+		ModulePositionEditor.Position position = ModulePositionEditor.anchored(corner, before,
+				after.width(), after.height());
+		String nextX = Integer.toString(Math.clamp(position.x(), 0,
+				Math.max(0, width - after.width())));
+		String nextY = Integer.toString(Math.clamp(position.y(), 0,
+				Math.max(0, height - after.height())));
+		if (nextX.equals(settings.get(module.xKey)) && nextY.equals(settings.get(module.yKey))) {
+			return;
+		}
+		settings.put(module.xKey, nextX);
+		settings.put(module.yKey, nextY);
+		editorWrote(module.xKey, module.yKey);
+	}
+
+	/** Shows what the in-world editor wrote in the boxes that show the same settings. */
+	private void editorWrote(String... keys) {
+		updatingEditorBoxes = true;
+		for (String key : keys) {
+			EditBox box = editorBoxes.get(key);
+			if (box != null) box.setValue(settings.get(key));
+		}
+		updatingEditorBoxes = false;
 		changed();
 	}
 
@@ -454,15 +521,25 @@ public final class VarioConfigScreen extends Screen {
 		}
 		if (isCoordinate(option.key())) {
 			body = body.copy().append("\n").append(text("positionEditor.controls"));
+		} else if (isSize(option.key())) {
+			body = body.copy().append("\n").append(text("positionEditor.sizeControls"));
 		}
 		return text(option.key()).copy().append("\n").append(body);
 	}
 
 	private static boolean isCoordinate(String key) {
-		return key.equals("chartX") || key.equals("chartY")
-				|| key.equals("statsX") || key.equals("statsY")
-				|| key.equals("barSpeedoX") || key.equals("barSpeedoY")
-				|| key.equals("dialSpeedoX") || key.equals("dialSpeedoY");
+		for (ModulePositionEditor.Module module : ModulePositionEditor.Module.values()) {
+			if (key.equals(module.xKey) || key.equals(module.yKey)) return true;
+		}
+		return false;
+	}
+
+	/** Whether the setting is the one a module's resize grips write. */
+	private static boolean isSize(String key) {
+		for (ModulePositionEditor.Module module : ModulePositionEditor.Module.values()) {
+			if (key.equals(module.sizeKey)) return true;
+		}
+		return false;
 	}
 
 	/** Advanced rows hide; rows belonging to another subpage are not part of this page's view. */
@@ -547,12 +624,19 @@ public final class VarioConfigScreen extends Screen {
 		ModulePositionEditor.Module selected = selectedModule();
 		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
 			boolean isHovered = hovered != null && bounds.module() == hovered.module();
-			if (bounds.module() == selected || isHovered) {
-				int color = isHovered ? 0xFFFFFFFF : 0xFF66CCFF;
+			boolean isDragging = bounds.module() == draggingModule;
+			if (bounds.module() == selected || isHovered || isDragging) {
+				int color = isHovered || isDragging ? 0xFFFFFFFF : 0xFF66CCFF;
 				graphics.outline(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
+				// Grips only on the module the pointer can actually take hold of, so that a
+				// module selected from its settings page still reads as a plain outline.
+				if (isHovered || isDragging) drawGrips(graphics, bounds, color);
 			}
 		}
 		if (draggingModule == null) return;
+		// A resize needs no ghost: the module is already drawn at the size the drag is asking
+		// for, and the corner it is pinning has not moved.
+		if (draggingCorner != null) return;
 		drawSnapGuides(graphics);
 		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
 			if (bounds.module() != draggingModule) continue;
@@ -563,6 +647,23 @@ public final class VarioConfigScreen extends Screen {
 			if (ghostX != bounds.x() || ghostY != bounds.y()) {
 				graphics.outline(ghostX, ghostY, bounds.width(), bounds.height(), 0xA0FFFFFF);
 			}
+		}
+	}
+
+	/** Thickened corners, marking where a module can be taken hold of to resize it. */
+	private static void drawGrips(GuiGraphicsExtractor graphics,
+			ModulePositionEditor.Bounds bounds, int color) {
+		int reach = ModulePositionEditor.gripReach(bounds);
+		int thickness = Math.min(GRIP_THICKNESS, reach);
+		int right = bounds.x() + bounds.width();
+		int bottom = bounds.y() + bounds.height();
+		for (ModulePositionEditor.Corner corner : ModulePositionEditor.Corner.values()) {
+			int x = corner.left ? bounds.x() : right - reach;
+			int y = corner.top ? bounds.y() : bottom - reach;
+			int column = corner.left ? bounds.x() : right - thickness;
+			int row = corner.top ? bounds.y() : bottom - thickness;
+			graphics.fill(x, row, x + reach, row + thickness, color);
+			graphics.fill(column, y, column + thickness, y + reach, color);
 		}
 	}
 
@@ -745,10 +846,12 @@ public final class VarioConfigScreen extends Screen {
 				box.setResponder(value -> {
 					settings.put(option.key(), value);
 					box.setTextColor(valid(value) ? 0xFFE0E0E0 : 0xFFFF7777);
-					if (!updatingCoordinates) changed();
+					if (!updatingEditorBoxes) changed();
 				});
 				box.setTextColor(valid(box.getValue()) ? 0xFFE0E0E0 : 0xFFFF7777);
-				if (isCoordinate(option.key())) coordinateBoxes.put(option.key(), box);
+				if (isCoordinate(option.key()) || isSize(option.key())) {
+					editorBoxes.put(option.key(), box);
+				}
 				control = box;
 			}
 			control.setTooltip(Tooltip.create(tooltip(option)));

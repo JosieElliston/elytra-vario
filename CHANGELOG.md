@@ -10,6 +10,35 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- Modules resize by dragging a corner in the in-world position editor. The corner opposite the
+  one you take hold of stays where it is, so the module grows away from the pointer rather than
+  jumping. A grip is the outer five pixels of a corner, and never more than a third of the
+  module's shorter side, so a small module keeps a middle to pick it up by; the module under the
+  pointer draws its four grips as thickened corners on the outline it already had.
+
+  Corners and not edges, because none of these modules has a nonuniform resize to offer. Each
+  one's box is a function of a single setting — the velocity graph's scale, the flight stats
+  panel's scale, the bar speedometer's plot height, the dial's radius — so an edge would have
+  nothing to drag that a corner does not. Where both axes follow that setting the corner tracks
+  the pointer down the box's diagonal, which is what dragging a locked-aspect corner looks like
+  anywhere else. The bar speedometer is the exception worth knowing about: its width is its bars
+  and its scale labels rather than a setting, so its corners follow the pointer vertically and
+  ignore the rest. A drag cannot push a module off the screen past its pinned corner, and stops
+  at each setting's own range.
+
+  A resize writes the same setting the module's page does, so its box follows the drag, and that
+  box's tooltip now says the corners are there. The new size is measured off the module after the
+  setting has been applied rather than predicted from it, so a scale that lands between pixels
+  cannot walk the pinned corner sideways over a long drag.
+
+  One caveat, on the velocity graph alone: its heatmap is rebuilt whenever the graph changes
+  size, so dragging that module's corner buys a rebuild for every pixel of drag — around 30ms
+  each at the default size, and quadratically more as the graph grows. The drag still lands
+  where you put it, but the frame rate during it does not survive; the exact scale field
+  remains the smooth way to make a large change there.
+
 ### Changed
 
 - The velocity chart's default scale is now 37.714286 pixels per block/tick rather than 34, so
