@@ -10,6 +10,15 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+### Changed
+
+- The velocity chart's default scale is now 37.714286 pixels per block/tick rather than 34, so
+  the default chart is exactly as wide as the flight stats panel stacked above it: 132 pixels
+  instead of 119. Nothing about the picture changes — the domain is the same and a pixel is
+  still worth the same change in speed on both axes — it is only drawn larger. Both axes span
+  3.5 b/tick, so the chart stays square and gained the same 13 pixels in height, and the
+  heatmap behind it now covers about a fifth more area to build.
+
 ### Fixed
 
 - The dial speedometer's acceleration arrows sat centered on their needle's tip radius, so
