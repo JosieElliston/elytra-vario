@@ -15,8 +15,7 @@ build identifier and released feature for feature; see its own changelog.
 - Modules resize by dragging a corner in the in-world position editor. The corner opposite the
   one you take hold of stays where it is, so the module grows away from the pointer rather than
   jumping. A grip is the outer five pixels of a corner, and never more than a third of the
-  module's shorter side, so a small module keeps a middle to pick it up by; the module under the
-  pointer draws its four grips as thickened corners on the outline it already had.
+  module's shorter side, so a small module keeps a middle to pick it up by.
 
   Corners and not edges, because none of these modules has a nonuniform resize to offer. Each
   one's box is a function of a single setting — the velocity graph's scale, the flight stats
@@ -28,19 +27,41 @@ build identifier and released feature for feature; see its own changelog.
   ignore the rest. A drag cannot push a module off the screen past its pinned corner, and stops
   at each setting's own range.
 
-  A resize writes the same setting the module's page does, so its box follows the drag, and that
-  box's tooltip now says the corners are there. The new size is measured off the module after the
-  setting has been applied rather than predicted from it, so a scale that lands between pixels
-  cannot walk the pinned corner sideways over a long drag.
+  A resize snaps to the same rests a move does: flush with another module's edge or center, a
+  margin clear of it, or against the screen's margins or center, with the same guides drawn.
+  Only one edge can win, since both edges of a corner are the same number, so the nearer rest
+  takes it; and a rest the setting cannot actually reach — the dial's diameter comes in steps of
+  two, so half its widths do not exist — is passed over for one it can. The guides are drawn
+  from the module as it ends up rather than from the size that was aimed at, so a line appears
+  only where an edge genuinely lies on it.
 
-  One caveat, on the velocity graph alone: its heatmap is rebuilt whenever the graph changes
-  size, so dragging that module's corner buys a rebuild for every pixel of drag — around 30ms
-  each at the default size, and quadratically more as the graph grows. The drag still lands
-  where you put it, but the frame rate during it does not survive; the exact scale field
-  remains the smooth way to make a large change there.
+  The module under the pointer draws its four grips as thickened corners on the outline it
+  already had, and the grip the pointer has found is drawn longer and thicker than the others.
+  At the same moment the white hover outline goes, because that outline means the module is
+  what a drag would pick up and carry, and over a grip it no longer is. The grown grip is drawn
+  larger than the area it answers to, which is safe in the direction that matters: the pointer
+  is inside the plain reach whenever the larger mark is showing.
+
+  A resize writes the same setting the module's page does, so its box follows the drag, and that
+  box's tooltip now says the corners are there. The new size is measured off the module after
+  the setting has been applied rather than predicted from it, so a scale that lands between
+  pixels cannot walk the pinned corner sideways over a long drag.
 
 ### Changed
 
+- The velocity graph keeps the heatmap it has while a resize drag is in progress, stretching it
+  over the graph, and builds the exact one when the mouse comes up. A rebuild costs around 30ms
+  at the default size and grows with the area, and a drag asks for a new size every pixel it
+  moves, so rebuilding as it went made a drag into a slideshow. The map goes blocky under the
+  drag and sharp again on release; only the scale changes while dragging, never the domain, so
+  the stretched map describes exactly the velocities the graph is drawing and is wrong in
+  nothing but resolution.
+- The bar speedometer's scale labels are now shown or hidden by their switch alone. The panel
+  used to drop them on its own once the major tick spacing was too fine for them to sit clear of
+  one another, which meant the panel's width depended on its height: dragging the plot shorter
+  made the label column vanish and the whole panel jump sideways under the pointer. Labels that
+  crowd at a fine step are the step's problem and are visibly so, which is better than a panel
+  that changes shape for reasons the person resizing it cannot see.
 - The velocity chart's default scale is now 37.714286 pixels per block/tick rather than 34, so
   the default chart is exactly as wide as the flight stats panel stacked above it: 132 pixels
   instead of 119. Nothing about the picture changes — the domain is the same and a pixel is

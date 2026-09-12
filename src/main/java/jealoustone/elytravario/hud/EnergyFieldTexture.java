@@ -25,7 +25,10 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
  * deciding how the physics results got stored.
  *
  * <p>{@link DynamicTexture} samples {@code NEAREST} and the blit is one texel to one GUI
- * pixel, so nothing is filtered or resampled on the way to the screen.
+ * pixel, so nothing is filtered or resampled on the way to the screen. The one exception is a chart
+ * mid-resize, which stretches the field it has rather than paying to rebuild it every
+ * pixel of the drag; nearest sampling then shows the field's own cells as blocks, which is
+ * an honest picture of what is actually known.
  *
  * <h2>What is rebuilt when</h2>
  *
@@ -47,11 +50,16 @@ final class EnergyFieldTexture {
 	private EnergyFieldTexture() {
 	}
 
-	/** Draws the field over the chart's interior, which is exactly the texture's size. */
-	static void blit(GuiGraphicsExtractor graphics, EnergyField field, int x, int y) {
+	/**
+	 * Draws the field over the chart's interior, stretched to it. The two are the same size
+	 * except while the chart is being resized by a drag, when the field is deliberately the one
+	 * built for the size the chart had when the drag started.
+	 */
+	static void blit(GuiGraphicsExtractor graphics, EnergyField field, int x, int y, int width,
+			int height) {
 		DynamicTexture current = prepare(field);
 		graphics.blit(current.getTextureView(), current.getSampler(),
-				x, y, x + field.width(), y + field.height(), 0.0f, 1.0f, 0.0f, 1.0f);
+				x, y, x + width, y + height, 0.0f, 1.0f, 0.0f, 1.0f);
 	}
 
 	/** Returns a texture holding this field in the configured colours, repainting if needed. */

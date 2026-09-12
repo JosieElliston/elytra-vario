@@ -58,6 +58,19 @@ public final class VarioHudElement implements HudElement {
 	private static final String DELTA_COLUMN = "-000.0 b";
 	private static final String ABSOLUTE_COLUMN = "-0000.0";
 
+	/**
+	 * While set, the chart stretches whatever field it last built instead of building one for
+	 * the size it is now.
+	 *
+	 * <p>The settings screen holds this for the length of a drag on the chart's resize grips.
+	 * A rebuild costs about 30ms at the default size and grows with the area, and a drag asks
+	 * for a new size every pixel it moves, so rebuilding as it went would turn the drag into a
+	 * slideshow of exact pictures nobody has time to look at. Only the scale changes under a
+	 * drag, never the domain, so the stretched field describes the same velocities as the chart
+	 * it is drawn on and is wrong in nothing but resolution. The exact one arrives on release.
+	 */
+	public static boolean stretchEnergyField;
+
 	private final FlightRecorder recorder;
 
 	public VarioHudElement(FlightRecorder recorder) {
@@ -295,8 +308,12 @@ public final class VarioHudElement implements HudElement {
 	 */
 	private void drawEnergyField(GuiGraphicsExtractor graphics, Sample sample, int x, int y,
 			int width, int height) {
-		EnergyFieldTexture.blit(graphics, EnergyField.of(width, height, VarioConfig.chartMinVxz,
-				VarioConfig.chartMaxVy, VarioConfig.chartScale, sample.gravity()), x, y);
+		EnergyField field = stretchEnergyField ? EnergyField.cached() : null;
+		if (field == null) {
+			field = EnergyField.of(width, height, VarioConfig.chartMinVxz,
+					VarioConfig.chartMaxVy, VarioConfig.chartScale, sample.gravity());
+		}
+		EnergyFieldTexture.blit(graphics, field, x, y, width, height);
 	}
 
 	/**

@@ -10,6 +10,7 @@ import jealoustone.elytravario.ElytraVario;
 import jealoustone.elytravario.ElytraVarioClient;
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
+import jealoustone.elytravario.hud.VarioHudElement;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -221,6 +222,8 @@ public final class VarioConfigScreen extends Screen {
 	public void removed() {
 		rememberScroll();
 		flush();
+		// A screen closed mid-drag never sees the mouse come up.
+		VarioHudElement.stretchEnergyField = false;
 		super.removed();
 	}
 
@@ -345,6 +348,10 @@ public final class VarioConfigScreen extends Screen {
 				clearFocus();
 				draggingModule = target.module();
 				draggingCorner = ModulePositionEditor.grip(target, event.x(), event.y());
+				// Resizing the chart would otherwise rebuild the heatmap on every pixel of the
+				// drag, so it stretches the one it has until the mouse comes up.
+				VarioHudElement.stretchEnergyField = draggingCorner != null
+						&& draggingModule == ModulePositionEditor.Module.CHART;
 				dragX = draggingCorner != null && !draggingCorner.left
 						? target.x() + target.width() : target.x();
 				dragY = draggingCorner != null && !draggingCorner.top
@@ -375,6 +382,7 @@ public final class VarioConfigScreen extends Screen {
 		if (draggingModule == null) return super.mouseReleased(event);
 		draggingModule = null;
 		draggingCorner = null;
+		VarioHudElement.stretchEnergyField = false;
 		snapVerticalGuides = List.of();
 		snapHorizontalGuides = List.of();
 		return true;
@@ -407,8 +415,13 @@ public final class VarioConfigScreen extends Screen {
 
 	/** The module as it is currently drawn, or null while it is hidden. */
 	private ModulePositionEditor.Bounds renderedBounds(ModulePositionEditor.Module module) {
-		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
-			if (bounds.module() == module) return bounds;
+		return boundsOf(moduleBounds(), module);
+	}
+
+	private static ModulePositionEditor.Bounds boundsOf(List<ModulePositionEditor.Bounds> bounds,
+			ModulePositionEditor.Module module) {
+		for (ModulePositionEditor.Bounds candidate : bounds) {
+			if (candidate.module() == module) return candidate;
 		}
 		return null;
 	}
@@ -444,7 +457,8 @@ public final class VarioConfigScreen extends Screen {
 	 */
 	private void resize(ModulePositionEditor.Module module, ModulePositionEditor.Corner corner,
 			double pointerX, double pointerY) {
-		ModulePositionEditor.Bounds before = renderedBounds(module);
+		List<ModulePositionEditor.Bounds> bounds = moduleBounds();
+		ModulePositionEditor.Bounds before = boundsOf(bounds, module);
 		if (before == null) return;
 		ConfigOptions.Option size = option(module.sizeKey);
 		double value;
@@ -455,9 +469,10 @@ public final class VarioConfigScreen extends Screen {
 			return;
 		}
 		double resized = ModulePositionEditor.resize(corner, before, value,
-				ModulePositionEditor.growth(module), pointerX, pointerY,
-				size.min() / size.factor(), size.max() / size.factor(), size.integral(),
-				width, height);
+				new ModulePositionEditor.Sizing(ModulePositionEditor.growth(module),
+						size.min() / size.factor(), size.max() / size.factor(), size.integral()),
+				pointerX, pointerY, bounds, width, height,
+				VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
 		String next = size.format(resized);
 		if (!next.equals(settings.get(size.key()))) {
 			settings.put(size.key(), next);
@@ -467,16 +482,23 @@ public final class VarioConfigScreen extends Screen {
 		if (after == null) return;
 		ModulePositionEditor.Position position = ModulePositionEditor.anchored(corner, before,
 				after.width(), after.height());
-		String nextX = Integer.toString(Math.clamp(position.x(), 0,
-				Math.max(0, width - after.width())));
-		String nextY = Integer.toString(Math.clamp(position.y(), 0,
-				Math.max(0, height - after.height())));
-		if (nextX.equals(settings.get(module.xKey)) && nextY.equals(settings.get(module.yKey))) {
-			return;
+		int x = Math.clamp(position.x(), 0, Math.max(0, width - after.width()));
+		int y = Math.clamp(position.y(), 0, Math.max(0, height - after.height()));
+		String nextX = Integer.toString(x);
+		String nextY = Integer.toString(y);
+		if (!nextX.equals(settings.get(module.xKey))
+				|| !nextY.equals(settings.get(module.yKey))) {
+			settings.put(module.xKey, nextX);
+			settings.put(module.yKey, nextY);
+			editorWrote(module.xKey, module.yKey);
 		}
-		settings.put(module.xKey, nextX);
-		settings.put(module.yKey, nextY);
-		editorWrote(module.xKey, module.yKey);
+		// Asked of the module as it ended up, so a guide is drawn only where an edge is
+		// genuinely on it. The others have not moved, so the rests they offer are unchanged.
+		ModulePositionEditor.Guides guides = ModulePositionEditor.resizeGuides(
+				new ModulePositionEditor.Bounds(module, x, y, after.width(), after.height()),
+				corner, bounds, width, height, VarioConfig.positionMargin);
+		snapVerticalGuides = guides.vertical();
+		snapHorizontalGuides = guides.horizontal();
 	}
 
 	/** Shows what the in-world editor wrote in the boxes that show the same settings. */
@@ -621,23 +643,33 @@ public final class VarioConfigScreen extends Screen {
 	private void drawPositionEditor(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		ModulePositionEditor.Bounds hovered = overControl(mouseX, mouseY)
 				? null : moduleAt(mouseX, mouseY, draggingModule);
+		ModulePositionEditor.Corner grip = hovered == null ? null
+				: ModulePositionEditor.grip(hovered, mouseX, mouseY);
 		ModulePositionEditor.Module selected = selectedModule();
 		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
 			boolean isHovered = hovered != null && bounds.module() == hovered.module();
 			boolean isDragging = bounds.module() == draggingModule;
-			if (bounds.module() == selected || isHovered || isDragging) {
-				int color = isHovered || isDragging ? 0xFFFFFFFF : 0xFF66CCFF;
+			if (bounds.module() != selected && !isHovered && !isDragging) continue;
+			ModulePositionEditor.Corner active = isDragging ? draggingCorner
+					: isHovered ? grip : null;
+			// The white outline says the module is the thing a drag would pick up and carry, so
+			// it goes as soon as the pointer finds a grip and the drag would resize instead.
+			// What is left is the quieter outline of the module whose page is open, and the
+			// grip itself, which grows to say it is the one that has been found.
+			boolean carrying = (isHovered || isDragging) && active == null;
+			int color = carrying ? 0xFFFFFFFF : 0xFF66CCFF;
+			if (carrying || bounds.module() == selected) {
 				graphics.outline(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
-				// Grips only on the module the pointer can actually take hold of, so that a
-				// module selected from its settings page still reads as a plain outline.
-				if (isHovered || isDragging) drawGrips(graphics, bounds, color);
 			}
+			// Grips only on the module the pointer can actually take hold of, so that a
+			// module selected from its settings page still reads as a plain outline.
+			if (isHovered || isDragging) drawGrips(graphics, bounds, color, active);
 		}
 		if (draggingModule == null) return;
+		drawSnapGuides(graphics);
 		// A resize needs no ghost: the module is already drawn at the size the drag is asking
 		// for, and the corner it is pinning has not moved.
 		if (draggingCorner != null) return;
-		drawSnapGuides(graphics);
 		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
 			if (bounds.module() != draggingModule) continue;
 			int ghostX = Math.clamp((int) Math.round(dragX), 0,
@@ -650,14 +682,19 @@ public final class VarioConfigScreen extends Screen {
 		}
 	}
 
-	/** Thickened corners, marking where a module can be taken hold of to resize it. */
-	private static void drawGrips(GuiGraphicsExtractor graphics,
-			ModulePositionEditor.Bounds bounds, int color) {
-		int reach = ModulePositionEditor.gripReach(bounds);
-		int thickness = Math.min(GRIP_THICKNESS, reach);
+	/**
+	 * Thickened corners, marking where a module can be taken hold of to resize it. The
+	 * {@code active} corner is the one the pointer has found, or the one being dragged, and is
+	 * drawn longer and thicker than the rest.
+	 */
+	private static void drawGrips(GuiGraphicsExtractor graphics, ModulePositionEditor.Bounds bounds,
+			int color, ModulePositionEditor.Corner active) {
 		int right = bounds.x() + bounds.width();
 		int bottom = bounds.y() + bounds.height();
 		for (ModulePositionEditor.Corner corner : ModulePositionEditor.Corner.values()) {
+			boolean grown = corner == active;
+			int reach = ModulePositionEditor.gripReach(bounds, grown);
+			int thickness = Math.min(grown ? GRIP_THICKNESS + 1 : GRIP_THICKNESS, reach);
 			int x = corner.left ? bounds.x() : right - reach;
 			int y = corner.top ? bounds.y() : bottom - reach;
 			int column = corner.left ? bounds.x() : right - thickness;

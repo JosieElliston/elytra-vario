@@ -66,6 +66,8 @@ final class ModulePositionEditor {
 	record Position(int x, int y) { }
 	record Guide(int coordinate, int from, int to) { }
 	record Snap(Position position, List<Guide> verticalGuides, List<Guide> horizontalGuides) { }
+	/** The guides a drag has come to rest on: vertical ones are columns, horizontal ones rows. */
+	record Guides(List<Guide> vertical, List<Guide> horizontal) { }
 	private record Candidate(int position, Guide guide) { }
 	private record AxisSnap(int position, List<Guide> guides) { }
 
@@ -109,13 +111,20 @@ final class ModulePositionEditor {
 
 	/** How far into a corner a resize grip reaches, before a small module shrinks it. */
 	static final int GRIP = 5;
+	/**
+	 * The reach of the grip the pointer is on. It is drawn larger than it is, which is the
+	 * point: the pointer is inside the plain reach whenever the larger mark is showing, so the
+	 * mark says what the next click will do without ever claiming ground the click does not.
+	 */
+	static final int GRIP_ACTIVE = 9;
 
 	/**
 	 * The reach of this module's grips. Never more than a third of its shorter side, so that a
 	 * small module keeps a middle to pick it up by.
 	 */
-	static int gripReach(Bounds bounds) {
-		return Math.clamp(Math.min(bounds.width, bounds.height) / 3, 1, GRIP);
+	static int gripReach(Bounds bounds, boolean active) {
+		return Math.clamp(Math.min(bounds.width, bounds.height) / 3, 1,
+				active ? GRIP_ACTIVE : GRIP);
 	}
 
 	/**
@@ -124,7 +133,7 @@ final class ModulePositionEditor {
 	 */
 	static Corner grip(Bounds bounds, double x, double y) {
 		if (!bounds.contains(x, y)) return null;
-		int reach = gripReach(bounds);
+		int reach = gripReach(bounds, false);
 		boolean left = x < bounds.x + reach;
 		boolean right = x >= bounds.x + bounds.width - reach;
 		boolean top = y < bounds.y + reach;
@@ -216,13 +225,7 @@ final class ModulePositionEditor {
 			}
 		}
 		if (position == null) return new AxisSnap(value, List.of());
-		List<Guide> guides = new ArrayList<>();
-		for (Candidate candidate : candidates) {
-			if (candidate.position == position && !guides.contains(candidate.guide)) {
-				guides.add(candidate.guide);
-			}
-		}
-		return new AxisSnap(position, List.copyOf(guides));
+		return new AxisSnap(position, resting(candidates, position));
 	}
 
 	/** Moves the module's absolute top-left coordinates in screen space. */
@@ -258,6 +261,9 @@ final class ModulePositionEditor {
 	/** How many pixels of width and of height one unit of a module's size setting buys. */
 	record Growth(double width, double height) { }
 
+	/** A module's one size setting: how its box grows with it, and the range it may take. */
+	record Sizing(Growth growth, double min, double max, boolean integral) { }
+
 	/**
 	 * How the module's box grows with its size setting.
 	 *
@@ -288,18 +294,25 @@ final class ModulePositionEditor {
 	 * <p>One setting has to answer a pointer that moves in two dimensions, so the answer is the
 	 * least-squares one: the value whose box comes closest to the box the pointer is asking for.
 	 * Where both axes grow that is the pointer projected onto the box's diagonal, which is what
-	 * dragging a locked-aspect corner looks like anywhere else; for the bar chart, whose width
-	 * is not a setting, the same expression collapses to following the pointer vertically.
+	 * dragging a locked-aspect corner looks like anywhere else; for a module whose width is not
+	 * a setting, the same expression collapses to following the pointer vertically.
 	 *
 	 * <p>The value is capped so that a module cannot be grown off the screen past its pinned
 	 * corner, and clamped to the setting's own range. Values are in the setting's own units, not
 	 * the screen's displayed ones.
+	 *
+	 * <p>A moving edge that comes within {@code distance} of somewhere it could rest — flush
+	 * with another module's edge or center, a {@code margin} clear of it, or against the
+	 * screen's margins or center — is put there exactly instead, the same rests a move snaps to.
+	 * Only one edge can win, because both of them are the same number: the nearer rest takes it,
+	 * and a rest the setting cannot actually reach, because it is out of range or because the
+	 * module lays itself out in whole pixels, is passed over for one it can.
 	 */
-	static double resize(Corner corner, Bounds rendered, double value, Growth growth,
-			double pointerX, double pointerY, double min, double max, boolean integral,
-			int screenWidth, int screenHeight) {
-		double width = growth.width();
-		double height = growth.height();
+	static double resize(Corner corner, Bounds rendered, double value, Sizing sizing,
+			double pointerX, double pointerY, List<Bounds> bounds,
+			int screenWidth, int screenHeight, int margin, int distance) {
+		double width = sizing.growth().width();
+		double height = sizing.growth().height();
 		if (width <= 0 && height <= 0) return value;
 		int anchorX = corner.left ? rendered.x + rendered.width : rendered.x;
 		int anchorY = corner.top ? rendered.y + rendered.height : rendered.y;
@@ -309,15 +322,114 @@ final class ModulePositionEditor {
 		double wantedHeight = Math.abs(Math.clamp(pointerY, 0, screenHeight) - anchorY);
 		double solved = (width * (wantedWidth - widthOffset)
 				+ height * (wantedHeight - heightOffset)) / (width * width + height * height);
-		double limit = Math.min(max, Math.min(
-				fits(corner.left ? anchorX : screenWidth - anchorX, width, widthOffset),
-				fits(corner.top ? anchorY : screenHeight - anchorY, height, heightOffset)));
-		if (integral) limit = Math.floor(limit);
 		// Where even the smallest size does not fit, the setting's own range wins over the
 		// screen: the drag can still reach the minimum, which is the best the module can do.
-		limit = Math.max(min, limit);
-		double capped = Math.clamp(solved, min, limit);
-		return integral ? Math.clamp(Math.rint(capped), min, limit) : capped;
+		double limit = Math.max(sizing.min(), Math.min(sizing.max(), Math.min(
+				fits(corner.left ? anchorX : screenWidth - anchorX, width, widthOffset),
+				fits(corner.top ? anchorY : screenHeight - anchorY, height, heightOffset))));
+		if (sizing.integral()) limit = Math.max(sizing.min(), Math.floor(limit));
+		double free = settled(solved, sizing, limit);
+
+		double best = free;
+		int closest = distance + 1;
+		// Both of the corner's edges are offered the rests on their own axis, and the nearest
+		// of the two wins outright: one setting cannot put both of them where they would like.
+		for (int axis = 0; axis < 2; axis++) {
+			boolean vertical = axis == 0;
+			double slope = vertical ? width : height;
+			if (slope <= 0) continue;
+			double offset = vertical ? widthOffset : heightOffset;
+			int anchor = vertical ? anchorX : anchorY;
+			boolean lower = vertical ? corner.left : corner.top;
+			int edge = edgeAt(anchor, lower, slope, offset, free);
+			for (Candidate candidate : rests(vertical, bounds, rendered.module,
+					vertical ? screenWidth : screenHeight,
+					vertical ? screenHeight : screenWidth, margin)) {
+				int gap = Math.abs(candidate.position - edge);
+				if (gap >= closest) continue;
+				double snapped = settled(
+						valueAt(candidate.position, anchor, lower, slope, offset), sizing, limit);
+				if (edgeAt(anchor, lower, slope, offset, snapped) != candidate.position) continue;
+				best = snapped;
+				closest = gap;
+			}
+		}
+		return best;
+	}
+
+	/**
+	 * The guides a resized module has come to rest on, which is asked of the module as it ends
+	 * up rather than of the size that was aimed at: a module lays itself out in whole pixels and
+	 * a scale is a real number, so a line is drawn only where an edge is genuinely on it.
+	 */
+	static Guides resizeGuides(Bounds resized, Corner corner, List<Bounds> bounds,
+			int screenWidth, int screenHeight, int margin) {
+		return new Guides(
+				resting(rests(true, bounds, resized.module, screenWidth, screenHeight, margin),
+						corner.left ? resized.x : resized.x + resized.width),
+				resting(rests(false, bounds, resized.module, screenHeight, screenWidth, margin),
+						corner.top ? resized.y : resized.y + resized.height));
+	}
+
+	/**
+	 * Where a moving edge can come to rest on one axis: flush with another module's near edge,
+	 * center or far edge, a margin clear of either of its sides, or on the screen's own margins
+	 * or center. {@code vertical} asks for the columns an edge in x can rest on; the guide each
+	 * rest draws spans the module that offered it, or the screen for the screen's own.
+	 */
+	private static List<Candidate> rests(boolean vertical, List<Bounds> bounds, Module moving,
+			int screenSize, int crossSize, int margin) {
+		List<Candidate> candidates = new ArrayList<>();
+		candidates.add(new Candidate(margin, new Guide(0, 0, crossSize)));
+		candidates.add(new Candidate(screenSize - margin, new Guide(screenSize, 0, crossSize)));
+		candidates.add(new Candidate(screenSize / 2, new Guide(screenSize / 2, 0, crossSize)));
+		for (Bounds other : bounds) {
+			if (other.module == moving) continue;
+			int near = vertical ? other.x : other.y;
+			int size = vertical ? other.width : other.height;
+			int from = vertical ? other.y : other.x;
+			int to = from + (vertical ? other.height : other.width);
+			Guide nearGuide = new Guide(near, from, to);
+			Guide farGuide = new Guide(near + size, from, to);
+			candidates.add(new Candidate(near, nearGuide));
+			candidates.add(new Candidate(near + size / 2,
+					new Guide(near + size / 2, from, to)));
+			candidates.add(new Candidate(near + size, farGuide));
+			candidates.add(new Candidate(near - margin, nearGuide));
+			candidates.add(new Candidate(near + size + margin, farGuide));
+		}
+		return candidates;
+	}
+
+	/** Every distinct guide that sits on a coordinate, in the order they were offered. */
+	private static List<Guide> resting(List<Candidate> candidates, int coordinate) {
+		List<Guide> guides = new ArrayList<>();
+		for (Candidate candidate : candidates) {
+			if (candidate.position == coordinate && !guides.contains(candidate.guide)) {
+				guides.add(candidate.guide);
+			}
+		}
+		return List.copyOf(guides);
+	}
+
+	/** A value in range, and in whole units where the setting counts in them. */
+	private static double settled(double value, Sizing sizing, double limit) {
+		double capped = Math.clamp(value, sizing.min(), limit);
+		return sizing.integral()
+				? Math.clamp(Math.rint(capped), sizing.min(), limit) : capped;
+	}
+
+	/** Where the moving edge of a box this size falls, on one axis. */
+	private static int edgeAt(int anchor, boolean lower, double slope, double offset,
+			double value) {
+		int size = (int) Math.round(slope * value + offset);
+		return lower ? anchor - size : anchor + size;
+	}
+
+	/** The size that would put the moving edge on a coordinate, before range and rounding. */
+	private static double valueAt(int edge, int anchor, boolean lower, double slope,
+			double offset) {
+		return ((lower ? anchor - edge : edge - anchor) - offset) / slope;
 	}
 
 	/** The largest setting whose axis still fits in {@code available} pixels. */
