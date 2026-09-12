@@ -24,6 +24,7 @@ import org.joml.Matrix3x2fStack;
 public final class DialSpeedometerElement implements HudElement {
 	private static final double TPS = 20.0;
 	private static final double ACCELERATION_ARROW_SECONDS = 1.0;
+	private static final double ACCELERATION_ARROW_WEIGHT = 1.0;
 	private static final int MAJOR = 0xFFC6CCD2;
 	private static final int MINOR = 0xA0B4BAC0;
 	private static final int MAJOR_LENGTH = 7;
@@ -235,13 +236,18 @@ public final class DialSpeedometerElement implements HudElement {
 		needle(graphics, dial, hubX, hubY, speed, length, color);
 		if (VarioConfig.showDialSpeedoAcceleration && Double.isFinite(previousSpeed)) {
 			accelerationArrow(graphics, dial, hubX, hubY, speed, previousSpeed,
-					dial.needleTip(length), needleColor(dial, speed, color));
+					dial.needleTip(length) - ACCELERATION_ARROW_WEIGHT / 2.0,
+					needleColor(dial, speed, color));
 		}
 	}
 
-	/** Projects one second of measured acceleration along the circle at the needle's tip. */
+	/**
+	 * Projects one second of measured acceleration along the circle at the needle's tip. The
+	 * arc rides half a stem inside the tip radius, so the stem's outer edge is flush with the
+	 * end of the needle rather than half of it hanging past.
+	 */
 	private static void accelerationArrow(GuiGraphicsExtractor graphics, DialSpeedometer dial,
-			int hubX, int hubY, double speed, double previousSpeed, int radius, int color) {
+			int hubX, int hubY, double speed, double previousSpeed, double radius, int color) {
 		double projected = speed + (speed - previousSpeed) * TPS * ACCELERATION_ARROW_SECONDS;
 		double startAngle = dial.angle(speed);
 		double endAngle = dial.angle(projected);
@@ -255,7 +261,7 @@ public final class DialSpeedometerElement implements HudElement {
 			smoothLine(graphics,
 					centerX + Math.cos(from) * radius, centerY + Math.sin(from) * radius,
 					centerX + Math.cos(to) * radius, centerY + Math.sin(to) * radius,
-					1.0, color);
+					ACCELERATION_ARROW_WEIGHT, color);
 		}
 
 		// As the arc shrinks to zero, the head becomes a stable radial five-pixel mark.
@@ -272,10 +278,12 @@ public final class DialSpeedometerElement implements HudElement {
 		double baseY = endY - tangentY * headDepth;
 		if (sweep == 0.0) {
 			smoothLine(graphics, endX + radialX, endY + radialY,
-					endX - radialX, endY - radialY, 1.0, color);
+					endX - radialX, endY - radialY, ACCELERATION_ARROW_WEIGHT, color);
 		} else {
-			smoothLine(graphics, endX, endY, baseX + radialX, baseY + radialY, 1.0, color);
-			smoothLine(graphics, endX, endY, baseX - radialX, baseY - radialY, 1.0, color);
+			smoothLine(graphics, endX, endY, baseX + radialX, baseY + radialY,
+					ACCELERATION_ARROW_WEIGHT, color);
+			smoothLine(graphics, endX, endY, baseX - radialX, baseY - radialY,
+					ACCELERATION_ARROW_WEIGHT, color);
 		}
 	}
 

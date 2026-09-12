@@ -10,6 +10,12 @@ build identifier and released feature for feature; see its own changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- The dial speedometer's acceleration arrows sat centered on their needle's tip radius, so
+  half the stem's width hung past the end of the needle. The arc now rides half a stem
+  further in, flush with the tip.
+
 ## [1.6.0] - 2026-09-12
 
 ### Added
