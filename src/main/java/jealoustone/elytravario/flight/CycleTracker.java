@@ -14,9 +14,11 @@ package jealoustone.elytravario.flight;
  * potential energy at the top — so the three held figures would not sum correctly. Taking
  * them from a single instant keeps KE + PE = TE.
  *
- * <p>The apex fires once vertical speed passes {@link #VY_DEADBAND} downwards, which is a
+ * <p>The apex fires once vertical speed passes {@link #DESCENT_ENTER} downwards, which is a
  * little after the true apex, so the sample actually latched is the highest one seen since
- * the previous boundary rather than the one present when the detector tripped.
+ * the climb began rather than the one present when the detector tripped. The search starts
+ * at the climb rather than at the previous boundary so that a cycle ending lower than it
+ * started still latches its own apex; see {@link #update}.
  */
 public final class CycleTracker {
 	/**
@@ -52,6 +54,16 @@ public final class CycleTracker {
 		if (descending) {
 			if (vy > DESCENT_EXIT) {
 				descending = false;
+
+				// The climb starts here, and the apex being looked for is the top of it. The
+				// running best has to restart with it: it has been carrying the tail of the
+				// previous descent, which begins a tick or two past the previous apex and so
+				// sits only a fraction of a block below it. Any cycle that ends lower than it
+				// started — which is most of them, since a pump trades altitude for speed —
+				// would otherwise find that leftover sample higher than its own apex and latch
+				// the previous cycle's apex a second time, putting every reading a whole cycle
+				// behind.
+				bestSinceBoundary = sample;
 			}
 
 			return;

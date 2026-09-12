@@ -11,6 +11,13 @@ and key-registration APIs, not behavior.
 
 ## [Unreleased]
 
+### Fixed
+
+- The `GAIN` readout, and the apex the `PE` and `TE` readouts measure against, were a whole
+  cycle behind whenever a cycle ended lower than it started: the apex search began a tick
+  past the previous apex, so the leftover sample outranked the new, lower apex and latched
+  again.
+
 ## [1.5.0+mc1.21.11] - 2026-09-07
 
 ### Added
