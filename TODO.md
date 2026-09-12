@@ -18,7 +18,7 @@ josie's todo/notes, don't edit this
 - make modules more unobtrusive
     - translucent
 - not fixed module render order?
-- snap guides are stroked outside for bottom and right, and stroked inside for top and left
+- if you are dragging a corner, the center comes into radius before the edge, so the center is draw without the edge, so we sometimes snap to an edge without it getting drawn. ig this is correct tho.
 
 ## myopic metrics
 

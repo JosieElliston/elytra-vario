@@ -64,7 +64,17 @@ final class ModulePositionEditor {
 	}
 
 	record Position(int x, int y) { }
-	record Guide(int coordinate, int from, int to) { }
+	/** A logical snap line and the in-bounds pixel on which its guide is painted. */
+	record Guide(int coordinate, int from, int to, int strokeCoordinate) {
+		Guide(int coordinate, int from, int to) {
+			this(coordinate, from, to, coordinate);
+		}
+
+		/** A right or bottom edge, whose logical coordinate is just beyond its last pixel. */
+		static Guide farEdge(int coordinate, int from, int to) {
+			return new Guide(coordinate, from, to, coordinate - 1);
+		}
+	}
 	record Snap(Position position, List<Guide> verticalGuides, List<Guide> horizontalGuides) { }
 	/** The guides a drag has come to rest on: vertical ones are columns, horizontal ones rows. */
 	record Guides(List<Guide> vertical, List<Guide> horizontal) { }
@@ -179,11 +189,11 @@ final class ModulePositionEditor {
 		List<Candidate> xs = new ArrayList<>();
 		List<Candidate> ys = new ArrayList<>();
 		addIfVisible(xs, margin, maxX, new Guide(0, 0, screenHeight));
-		addIfVisible(xs, maxX - margin, maxX, new Guide(screenWidth, 0, screenHeight));
+		addIfVisible(xs, maxX - margin, maxX, Guide.farEdge(screenWidth, 0, screenHeight));
 		addIfVisible(xs, (screenWidth - width) / 2, maxX,
 				new Guide(screenWidth / 2, 0, screenHeight));
 		addIfVisible(ys, margin, maxY, new Guide(0, 0, screenWidth));
-		addIfVisible(ys, maxY - margin, maxY, new Guide(screenHeight, 0, screenWidth));
+		addIfVisible(ys, maxY - margin, maxY, Guide.farEdge(screenHeight, 0, screenWidth));
 		addIfVisible(ys, (screenHeight - height) / 2, maxY,
 				new Guide(screenHeight / 2, 0, screenWidth));
 		for (Bounds other : bounds) {
@@ -191,7 +201,8 @@ final class ModulePositionEditor {
 			Guide left = new Guide(other.x, other.y, other.y + other.height);
 			Guide centerX = new Guide(other.x + other.width / 2,
 					other.y, other.y + other.height);
-			Guide right = new Guide(other.x + other.width, other.y, other.y + other.height);
+			Guide right = Guide.farEdge(other.x + other.width,
+					other.y, other.y + other.height);
 			addIfVisible(xs, other.x, maxX, left);
 			addIfVisible(xs, other.x + other.width - width, maxX, right);
 			addIfVisible(xs, other.x + (other.width - width) / 2, maxX, centerX);
@@ -200,7 +211,8 @@ final class ModulePositionEditor {
 			Guide top = new Guide(other.y, other.x, other.x + other.width);
 			Guide centerY = new Guide(other.y + other.height / 2,
 					other.x, other.x + other.width);
-			Guide bottom = new Guide(other.y + other.height, other.x, other.x + other.width);
+			Guide bottom = Guide.farEdge(other.y + other.height,
+					other.x, other.x + other.width);
 			addIfVisible(ys, other.y, maxY, top);
 			addIfVisible(ys, other.y + other.height - height, maxY, bottom);
 			addIfVisible(ys, other.y + (other.height - height) / 2, maxY, centerY);
@@ -460,7 +472,7 @@ final class ModulePositionEditor {
 			candidates.add(new Candidate(margin, new Guide(0, 0, crossSize)));
 		} else {
 			candidates.add(new Candidate(screenSize - margin,
-					new Guide(screenSize, 0, crossSize)));
+					Guide.farEdge(screenSize, 0, crossSize)));
 		}
 		for (Bounds other : bounds) {
 			if (other.module == moving) continue;
@@ -474,9 +486,10 @@ final class ModulePositionEditor {
 			} else if (lower) {
 				candidates.add(new Candidate(near, new Guide(near, from, to)));
 				candidates.add(new Candidate(near + size + margin,
-						new Guide(near + size, from, to)));
+						Guide.farEdge(near + size, from, to)));
 			} else {
-				candidates.add(new Candidate(near + size, new Guide(near + size, from, to)));
+				candidates.add(new Candidate(near + size,
+						Guide.farEdge(near + size, from, to)));
 				candidates.add(new Candidate(near - margin, new Guide(near, from, to)));
 			}
 		}

@@ -73,10 +73,28 @@ class ModulePositionEditorTest {
 		var snap = ModulePositionEditor.snap(ModulePositionEditor.Module.CHART,
 				146, 106, 20, 10, List.of(other), 320, 240, 4, 4);
 
-		assertEquals(List.of(new ModulePositionEditor.Guide(140, 70, 100)),
+		assertEquals(List.of(new ModulePositionEditor.Guide(140, 70, 100, 139)),
 				snap.verticalGuides());
-		assertEquals(List.of(new ModulePositionEditor.Guide(100, 100, 140)),
+		assertEquals(List.of(new ModulePositionEditor.Guide(100, 100, 140, 99)),
 				snap.horizontalGuides());
+	}
+
+	@Test
+	void farEdgeGuidesStrokeInsideEveryDraggableModule() {
+		for (ModulePositionEditor.Module moving : ModulePositionEditor.Module.values()) {
+			for (ModulePositionEditor.Module target : ModulePositionEditor.Module.values()) {
+				if (moving == target) continue;
+				var other = new ModulePositionEditor.Bounds(target, 100, 70, 40, 30);
+				var snap = ModulePositionEditor.snap(moving,
+						120, 90, 20, 10, List.of(other), 320, 240, 4, 0);
+				String caseName = moving.name() + " against " + target.name();
+
+				assertEquals(List.of(new ModulePositionEditor.Guide(140, 70, 100, 139)),
+						snap.verticalGuides(), caseName);
+				assertEquals(List.of(new ModulePositionEditor.Guide(100, 100, 140, 99)),
+						snap.horizontalGuides(), caseName);
+			}
+		}
 	}
 
 	@Test
@@ -455,8 +473,8 @@ class ModulePositionEditorTest {
 		assertEquals(40, resize.value());
 		var guides = ModulePositionEditor.resizeGuides(resize, landed,
 				ModulePositionEditor.Corner.BOTTOM_RIGHT);
-		assertEquals(List.of(new ModulePositionEditor.Guide(100, 20, 80)), guides.vertical());
-		assertEquals(List.of(new ModulePositionEditor.Guide(80, 30, 100)), guides.horizontal());
+		assertEquals(List.of(new ModulePositionEditor.Guide(100, 20, 80, 99)), guides.vertical());
+		assertEquals(List.of(new ModulePositionEditor.Guide(80, 30, 100, 79)), guides.horizontal());
 
 		// Applying a nonintegral setting can round a predicted line away. Even though its marker
 		// gave the winning arithmetic answer, it is not drawn unless the rendered box landed.
@@ -489,7 +507,7 @@ class ModulePositionEditorTest {
 				ModulePositionEditor.Corner.BOTTOM_RIGHT);
 
 		assertEquals(100, resize.value());
-		assertEquals(List.of(new ModulePositionEditor.Guide(200, 20, 60)), guides.vertical());
+		assertEquals(List.of(new ModulePositionEditor.Guide(200, 20, 60, 199)), guides.vertical());
 		assertEquals(List.of(), guides.horizontal());
 	}
 
