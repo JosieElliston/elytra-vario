@@ -13,6 +13,10 @@ and key-registration APIs, not behavior.
 
 ### Changed
 
+- The selection and hover outlines in the position editor now stroke inside a module's
+  bounds rather than one pixel outside them. The outline used to add a pixel on every side,
+  so a module appeared to grow as the pointer crossed it and modules that were in fact flush
+  with each other looked a pixel out of true while you were placing them.
 - The cycle boundary is now exactly where vertical speed changes sign, rather than a
   deadband either side of zero. The rule is one the vertical speed readout shows happening.
   A stretch that only flattens out without ever climbing no longer counts as an apex, so on
