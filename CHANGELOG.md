@@ -11,12 +11,20 @@ and key-registration APIs, not behavior.
 
 ## [Unreleased]
 
+### Changed
+
+- The cycle boundary is now exactly where vertical speed changes sign, rather than a
+  deadband either side of zero. The rule is one the vertical speed readout shows happening.
+  A stretch that only flattens out without ever climbing no longer counts as an apex, so on
+  a flight that is steadily sinking the cycle readouts hold the last real apex rather than
+  reporting a cycle per near-level moment.
+
 ### Fixed
 
 - The `GAIN` readout, and the apex the `PE` and `TE` readouts measure against, were a whole
-  cycle behind whenever a cycle ended lower than it started: the apex search began a tick
-  past the previous apex, so the leftover sample outranked the new, lower apex and latched
-  again.
+  cycle behind whenever a cycle ended lower than it started: the apex was the highest sample
+  since the previous boundary, which fell a tick past the previous apex, so that leftover
+  sample outranked the new, lower apex and latched again.
 
 ## [1.5.0+mc1.21.11] - 2026-09-07
 

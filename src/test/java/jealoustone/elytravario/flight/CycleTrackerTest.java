@@ -18,12 +18,12 @@ class CycleTrackerTest {
 	/**
 	 * A cycle whose apex is lower than the last one still latches its own apex.
 	 *
-	 * <p>The running best used to be taken from the previous boundary, which falls a tick
-	 * past the previous apex and so sits barely below it. A cycle that gave altitude back
-	 * therefore found that leftover sample higher than its own apex, latched it a second
-	 * time, and reported the previous cycle's gain — every reading a cycle behind. The
-	 * cycles here lose different amounts so that a stale reading cannot pass by looking like
-	 * a correct one.
+	 * <p>The apex used to be the highest sample since the previous boundary, and that
+	 * boundary fell a tick past the previous apex, barely below it. A cycle that gave
+	 * altitude back therefore found the leftover sample higher than its own apex, latched it
+	 * a second time, and reported the previous cycle's gain — every reading a cycle behind.
+	 * The cycles here lose different amounts so that a stale reading cannot pass by looking
+	 * like a correct one.
 	 */
 	@Test
 	void reportsTheGainOfTheCycleThatJustClosed() {
@@ -41,7 +41,7 @@ class CycleTrackerTest {
 		for (int t = 0; t < pump.samples.size(); t++) {
 			tracker.update(pump.samples.get(t));
 
-			// The apex latches on the first descending tick after it, one tick later.
+			// The turn is detected on the first falling tick, one tick past the apex itself.
 			if (cycle < pump.apexes.size() && t == pump.apexes.get(cycle) + 1) {
 				Sample apex = pump.samples.get(pump.apexes.get(cycle));
 				assertEquals(apex.totalHeight(), tracker.peakTotalHeight(), TOLERANCE,
@@ -86,8 +86,8 @@ class CycleTrackerTest {
 
 	/**
 	 * A sawtooth of altitude: each {@code {climb, descent}} pair is one cycle, spread over
-	 * {@link #LEG} ticks per leg. Vertical speed follows from the altitude step, and is well
-	 * clear of the tracker's deadbands at these sizes.
+	 * {@link #LEG} ticks per leg. Vertical speed follows from the altitude step, so every
+	 * climb is unambiguously a climb and each cycle turns over exactly once.
 	 */
 	private static Pump pump(double[][] cycles) {
 		List<Sample> samples = new ArrayList<>();
