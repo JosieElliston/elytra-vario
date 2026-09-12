@@ -18,6 +18,9 @@ and key-registration APIs, not behavior.
   A stretch that only flattens out without ever climbing no longer counts as an apex, so on
   a flight that is steadily sinking the cycle readouts hold the last real apex rather than
   reporting a cycle per near-level moment.
+- A latched apex no longer expires. The cycle readouts used to blank after thirty seconds
+  without a new apex; they now hold the last one until another is reached, which is what a
+  flight with no peak in it has to report. Teleports and dimension changes still clear them.
 
 ### Fixed
 

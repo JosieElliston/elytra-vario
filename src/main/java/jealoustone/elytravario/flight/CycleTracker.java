@@ -18,6 +18,13 @@ package jealoustone.elytravario.flight;
  * first, so that walking off a ledge closes a cycle too: there is no climb before it, but
  * there is still a height that was just left behind.
  *
+ * <p>An apex stands until the next one replaces it, however long that takes. Nothing expires
+ * it on a timer: a reading that has not moved for a while is saying that no peak has been
+ * reached since, which is the true answer and a visible one, where a readout that blanked
+ * itself after some number of ticks would only look like a fault. {@link FlightRecorder}
+ * clears the tracker outright when the player teleports or changes dimension, which is the
+ * one case where the held apex really is meaningless.
+ *
  * <p>One clock drives every reading, and the whole {@link Sample} from the apex is kept
  * rather than each energy being tracked separately. Independent per-metric peak detectors
  * would latch at different instants — kinetic energy crests at the bottom of the dive,
@@ -25,20 +32,12 @@ package jealoustone.elytravario.flight;
  * them from a single instant keeps KE + PE = TE.
  */
 public final class CycleTracker {
-	/** Ticks after which a latched apex is too old to be the reference any more. */
-	private static final int STALE_TICKS = 600;
-
 	private Sample previous;
 	private boolean falling;
 	private Sample apex;
 	private double lastGain = Double.NaN;
-	private int ticksSinceApex = Integer.MAX_VALUE;
 
 	public void update(Sample sample) {
-		if (ticksSinceApex < Integer.MAX_VALUE) {
-			ticksSinceApex++;
-		}
-
 		// Zero counts as still rising, so a level stretch ends at its last tick rather than
 		// its first, and flat ground does not close a cycle every tick.
 		boolean nowFalling = sample.vy() < 0.0;
@@ -52,26 +51,19 @@ public final class CycleTracker {
 			}
 
 			apex = top;
-			ticksSinceApex = 0;
 		}
 
 		falling = nowFalling;
 		previous = sample;
 	}
 
-	/** The apex of the last completed cycle, or null when there is none recent enough. */
-	private Sample displayed() {
-		return ticksSinceApex <= STALE_TICKS ? apex : null;
-	}
-
+	/** The apex of the last completed cycle; {@code NaN} before there has been one. */
 	public double peakPotentialHeight() {
-		Sample s = displayed();
-		return s == null ? Double.NaN : s.potentialHeight();
+		return apex == null ? Double.NaN : apex.potentialHeight();
 	}
 
 	public double peakTotalHeight() {
-		Sample s = displayed();
-		return s == null ? Double.NaN : s.totalHeight();
+		return apex == null ? Double.NaN : apex.totalHeight();
 	}
 
 	/**
@@ -88,6 +80,5 @@ public final class CycleTracker {
 		falling = false;
 		apex = null;
 		lastGain = Double.NaN;
-		ticksSinceApex = Integer.MAX_VALUE;
 	}
 }
