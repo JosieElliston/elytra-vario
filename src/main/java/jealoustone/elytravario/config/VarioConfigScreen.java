@@ -181,7 +181,7 @@ public final class VarioConfigScreen extends YACLScreen {
 				.description(OptionDescription.of(text("layout.tooltip")))
 				.available(Minecraft.getInstance().level != null)
 				.action((screen, option) -> {
-					screen.finishOrSave();
+					if (!screen.shouldCloseOnEsc()) return;
 					Minecraft.getInstance().gui.setScreen(new HudLayoutScreen(screen, module));
 				})
 				.build();
