@@ -128,6 +128,10 @@ public final class VarioHudElement implements HudElement {
 					(float) boxHeight / panel.layoutHeight());
 			drawPanel(graphics, minecraft.font, panel, sample, 0, 0);
 			graphics.pose().popMatrix();
+			// The contents scale with the panel, but its frame is always one screen pixel,
+			// like the velocity graph and bar speedometer frames. Drawing the outline inside
+			// the transform made larger stats panels grow a visibly heavier border.
+			if (panel.border()) graphics.outline(at.x(), at.y(), boxWidth, boxHeight, BORDER);
 		}
 		if (chart) {
 			drawChart(graphics, minecraft.font, sample, position.x(), position.y());
@@ -141,7 +145,6 @@ public final class VarioHudElement implements HudElement {
 		double opacity = panel.opacity();
 		int background = ((int) Math.round(opacity * 255) << 24) | (PANEL_BG & 0xFFFFFF);
 		if (opacity > 0) graphics.fill(x, y, x + width, y + height, background);
-		if (panel.border()) graphics.outline(x, y, width, height, BORDER);
 
 		int row = y + PAD;
 		Sample previous = recorder.ago(1);
