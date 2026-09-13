@@ -6,18 +6,14 @@ import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
 
 /**
- * The four boxes Flight Stats is drawn as, each placed, sized and switched on its own.
+ * The boxes Flight Stats is drawn as, each placed, sized and switched on its own.
  *
  * <p>One panel per <em>kind</em> of reading rather than one panel for all of them. The old
- * single panel had to give every row the same width, and the width a row wants is set by the
- * widest label and figure it carries: {@code SPEED XYZ} against a speed is 106 pixels of
- * content, while {@code GLIDE} against a ratio is 76, so a panel wide enough for the one was
- * carrying thirty pixels of dead gap on the other. Split, each box is only as wide as its own
- * rows need, and the four can be stacked, spread across the screen, or switched off one at a
- * time. Nothing about what a row <em>says</em> changed.
+ * single panel could not place or switch kinds independently. Split, the boxes can be stacked,
+ * spread across the screen, or switched off one at a time.
  *
  * <p>They are still meant to read as one instrument, which is what the editor's overlap snap is
- * for: butted together with their borders sharing a column, four panels look like one panel
+ * for: butted together with their borders sharing a column, several panels look like one panel
  * ruled into sections — the rule the old panel drew between its speed and energy halves, now
  * available between any two of them and in either direction. See
  * {@link jealoustone.elytravario.config.ModulePositionEditor}.
@@ -31,12 +27,7 @@ public enum StatsPanel {
 	/**
 	 * The two readings that are neither a speed nor an energy: attitude, and its efficiency.
 	 *
-	 * <p>The narrowest of the four, and the panel that pays for the split on its own: at 86 it
-	 * is thirty pixels inside what the speed rows need, and under one shared width every one of
-	 * those thirty was dead gap. {@code GLIDE} is 28 pixels of label and a ratio like
-	 * {@code -12.34 : 1} is 48 of figure — signed, because a climb reads as blocks forward per
-	 * block gained — the padding takes eight, and two are left over. A pitch is narrower than
-	 * either, at 31 pixels for {@code -90.0°}.
+	 * A glide ratio is signed because a climb reads as blocks forward per block gained.
 	 */
 	OTHER("statsOther", 86, "showPitch", "showGlideRatio"),
 
@@ -70,21 +61,29 @@ public enum StatsPanel {
 	 * has already been set.
 	 */
 	ENERGY("statsEnergy", 106, "showKineticEnergy", "showPotentialEnergy", "showTotalEnergy",
-			"showCycleGain");
+			"showCycleGain"),
 
-	/** The height of one row, in layout pixels, before a panel's height scales the text. */
+	/** Touch, leave and deploy velocities as columns, with X, XZ and XYZ as rows. */
+	BOUNCE_VELOCITY("statsBounceVelocity", 194, "showBounceVelocityX",
+			"showBounceVelocityXz", "showBounceVelocityXyz"),
+
+	/** Leave-touch and deploy-leave position differences as columns. */
+	BOUNCE_DISTANCE("statsBounceDistance", 194, "showBounceDistanceX",
+			"showBounceDistanceXz", "showBounceDistanceXyz"),
+
+	/** Leave-touch and deploy-leave elapsed ticks as columns. */
+	BOUNCE_TICKS("statsBounceTicks", 194, "showBounceTicks");
+
+	/** The height of one row in the shared unscaled layout. */
 	public static final int LINE = 10;
 
 	/** The padding inside a panel's border, on all four sides. */
 	public static final int PAD = 4;
-
 	private final String prefix;
 	private final int minLayoutWidth;
 	private final List<String> rowKeys;
 
 	/**
-	 * @param minLayoutWidth the narrowest this panel is laid out before its height's text size
-	 *     scales it; see {@link #minWidth()}
 	 * @param rowKeys this panel's row switches, in the order the panel draws them
 	 */
 	StatsPanel(String prefix, int minLayoutWidth, String... rowKeys) {
@@ -132,6 +131,9 @@ public enum StatsPanel {
 			case SPEED -> VarioConfig.showStatsSpeed;
 			case ACCEL -> VarioConfig.showStatsAccel;
 			case ENERGY -> VarioConfig.showStatsEnergy;
+			case BOUNCE_VELOCITY -> VarioConfig.showStatsBounceVelocity;
+			case BOUNCE_DISTANCE -> VarioConfig.showStatsBounceDistance;
+			case BOUNCE_TICKS -> VarioConfig.showStatsBounceTicks;
 		};
 	}
 
@@ -141,6 +143,9 @@ public enum StatsPanel {
 			case SPEED -> VarioConfig.statsSpeedX;
 			case ACCEL -> VarioConfig.statsAccelX;
 			case ENERGY -> VarioConfig.statsEnergyX;
+			case BOUNCE_VELOCITY -> VarioConfig.statsBounceVelocityX;
+			case BOUNCE_DISTANCE -> VarioConfig.statsBounceDistanceX;
+			case BOUNCE_TICKS -> VarioConfig.statsBounceTicksX;
 		};
 	}
 
@@ -150,6 +155,9 @@ public enum StatsPanel {
 			case SPEED -> VarioConfig.statsSpeedY;
 			case ACCEL -> VarioConfig.statsAccelY;
 			case ENERGY -> VarioConfig.statsEnergyY;
+			case BOUNCE_VELOCITY -> VarioConfig.statsBounceVelocityY;
+			case BOUNCE_DISTANCE -> VarioConfig.statsBounceDistanceY;
+			case BOUNCE_TICKS -> VarioConfig.statsBounceTicksY;
 		};
 	}
 
@@ -160,16 +168,22 @@ public enum StatsPanel {
 			case SPEED -> VarioConfig.statsSpeedWidth;
 			case ACCEL -> VarioConfig.statsAccelWidth;
 			case ENERGY -> VarioConfig.statsEnergyWidth;
+			case BOUNCE_VELOCITY -> VarioConfig.statsBounceVelocityWidth;
+			case BOUNCE_DISTANCE -> VarioConfig.statsBounceDistanceWidth;
+			case BOUNCE_TICKS -> VarioConfig.statsBounceTicksWidth;
 		};
 	}
 
-	/** The panel's on-screen height, which is exactly the setting. */
+	/** The panel's configured on-screen height. */
 	public int height() {
 		return switch (this) {
 			case OTHER -> VarioConfig.statsOtherHeight;
 			case SPEED -> VarioConfig.statsSpeedHeight;
 			case ACCEL -> VarioConfig.statsAccelHeight;
 			case ENERGY -> VarioConfig.statsEnergyHeight;
+			case BOUNCE_VELOCITY -> VarioConfig.statsBounceVelocityHeight;
+			case BOUNCE_DISTANCE -> VarioConfig.statsBounceDistanceHeight;
+			case BOUNCE_TICKS -> VarioConfig.statsBounceTicksHeight;
 		};
 	}
 
@@ -179,6 +193,9 @@ public enum StatsPanel {
 			case SPEED -> VarioConfig.statsSpeedOpacity;
 			case ACCEL -> VarioConfig.statsAccelOpacity;
 			case ENERGY -> VarioConfig.statsEnergyOpacity;
+			case BOUNCE_VELOCITY -> VarioConfig.statsBounceVelocityOpacity;
+			case BOUNCE_DISTANCE -> VarioConfig.statsBounceDistanceOpacity;
+			case BOUNCE_TICKS -> VarioConfig.statsBounceTicksOpacity;
 		};
 	}
 
@@ -188,6 +205,9 @@ public enum StatsPanel {
 			case SPEED -> VarioConfig.showStatsSpeedBorder;
 			case ACCEL -> VarioConfig.showStatsAccelBorder;
 			case ENERGY -> VarioConfig.showStatsEnergyBorder;
+			case BOUNCE_VELOCITY -> VarioConfig.showStatsBounceVelocityBorder;
+			case BOUNCE_DISTANCE -> VarioConfig.showStatsBounceDistanceBorder;
+			case BOUNCE_TICKS -> VarioConfig.showStatsBounceTicksBorder;
 		};
 	}
 
@@ -201,7 +221,17 @@ public enum StatsPanel {
 					VarioConfig.showHorizontalAcceleration, VarioConfig.showTotalAcceleration);
 			case ENERGY -> count(VarioConfig.showKineticEnergy, VarioConfig.showPotentialEnergy,
 					VarioConfig.showTotalEnergy, VarioConfig.showCycleGain);
+			case BOUNCE_VELOCITY -> headedRows(VarioConfig.showBounceVelocityX,
+					VarioConfig.showBounceVelocityXz, VarioConfig.showBounceVelocityXyz);
+			case BOUNCE_DISTANCE -> headedRows(VarioConfig.showBounceDistanceX,
+					VarioConfig.showBounceDistanceXz, VarioConfig.showBounceDistanceXyz);
+			case BOUNCE_TICKS -> headedRows(VarioConfig.showBounceTicks);
 		};
+	}
+
+	private static int headedRows(boolean... switches) {
+		int content = count(switches);
+		return content == 0 ? 0 : content + 1;
 	}
 
 	private static int count(boolean... switches) {
@@ -217,29 +247,18 @@ public enum StatsPanel {
 		return VarioInstrument.STATS.visible(gliding) && shown() && rows() > 0;
 	}
 
-	/** The height the rows lay themselves out in, before the height setting scales them. */
+	/** The height the rows lay themselves out in before scaling. */
 	public int layoutHeight() { return rows() * LINE + PAD * 2; }
 
-	/** The text size, set by the height: the rows are drawn to exactly fill it. */
+	/** The text size set by the configured height. */
 	public double scale() { return (double) height() / layoutHeight(); }
 
-	/**
-	 * The narrowest this panel may be drawn at its current text size.
-	 *
-	 * <p>Each panel's layout minimum is where its own widest row has met itself — label, figure
-	 * and padding with nothing between them — so that narrowing further would stack one column
-	 * on the other rather than close a gap. The figure each is measured against is a
-	 * representative one rather than the worst imaginable; see the constants above for the
-	 * arithmetic, every figure in it measured through the font rather than guessed at.
-	 *
-	 * <p>The grips stop here too, so only a width typed into the box can ask for less, and that
-	 * is drawn at the minimum rather than refused.
-	 */
+	/** The narrowest width that keeps this panel's columns apart at its current text size. */
 	public int minWidth() { return (int) Math.ceil(minLayoutWidth * scale()); }
 
-	/** The panel's on-screen width, never narrower than its rows need. */
+	/** The panel's on-screen width, never narrower than its content. */
 	public int width() { return Math.max(configuredWidth(), minWidth()); }
 
-	/** The width the panel lays its two columns out in, before the text size scales it up. */
+	/** The width used for layout before scaling. */
 	public int layoutWidth() { return (int) Math.round(width() / scale()); }
 }

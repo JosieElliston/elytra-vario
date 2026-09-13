@@ -40,16 +40,15 @@ class StatsPanelTest {
 		assertNull(StatsPanel.byWidthKey("chartSize"));
 	}
 
-	/** Every row belongs to exactly one panel, so the split neither loses nor duplicates one. */
-	@Test void theFourPanelsPartitionTheRows() {
+	/** Every switch belongs to exactly one panel, so settings neither lose nor duplicate one. */
+	@Test void thePanelsPartitionTheSwitches() {
 		List<String> rows = new ArrayList<>();
 		for (StatsPanel panel : StatsPanel.values()) rows.addAll(panel.rowKeys());
-		assertEquals(12, rows.size());
+		assertEquals(19, rows.size());
 		assertEquals(rows.size(), new LinkedHashSet<>(rows).size());
-		// The default is every row on, so the count the layout uses is the list drawing reads.
-		for (StatsPanel panel : StatsPanel.values()) {
-			assertEquals(panel.rowKeys().size(), panel.rows(), panel.name());
-		}
+		assertEquals(4, StatsPanel.BOUNCE_VELOCITY.rows());
+		assertEquals(4, StatsPanel.BOUNCE_DISTANCE.rows());
+		assertEquals(2, StatsPanel.BOUNCE_TICKS.rows());
 	}
 
 	@Test void theDefaultHeightsAreTheDefaultRowsAtTheirNaturalSize() {
@@ -62,11 +61,21 @@ class StatsPanelTest {
 
 	/** The default stack butts each panel onto the one above it, borders sharing a column. */
 	@Test void theDefaultPositionsShareOneColumnOfBorder() {
-		StatsPanel[] panels = StatsPanel.values();
+		StatsPanel[] panels = { StatsPanel.OTHER, StatsPanel.SPEED,
+				StatsPanel.ACCEL, StatsPanel.ENERGY };
 		for (int i = 1; i < panels.length; i++) {
 			assertEquals(panels[i - 1].y() + panels[i - 1].height() - 1, panels[i].y(),
 					panels[i].name());
 			assertEquals(panels[i - 1].x(), panels[i].x(), panels[i].name());
+		}
+	}
+
+	@Test void theDefaultBouncePanelsShareASecondColumnAndBorders() {
+		StatsPanel[] panels = { StatsPanel.BOUNCE_VELOCITY, StatsPanel.BOUNCE_DISTANCE,
+				StatsPanel.BOUNCE_TICKS };
+		for (int i = 1; i < panels.length; i++) {
+			assertEquals(panels[i - 1].y() + panels[i - 1].height() - 1, panels[i].y());
+			assertEquals(panels[i - 1].x(), panels[i].x());
 		}
 	}
 
@@ -75,18 +84,11 @@ class StatsPanelTest {
 		int height = VarioConfig.statsSpeedHeight;
 		int otherWidth = VarioConfig.statsOtherWidth;
 		try {
-			// Narrowing spends the gap between the columns and leaves the text where it was.
 			VarioConfig.statsSpeedWidth = 120;
 			assertEquals(120, StatsPanel.SPEED.layoutWidth());
-
-			// Doubling the height doubles the text size, so a width that has not changed buys
-			// half the layout it did before.
 			VarioConfig.statsSpeedWidth = 264;
-			assertEquals(264, StatsPanel.SPEED.layoutWidth());
 			VarioConfig.statsSpeedHeight = 2 * StatsPanel.SPEED.layoutHeight();
 			assertEquals(132, StatsPanel.SPEED.layoutWidth());
-
-			// And none of it reached the panel beside it, which is the point of the split.
 			assertEquals(otherWidth, StatsPanel.OTHER.width());
 		} finally {
 			VarioConfig.statsSpeedWidth = width;
@@ -102,7 +104,6 @@ class StatsPanelTest {
 			VarioConfig.statsOtherWidth = 32;
 			int minimum = StatsPanel.OTHER.minWidth();
 			assertEquals(minimum, StatsPanel.OTHER.width());
-			// The minimum is a layout width, so it grows with the text size the height sets.
 			VarioConfig.statsOtherHeight = 3 * StatsPanel.OTHER.layoutHeight();
 			assertEquals(3 * minimum, StatsPanel.OTHER.width());
 		} finally {
@@ -111,8 +112,7 @@ class StatsPanelTest {
 		}
 	}
 
-	/** The narrow panel is genuinely narrower, which is the whole reason for the split. */
-	@Test void thePitchAndGlideRowsNeedLessWidthThanTheSpeedRows() {
+	@Test void eachPanelKeepsItsOwnContentMinimum() {
 		assertTrue(StatsPanel.OTHER.minWidth() < StatsPanel.SPEED.minWidth());
 		assertEquals(StatsPanel.SPEED.minWidth(), StatsPanel.ACCEL.minWidth());
 	}
