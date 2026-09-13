@@ -133,6 +133,9 @@ and key-registration APIs, not behavior.
 
 ### Fixed
 
+- Resize snaps at a margin, a shared-border butt, or a screen margin now draw every target edge
+  that produced the winning size. Their guides were previously discarded because validation
+  compared the resized edge with the target edge instead of with its offset resting coordinate.
 - Position-editor module tooltips now disappear during move and resize drags, so they do not
   cover modules and alignment guides to the right of the pointer.
 - Resize candidates are now evaluated from the immutable geometry at the start of the drag and
