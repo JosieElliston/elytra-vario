@@ -158,20 +158,23 @@ and key-registration APIs, not behavior.
   accident that makes one width enough is that seven glyphs and one stop measure the same
   whether they are spent on three digits and two decimals or on four and one, so a two-decimal
   speed and a one-decimal altitude want the same column.
-- Dragging a Flight Stats panel's height now rests on the text sizes worth having: the halves of
-  the font's own size, and whatever size another stats panel on screen is currently drawn at.
-  Text size stays continuous — it is whatever the height divides out to, which is what keeps a
-  panel exactly as tall as its rows and never leaves it a gap at the bottom — but the one thing a
-  drag could not do by itself was land on a round one, and two panels at 1.03× and 0.97× neither
-  match nor can be made to match by eye.
+- Dragging a Flight Stats panel's height now rests on the text sizes worth landing on: whatever
+  size another stats panel on screen is currently drawn at, and the whole multiples of the size
+  Minecraft draws its font at. Text size stays continuous — it is whatever the height divides out
+  to, which is what keeps a panel exactly as tall as its rows and never leaves it a gap at the
+  bottom — but the one thing a drag could not do by itself was land on either.
 
-  The second list is the one that does the work. Panels butted into a stack are meant to read as
-  one instrument, and nothing says otherwise like two sections of it set in different sizes — but
-  a panel's height is its rows times its text size, so matching a four-row panel to a two-row one
-  is arithmetic rather than something the eye can do at a drag's speed. Offering the answer as a
-  rest is the whole of the fix. These rest on a value rather than on a line, so unlike every
-  other rest they draw no guide, and a height more than a snap distance from one is left exactly
-  where it was asked for.
+  The first is what makes two panels agree. Panels butted into a stack are meant to read as one
+  instrument, and nothing says otherwise like two sections of it set in different sizes — but a
+  panel's height is its rows times its text size, so matching a four-row panel to a two-row one
+  is arithmetic rather than something the eye can do at a drag's speed. The second is where the
+  glyphs are drawn losslessly: they are a bitmap, so at a whole multiple every pixel of a glyph
+  covers the same whole number of pixels on screen, and the letter that comes out is the letter
+  the font has, enlarged. At 1.3× some strokes land on two pixels and their neighbours on one,
+  and the same letter is a different shape in different words.
+
+  These rest on a value rather than on a line, so unlike every other rest they draw no guide,
+  and a height more than a snap distance from one is left exactly where it was asked for.
 - A stats panel's rows are now scaled by one factor on both axes, and its background is filled on
   the exact box instead. The width setting buys unscaled space to the right of the figures, as it
   always did, but it no longer stretches the glyphs sideways to reach the box's corner: the two

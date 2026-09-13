@@ -531,23 +531,28 @@ final class ModulePositionEditor {
 	}
 
 	/**
-	 * Text sizes a stats panel's height comes to rest on, as multiples of the size Minecraft
-	 * draws its font at.
+	 * The text sizes the font is drawn at losslessly, as multiples of the size Minecraft draws
+	 * it at, which a stats panel's height rests on.
 	 *
-	 * <p><b>Absolute multiples, not multiples of whatever size the panel is at now.</b> One is
-	 * the font as the game draws it and the size every panel ships at; these are fixed points on
-	 * screen, so two panels that both rest on one are the same size as each other, and a drag's
-	 * answer does not depend on the size the drag started from.
+	 * <p><b>Whole multiples, because those are the ones that need no interpolation.</b> The
+	 * glyphs are a bitmap. At a whole multiple every pixel of a glyph covers the same whole
+	 * number of pixels on screen — and the GUI scale the whole HUD is drawn through is a whole
+	 * number too, so the product still is — and the letter that comes out is the letter the font
+	 * has, enlarged. At 1.3× some strokes land on two pixels and their neighbours on one, so the
+	 * same letter is a different shape in different words. Half sizes are no better in kind:
+	 * 0.5× has to throw away every other row of the glyph to fit, which is a smaller letter than
+	 * the font has rather than the one it has.
 	 *
-	 * <p>Halves, and nothing finer. A panel's text size is whatever its height divides out to,
-	 * which is what keeps a panel exactly as tall as its rows and never leaves it a gap at the
-	 * bottom — but it also means the one thing a drag cannot do is land on a round size, and two
-	 * panels at 1.03× and 0.97× are two panels that do not match and cannot be made to by eye.
-	 * These are the sizes worth aiming at. Finer steps would not be worth aiming at and would
-	 * make the drag sticky everywhere: on a one-row panel a quarter step is already under two
-	 * snap distances apart.
+	 * <p>Absolute multiples, not multiples of whatever size the panel is at now. One is the font
+	 * as the game draws it and the size every panel ships at; these are fixed points on screen,
+	 * so a drag's answer does not depend on the size the drag started from.
+	 *
+	 * <p>Four of them is a short list, and deliberately: matching a panel already on screen is
+	 * what makes two panels agree, and this list is for the different question of landing on a
+	 * size the font is actually drawn at. Everything between remains reachable — these are an
+	 * aim, not a ladder — it is just not crisp.
 	 */
-	private static final double[] TEXT_SIZES = { 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0 };
+	private static final double[] TEXT_SIZES = { 1.0, 2.0, 3.0, 4.0 };
 
 	/**
 	 * The heights that put this module's text on one of those sizes, or on the size a stats

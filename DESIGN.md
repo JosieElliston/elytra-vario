@@ -899,14 +899,23 @@ instrument.
 whatever its height divides out to, which is what keeps it exactly as tall as its rows and never
 leaves it a gap at the bottom — snapping the size to a ladder instead would put the dead space
 back, and put it back worst at the height that had none. But it does mean the one thing a drag
-cannot do by itself is land on a round size, and two panels at 1.03× and 0.97× neither match nor
-can be made to match by eye. So a stats panel's height rests at the halves of the size Minecraft
-draws its font at — absolute multiples, fixed points on screen, not multiples of whatever size
-the panel happens to be at now — and at whatever size another stats panel on screen is currently
-drawn at. The second is the
-one that does the work: panels butted into a stack are meant to read as one instrument, and
-matching a four-row panel to a two-row one is arithmetic rather than something the eye can do at
-a drag's speed.
+cannot do by itself is land on a size worth landing on. So a stats panel's height rests at two
+kinds of size.
+
+**Whatever size another stats panel on screen is currently drawn at**, which is what makes two
+panels agree. Panels butted into a stack are meant to read as one instrument, and matching a
+four-row panel to a two-row one is arithmetic rather than something the eye can do at a drag's
+speed.
+
+**And the whole multiples of the size Minecraft draws its font at**, which are the sizes the
+glyphs are drawn at losslessly. They are a bitmap: at a whole multiple every pixel of a glyph
+covers the same whole number of pixels on screen — and the GUI scale the HUD is drawn through is
+a whole number too, so the product still is — and the letter that comes out is the letter the
+font has, enlarged. At 1.3× some strokes land on two pixels and their neighbours on one, so the
+same letter is a different shape in different words. Halves are no better in kind: 0.5× throws
+away every other row of the glyph to fit, which is a smaller letter than the font has rather
+than the one it has. These are absolute multiples, fixed points on screen, not multiples of
+whatever size the panel happens to be at now.
 
 These rest on a value rather than on a line, so unlike every other rest they draw no guide —
 there is no geometry to point at. They are scored against the pointer beside the edge rests and
