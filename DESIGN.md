@@ -669,6 +669,19 @@ boundary the cap is the necessary coupling. Without it, pulling a corner mostly 
 could enlarge the text first and then force the panel's far horizontal edge well past the
 pointer merely to contain it.
 
+**Both bounds are read from the drag, never from the module as it is currently drawn.** The
+width's floor is the panel's rows at the shortest height the height setting allows — a constant
+— and the height's cap is taken from the width this same event just settled. Read live instead,
+the two close a loop: the floor rises with the text size, the text size is the height, and the
+cap falls with the width, so this event's width depends on the last event's height and this
+event's height on this event's width. That loop has fixed points a drag cannot leave. A panel
+sitting exactly on its content floor cannot get narrower, because the height it has demands
+that width, and cannot get taller, because the width it has forbids that height; it stands
+still under a pointer asking for something else entirely until the pointer happens to ask for
+something the loop admits, and then unwinds in a rush. **A drag's answer must be a function of
+where the pointer is and of nothing else** — not of how it got there — or dragging back does not
+undo dragging forward.
+
 **The box is affine in its settings, and the constant is measured rather than modelled.** A
 slope — the graph's aspect ratio, one per axis for a stats panel, two for the dial's diameter —
 plus the size the module is currently drawn at pins the whole relationship, so whatever the box

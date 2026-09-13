@@ -220,6 +220,22 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Fixed
 
+- A Flight Stats panel's corner resize is now a function of where the pointer is rather than of
+  how it got there. Both bounds on its two size settings were read off the panel as it stood:
+  the width could not be dragged below the rows' width at the panel's *current* text size, and
+  the height could not be dragged past the text size the panel's *current* width holds. Since
+  text size is height, that closed a loop — this event's width depended on the last event's
+  height, and this event's height on this event's width — and the loop has fixed points a drag
+  cannot leave. A panel sitting exactly on its content floor could not get narrower, because the
+  height it had demanded that width, and could not get taller, because the width it had forbade
+  that height, so it stood still under a pointer asking for something else and then unwound in a
+  rush once the pointer crossed into something the loop admitted.
+
+  The width's floor is now the panel's rows at the shortest height its setting allows, which is
+  a constant, and the height's cap is taken from the width the same event just settled on.
+  Nothing is given up: the height is still capped so the settled width holds the rows, so the
+  panel is still never drawn wider than the drag placed it.
+
 - Resizing a Flight Stats panel vertically no longer makes its horizontal edge run away from
   the pointer. A stats resize now establishes its width first and limits text growth to the
   largest size that width can contain.
