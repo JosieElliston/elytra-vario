@@ -441,8 +441,7 @@ public final class VarioConfigScreen extends Screen {
 	}
 
 	/**
-	 * The module the arrow keys move and the quiet outline marks, which is the one whose
-	 * settings are on screen.
+	 * The module the arrow keys move, which is the one whose settings are on screen.
 	 *
 	 * <p>A page carrying several modules — Flight Stats, one per panel — names each of them on
 	 * its own subpage, so the selection follows the dropdown. A page carrying one leaves its
@@ -746,25 +745,14 @@ public final class VarioConfigScreen extends Screen {
 				? null : moduleAt(mouseX, mouseY, draggingModule);
 		ModulePositionEditor.Corner grip = hovered == null ? null
 				: ModulePositionEditor.grip(hovered, mouseX, mouseY);
-		ModulePositionEditor.Module selected = selectedModule();
 		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
 			boolean isHovered = hovered != null && bounds.module() == hovered.module();
 			boolean isDragging = bounds.module() == draggingModule;
-			if (bounds.module() != selected && !isHovered && !isDragging) continue;
+			if (!isHovered && !isDragging) continue;
 			ModulePositionEditor.Corner active = isDragging ? draggingCorner
 					: isHovered ? grip : null;
-			// The white outline says the module is the thing a drag would pick up and carry, so
-			// it goes as soon as the pointer finds a grip and the drag would resize instead.
-			// What is left is the quieter outline of the module whose page is open, and the
-			// grip itself, which grows to say it is the one that has been found.
-			boolean carrying = (isHovered || isDragging) && active == null;
-			int color = carrying ? 0xFFFFFFFF : 0xFF66CCFF;
-			if (carrying || bounds.module() == selected) {
-				graphics.outline(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
-			}
-			// Grips only on the module the pointer can actually take hold of, so that a
-			// module selected from its settings page still reads as a plain outline.
-			if (isHovered || isDragging) drawGrips(graphics, bounds, color, active);
+			graphics.outline(bounds.x(), bounds.y(), bounds.width(), bounds.height(), 0xFFFFFFFF);
+			drawGrips(graphics, bounds, active);
 		}
 		if (draggingModule == null) return;
 		drawSnapGuides(graphics);
@@ -779,25 +767,23 @@ public final class VarioConfigScreen extends Screen {
 	/**
 	 * Thickened corners, marking where a module can be taken hold of to resize it. The
 	 * {@code active} corner is the one the pointer has found, or the one being dragged, and is
-	 * drawn longer, thicker and white: the white the outline gives up when the drag stops being
-	 * a move goes to the grip that has taken the drag over, so there is one white thing on the
-	 * screen at a time and it is always the thing the next click will act on.
+	 * drawn longer and thicker. Color and outline stay unchanged, leaving size as the only
+	 * indication that the corner has been found.
 	 */
 	private static void drawGrips(GuiGraphicsExtractor graphics, ModulePositionEditor.Bounds bounds,
-			int color, ModulePositionEditor.Corner active) {
+			ModulePositionEditor.Corner active) {
 		int right = bounds.x() + bounds.width();
 		int bottom = bounds.y() + bounds.height();
 		for (ModulePositionEditor.Corner corner : ModulePositionEditor.Corner.values()) {
 			boolean grown = corner == active;
 			int reach = ModulePositionEditor.gripReach(bounds, grown);
 			int thickness = Math.min(grown ? GRIP_THICKNESS + 1 : GRIP_THICKNESS, reach);
-			int paint = grown ? 0xFFFFFFFF : color;
 			int x = corner.left ? bounds.x() : right - reach;
 			int y = corner.top ? bounds.y() : bottom - reach;
 			int column = corner.left ? bounds.x() : right - thickness;
 			int row = corner.top ? bounds.y() : bottom - thickness;
-			graphics.fill(x, row, x + reach, row + thickness, paint);
-			graphics.fill(column, y, column + thickness, y + reach, paint);
+			graphics.fill(x, row, x + reach, row + thickness, 0xFFFFFFFF);
+			graphics.fill(column, y, column + thickness, y + reach, 0xFFFFFFFF);
 		}
 	}
 
