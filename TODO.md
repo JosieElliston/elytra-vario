@@ -26,7 +26,10 @@ josie's todo/notes, don't edit this, tho you should include it in commits
     - translucent
 - not fixed module render order?
 - that we don't have comboboxes for submodules/markers/... is kinda a problem.
-- the borders are different sizes
+    - generally the ui elements are bad
+        - on/off is just text
+        - there aren't sliders
+    - steal sodiums?
 - remove blue selected module highlight; it obscures the border.
 - e-bounce
     - ground touch
