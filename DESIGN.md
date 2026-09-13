@@ -662,25 +662,27 @@ locked-aspect corner looks like anywhere else; for the bar speedometer, whose wi
 and labels rather than a setting, the same expression collapses to following the pointer
 vertically and ignoring the rest.
 
-**Two settings are solved one at a time.** A stats panel's width and height each answer one
-pointer axis. Width is established first, then height is capped at the largest text size whose
+**Two settings are solved one at a time.** A stats panel's width and text size each answer one
+pointer axis. Width is established first, then the text size is capped at the largest whose
 content minimum fits inside that width. Inside that boundary the axes are orthogonal; at the
 boundary the cap is the necessary coupling. Without it, pulling a corner mostly vertically
 could enlarge the text first and then force the panel's far horizontal edge well past the
 pointer merely to contain it.
 
 **Both bounds are read from the drag, never from the module as it is currently drawn.** The
-width's floor is the panel's rows at the shortest height the height setting allows — a constant
-— and the height's cap is taken from the width this same event just settled. Read live instead,
-the two close a loop: the floor rises with the text size, the text size is the height, and the
-cap falls with the width, so this event's width depends on the last event's height and this
-event's height on this event's width. That loop has fixed points a drag cannot leave. A panel
-sitting exactly on its content floor cannot get narrower, because the height it has demands
-that width, and cannot get taller, because the width it has forbids that height; it stands
-still under a pointer asking for something else entirely until the pointer happens to ask for
-something the loop admits, and then unwinds in a rush. **A drag's answer must be a function of
-where the pointer is and of nothing else** — not of how it got there — or dragging back does not
-undo dragging forward.
+width's floor is the panel's rows at the smallest text size the setting allows — a constant —
+and the size's cap is taken from the width this same event just settled. Read live instead, the
+two close a loop: the floor rises with the text size and the cap falls with the width, so this
+event's width depends on the last event's size and this event's size on this event's width.
+That loop has fixed points a drag cannot leave. A panel sitting exactly on its content floor
+cannot get narrower, because the size it has demands that width, and cannot get larger, because
+the width it has forbids that size; it stands still under a pointer asking for something else
+entirely until the pointer happens to ask for something the loop admits, and then unwinds in a
+rush. **A drag's answer must be a function of where the pointer is and of nothing else** — not
+of how it got there — or dragging back does not undo dragging forward.
+
+Both are now whole multiples of the same layout width, so they are exact inverses: a width
+holds precisely the sizes whose floors fit inside it, with nothing lost to rounding either way.
 
 **The box is affine in its settings, and the constant is measured rather than modelled.** A
 slope — the graph's aspect ratio, one per axis for a stats panel, two for the dial's diameter —
@@ -875,14 +877,44 @@ the matrices under it, sharing a left edge and a width so the stack has one righ
 shared width is 150, the widest of the floors below, which is the narrowest width every panel in
 the stack can be drawn at.
 
-**Width and height are set separately, and the height is the one that sets the text size.** The
-rows are laid out at a fixed line height and the panel is scaled to the height asked for, so it
-is always exactly as tall as its rows need and never carries a gap at the bottom. The width then
-buys one thing only: the distance between a label and the value right-aligned against the far
-edge. That gap is a panel's only dead space, and a single size setting could not close it —
-narrowing the panel shrank the reading along with it. The cost of the split is that switching a
-row off no longer makes its panel shorter; that panel keeps the height it was given and draws
-the rows that remain larger.
+**The two settings are a width in pixels and a text size, and the height is neither.** The rows
+are laid out at a fixed line height and drawn at the text size asked for, so the height is
+exactly the rows times that size: always exactly as tall as its rows need, and never carrying a
+gap at the bottom because there is no way to ask for one. The width then buys one thing only:
+the distance between a label and the value right-aligned against the far edge. That gap is a
+panel's only dead space, and a single size setting could not close it — narrowing the panel
+shrank the reading along with it.
+
+**The text size is a whole number, and the height is what follows from it.** That is the way
+round it has to be. The height was the setting once and the text size the quotient, and that
+made two things wrong at once. Switching a row off shrank the divisor and left the dividend
+where it was, so a checkbox reading *show total speed* also enlarged every letter on the panel;
+now it shortens the panel and leaves the letters alone, which is the only thing the checkbox
+claims to do. And a height free to be any pixel count made the text size free to be any
+fraction, so most panels sat at a size the font is not drawn at.
+
+**Whole numbers are the sizes the glyphs are drawn at losslessly.** They are a bitmap: at a
+whole multiple every pixel of a glyph covers the same whole number of pixels on screen — and the
+GUI scale the HUD is drawn through is a whole number too, so the product still is — and the
+letter that comes out is the letter the font has, enlarged. At 1.3× some strokes land on two
+pixels and their neighbours on one, so the same letter is a different shape in different words.
+Halves are no better in kind: 0.5× throws away every other row of the glyph to fit, which is a
+smaller letter than the font has rather than the one it has. **Sizes that would interpolate are
+not merely avoided, they are inexpressible** — the setting counts font sizes, so there is
+nothing in between to land on.
+
+This is also what makes two panels agree. Butted into a stack they are meant to read as one
+instrument, and nothing says *not one instrument* like two sections of it set in different
+sizes; two panels showing the same number are now set to the same size, exactly, whatever their
+row counts. The editor used to carry a pair of resize rests for both of these jobs — one
+offering the whole multiples, one offering whatever size another panel on screen was drawn at —
+and both are gone with the need for them. A rest pulls a continuous value onto a good one; there
+is no continuous value left to pull.
+
+The cost is that a panel's height comes in steps of its whole layout, which is coarse: a
+four-row panel is 48 pixels tall or 96 and nothing between. Panels are aligned by moving them,
+not by sizing them, so this costs nothing at the edges — and the heights it forbids were all
+heights that drew interpolated text or left a gap under the last row.
 
 **A width narrower than the rows need is drawn at the width they need**, and each panel has its
 own floor, where its own widest row has met itself.
@@ -895,32 +927,9 @@ slightly different shape for every width it was given, which is not much on its 
 exactly the wrong thing when the point is that two panels at one text size look like one
 instrument.
 
-**Text size is continuous, and a resize rests on the sizes worth having.** A panel's text size is
-whatever its height divides out to, which is what keeps it exactly as tall as its rows and never
-leaves it a gap at the bottom — snapping the size to a ladder instead would put the dead space
-back, and put it back worst at the height that had none. But it does mean the one thing a drag
-cannot do by itself is land on a size worth landing on. So a stats panel's height rests at two
-kinds of size.
-
-**Whatever size another stats panel on screen is currently drawn at**, which is what makes two
-panels agree. Panels butted into a stack are meant to read as one instrument, and matching a
-four-row panel to a two-row one is arithmetic rather than something the eye can do at a drag's
-speed.
-
-**And the whole multiples of the size Minecraft draws its font at**, which are the sizes the
-glyphs are drawn at losslessly. They are a bitmap: at a whole multiple every pixel of a glyph
-covers the same whole number of pixels on screen — and the GUI scale the HUD is drawn through is
-a whole number too, so the product still is — and the letter that comes out is the letter the
-font has, enlarged. At 1.3× some strokes land on two pixels and their neighbours on one, so the
-same letter is a different shape in different words. Halves are no better in kind: 0.5× throws
-away every other row of the glyph to fit, which is a smaller letter than the font has rather
-than the one it has. These are absolute multiples, fixed points on screen, not multiples of
-whatever size the panel happens to be at now.
-
-These rest on a value rather than on a line, so unlike every other rest they draw no guide —
-there is no geometry to point at. They are scored against the pointer beside the edge rests and
-the nearest of all of them wins, and anything more than a snap distance from one is left exactly
-where it was asked for: they are an aim, not a ladder.
+**Eight is the largest size offered**, because that is where the width setting runs out: the
+widest panel's rows need 150 pixels at size one and the width may be set to 1200, so a ninth
+size is one no panel could be made wide enough to hold.
 
 **The floors are computed from the rows, not written down.** A row costs the panel's four pixels
 of padding either side, its label, two pixels of clearance so that at the floor the label and

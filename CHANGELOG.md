@@ -130,24 +130,45 @@ build identifier and released feature for feature; see its own changelog.
   through. Each module's opacity remains its own setting, and a configured value is untouched.
 - Drag snapping no longer uses module or screen center lines. Moves and corner resizes now snap
   only to edges, removing the competing middle guide when boxes are already edge-aligned.
-- Each Flight Stats panel is sized by a width and a height that move independently, replacing
-  the single panel's one size setting and the advanced content width behind it. The height sets
-  the text size: its rows are laid out at a fixed line height and scaled to fill exactly the
-  height asked for,
-  so the panel is never left with a gap at the bottom. The width then buys one thing only, the
-  distance between a label and the value right-aligned against the far edge — the panel's only
-  dead space, and something the single setting could not close without shrinking the reading
-  along with it. A width narrower than the rows need at the current text size is drawn at that
-  minimum rather than refused, so a panel never becomes an overlap. An existing panel migrates
-  to four panels drawn at the text size it was drawn at, stacked from where it sat with their
-  borders sharing a column, so a migrated HUD reads at the size and in the order it read in. The
-  cost of the split is that switching a row off no longer shortens the panel it is on: that
-  panel keeps the height it was given and draws the rows that remain larger.
-- Migrating a Flight Stats panel from before the split now keeps the text size it was drawn at,
-  heading rows included. Each of the four panels it becomes takes the height *its own* rows want
-  at the retired panel's text size, which is no longer the height the retired panel would have
-  given those rows: three of the four draw a units heading it never had, and measuring without
-  it cost them a fifth of their text size on the way across.
+- Each Flight Stats panel is sized by a width in pixels and a text size that move independently,
+  replacing the single panel's one size setting and the advanced content width behind it. The
+  height is neither: the rows are laid out at a fixed line height and drawn at the size asked
+  for, so the panel is exactly as tall as its rows need and cannot be left with a gap at the
+  bottom. The width then buys one thing only, the distance between a label and the value
+  right-aligned against the far edge — the panel's only dead space, and something the single
+  setting could not close without shrinking the reading along with it. A width narrower than the
+  rows need at the current text size is drawn at that minimum rather than refused, so a panel
+  never becomes an overlap.
+- **A Flight Stats panel's text size is a whole number of font sizes, and sizes that would be
+  interpolated are inexpressible.** The glyphs are a bitmap: at a whole multiple every pixel of
+  a glyph covers the same whole number of pixels on screen — and the GUI scale the HUD is drawn
+  through is a whole number too, so the product still is — and the letter that comes out is the
+  letter the font has, enlarged. At 1.3× some strokes land on two pixels and their neighbours on
+  one, so the same letter is a different shape in different words. Halves are no better in kind:
+  0.5× throws away every other row of the glyph to fit.
+
+  This is also what makes two panels agree. Butted into a stack they are meant to read as one
+  instrument, and nothing says otherwise like two sections of it set in different sizes; two
+  panels showing the same number are now set to the same size exactly, whatever their row
+  counts.
+
+  Sizes run from 1 to 8. Eight is where the width setting runs out — the widest panel's rows
+  need 150 pixels at size one, and the width may be set to 1200. The cost is that a panel's
+  height comes in steps of its whole layout: a four-row panel is 48 pixels tall or 96 and
+  nothing between. Panels are aligned by moving them rather than by sizing them, so that costs
+  nothing at the edges, and every height it forbids was one that drew interpolated text or left
+  a gap under the last row.
+- Switching a Flight Stats row off now shortens its panel instead of enlarging its text. The
+  height used to be the setting and the text size the quotient, so turning off a row shrank the
+  divisor and left the dividend where it was — a checkbox reading *show total speed* also made
+  every letter on the panel bigger. It now does the one thing it says.
+- A Flight Stats panel from before the split migrates to four panels at the text size it was
+  drawn at, stacked from where it sat with their borders sharing a column, so a migrated HUD
+  reads at the size and in the order it read in. Each takes the size *its own* rows want, which
+  is not the height the retired panel would have given them: three of the four draw a units
+  heading it never had, and measuring without it cost them a fifth of their text size on the way
+  across. The retired size was a height over its rows and so could be any fraction, so this is
+  now a rounding where it was not already whole — a panel drawn at 1.5× opens at 2×.
 - Every figure column on every Flight Stats panel now reserves the same width, so a stack of
   panels butted together at one width has one grid of columns rather than several that nearly
   agree. A column is placed by measuring back from the panel's right edge, so the three separate
@@ -157,23 +178,6 @@ build identifier and released feature for feature; see its own changelog.
   accident that makes one width enough is that seven glyphs and one stop measure the same
   whether they are spent on three digits and two decimals or on four and one, so a two-decimal
   speed and a one-decimal altitude want the same column.
-- Dragging a Flight Stats panel's height now rests on the text sizes worth landing on: whatever
-  size another stats panel on screen is currently drawn at, and the whole multiples of the size
-  Minecraft draws its font at. Text size stays continuous — it is whatever the height divides out
-  to, which is what keeps a panel exactly as tall as its rows and never leaves it a gap at the
-  bottom — but the one thing a drag could not do by itself was land on either.
-
-  The first is what makes two panels agree. Panels butted into a stack are meant to read as one
-  instrument, and nothing says otherwise like two sections of it set in different sizes — but a
-  panel's height is its rows times its text size, so matching a four-row panel to a two-row one
-  is arithmetic rather than something the eye can do at a drag's speed. The second is where the
-  glyphs are drawn losslessly: they are a bitmap, so at a whole multiple every pixel of a glyph
-  covers the same whole number of pixels on screen, and the letter that comes out is the letter
-  the font has, enlarged. At 1.3× some strokes land on two pixels and their neighbours on one,
-  and the same letter is a different shape in different words.
-
-  These rest on a value rather than on a line, so unlike every other rest they draw no guide,
-  and a height more than a snap distance from one is left exactly where it was asked for.
 - A stats panel's rows are now scaled by one factor on both axes, and its background is filled on
   the exact box instead. The width setting buys unscaled space to the right of the figures, as it
   always did, but it no longer stretches the glyphs sideways to reach the box's corner: the two
@@ -240,17 +244,17 @@ build identifier and released feature for feature; see its own changelog.
 - A Flight Stats panel's corner resize is now a function of where the pointer is rather than of
   how it got there. Both bounds on its two size settings were read off the panel as it stood:
   the width could not be dragged below the rows' width at the panel's *current* text size, and
-  the height could not be dragged past the text size the panel's *current* width holds. Since
-  text size is height, that closed a loop — this event's width depended on the last event's
-  height, and this event's height on this event's width — and the loop has fixed points a drag
-  cannot leave. A panel sitting exactly on its content floor could not get narrower, because the
-  height it had demanded that width, and could not get taller, because the width it had forbade
-  that height, so it stood still under a pointer asking for something else and then unwound in a
-  rush once the pointer crossed into something the loop admitted.
+  the text size could not be dragged past what the panel's *current* width holds. That closed a
+  loop — this event's width depended on the last event's size, and this event's size on this
+  event's width — and the loop has fixed points a drag cannot leave. A panel sitting exactly on
+  its content floor could not get narrower, because the size it had demanded that width, and
+  could not get larger, because the width it had forbade that size, so it stood still under a
+  pointer asking for something else and then unwound in a rush once the pointer crossed into
+  something the loop admitted.
 
-  The width's floor is now the panel's rows at the shortest height its setting allows, which is
-  a constant, and the height's cap is taken from the width the same event just settled on.
-  Nothing is given up: the height is still capped so the settled width holds the rows, so the
+  The width's floor is now the panel's rows at the smallest text size its setting allows, which
+  is a constant, and the size's cap is taken from the width the same event just settled on.
+  Nothing is given up: the size is still capped so the settled width holds the rows, so the
   panel is still never drawn wider than the drag placed it.
 
 - Resizing a Flight Stats panel vertically no longer makes its horizontal edge run away from

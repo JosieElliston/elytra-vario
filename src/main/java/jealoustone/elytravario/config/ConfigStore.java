@@ -104,6 +104,7 @@ public final class ConfigStore {
 					horizontalRange * root.get("chartScale").getAsDouble())));
 		}
 		splitStatsPanel(root, values);
+		statsHeightToTextSize(root, values);
 		if (ConfigOptions.error(values) != null) throw new IllegalArgumentException("Invalid config values");
 		return values;
 	}
@@ -154,17 +155,20 @@ public final class ConfigStore {
 				StatsPanel.ACCEL, StatsPanel.ENERGY)) {
 			int rows = rows(values, panel.rowKeys());
 			int drawn = rows > 0 ? rows : panel.rowKeys().size();
-			// The height its rows need at the retired panel's text size, which is the whole
-			// point of the migration: the same reading, the same size, in more boxes. Asked of
-			// the panel rather than worked out here, so that a row the panel draws and this file
-			// never knew about — its units heading — is included rather than quietly costing the
-			// migrated panel a fifth of its text size.
-			long panelHeight = Math.clamp(
-					Math.round(panel.layoutHeightFor(drawn) * scale), 16, 1200);
+			// The retired panel's text size, rounded to one the split panels can be set to.
+			// That is the whole point of the migration — the same reading, the same size, in
+			// more boxes — and it is now a rounding rather than an exact carry: the old panel's
+			// size was a height divided by its rows and so could be any fraction, and there is
+			// no fraction here to put it in. A file drawn at 1.5× opens at 2×.
+			long textSize = Math.clamp(Math.round(scale), 1, StatsPanel.MAX_TEXT_SIZE);
+			// The height it will actually be drawn at, for stacking the next panel under it.
+			// Asked of the panel rather than worked out here, so that a row the panel draws and
+			// this file never knew about — its units heading — is counted.
+			long panelHeight = panel.layoutHeightFor(drawn) * textSize;
 			values.put(panel.xKey(), Long.toString(Math.clamp(x, -4096, 4096)));
 			values.put(panel.yKey(), Long.toString(Math.clamp(top, -4096, 4096)));
 			values.put(panel.widthKey(), Long.toString(Math.clamp(width, 32, 1200)));
-			values.put(panel.heightKey(), Long.toString(panelHeight));
+			values.put(panel.textSizeKey(), Long.toString(textSize));
 			if (root.has("panelOpacity")) {
 				values.put(panel.opacityKey(), root.get("panelOpacity").getAsString());
 			}
@@ -172,6 +176,32 @@ public final class ConfigStore {
 				values.put(panel.borderKey(), root.get("showPanelBorder").getAsString());
 			}
 			if (rows > 0) top += panelHeight - ModulePositionEditor.OVERLAP;
+		}
+	}
+
+	/**
+	 * Turns a panel's retired pixel height into the text size that height was drawing it at.
+	 *
+	 * <p>The height was the setting and the text size the quotient; they have changed places, so
+	 * a file from before that swap says how tall to be and nothing about how large to write.
+	 * Dividing by the rows it was drawing recovers what it meant, rounded to a whole size — the
+	 * same rounding {@link #splitStatsPanel} does, and for the same reason.
+	 *
+	 * <p>A panel with every row switched off is measured against the rows it could draw, since
+	 * that is what its height was set against. This can go once no config file predates the
+	 * swap; the heights it reads were never released.
+	 */
+	private static void statsHeightToTextSize(JsonObject root, Map<String, String> values) {
+		for (StatsPanel panel : StatsPanel.values()) {
+			String retired = panel.group() + "Height";
+			// Against the file, not against values: values is seeded with every default, so a
+			// text size is always present there and would veto every migration.
+			if (!root.has(retired) || root.has(panel.textSizeKey())) continue;
+			int rows = rows(values, panel.rowKeys());
+			int drawn = rows > 0 ? rows : panel.rowKeys().size();
+			double size = (double) root.get(retired).getAsLong() / panel.layoutHeightFor(drawn);
+			values.put(panel.textSizeKey(), Long.toString(
+					Math.clamp(Math.round(size), 1, StatsPanel.MAX_TEXT_SIZE)));
 		}
 	}
 

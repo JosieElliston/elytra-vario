@@ -51,11 +51,11 @@ final class ModulePositionEditor {
 			this(page, null, null, xKey, yKey, sizeKeys);
 		}
 
-		// Width before height: the height is capped by the text size that the dragged width can
-		// contain, so increasing the height cannot make the far edge run away from the pointer.
+		// Width before text size: the size is capped by what the dragged width can contain, so
+		// growing the text cannot make the far edge run away from the pointer.
 		Module(StatsPanel panel) {
 			this(STATS_PAGE, panel.group(), panel, panel.xKey(), panel.yKey(),
-					new String[] { panel.widthKey(), panel.heightKey() });
+					new String[] { panel.widthKey(), panel.textSizeKey() });
 		}
 
 		Module(int page, String group, StatsPanel panel, String xKey, String yKey,
@@ -351,9 +351,11 @@ final class ModulePositionEditor {
 	 * each of them be solved on its own axis by the same arithmetic that solves a single one.
 	 */
 	static Growth growth(String sizeKey) {
-		// A stats panel's two settings are its two dimensions, each on its own.
+		// A stats panel's two settings are its two dimensions, each on its own. Its width is
+		// pixels; its height is its rows, so one more text size buys a whole layout of them.
 		if (StatsPanel.byWidthKey(sizeKey) != null) return new Growth(1, 0);
-		if (StatsPanel.byHeightKey(sizeKey) != null) return new Growth(0, 1);
+		StatsPanel sized = StatsPanel.byTextSizeKey(sizeKey);
+		if (sized != null) return new Growth(0, sized.layoutHeight());
 		return switch (sizeKey) {
 			// Size is the exact width; height follows the chart's aspect ratio.
 			case "chartSize" -> new Growth(1, (VarioConfig.chartMaxVy - VarioConfig.chartMinVy)
@@ -368,39 +370,39 @@ final class ModulePositionEditor {
 	}
 
 	/**
-	 * The narrowest a grip may drag a stats panel's width to: its rows at the shortest height
-	 * the height setting itself allows, which is the narrowest the panel is ever drawn.
+	 * The narrowest a grip may drag a stats panel's width to: its rows at the smallest text size
+	 * the setting itself allows, which is the narrowest the panel is ever drawn.
 	 *
-	 * <p><b>At the shortest height, and not at the height the panel happens to have.</b> A
-	 * panel's width floor rises with its text size and its text size is its height, so reading
-	 * the floor off the panel as it stands makes this event's width depend on the last event's
-	 * height — and {@link #tallestHeight} makes this event's height depend on this event's
-	 * width. Together those two close a loop with fixed points a drag cannot leave: a panel
-	 * sitting exactly on its content floor cannot get narrower, because the height it has
-	 * demands that width, and cannot get taller, because the width it has forbids that height,
-	 * so it stands still under a pointer asking for something else entirely until the pointer
-	 * happens to ask for something the loop admits.
+	 * <p><b>At the smallest text size, and not at the size the panel happens to have.</b> A
+	 * panel's width floor rises with its text size, so reading the floor off the panel as it
+	 * stands makes this event's width depend on the last event's text size — and
+	 * {@link #largestTextSize} makes this event's text size depend on this event's width.
+	 * Together those two close a loop with fixed points a drag cannot leave: a panel sitting
+	 * exactly on its content floor cannot get narrower, because the size it has demands that
+	 * width, and cannot get larger, because the width it has forbids that size, so it stands
+	 * still under a pointer asking for something else entirely until the pointer happens to ask
+	 * for something the loop admits.
 	 *
 	 * <p>Both bounds are therefore read from this drag rather than from the panel: the width
-	 * against a constant, and the height against the width this same event just settled. The
+	 * against a constant, and the text size against the width this same event just settled. The
 	 * pair that comes out is a function of where the pointer is and of nothing else, which is
 	 * the only way a drag can be undone by dragging back.
 	 *
-	 * <p>Nothing is given up by it. The height is capped so that the width the drag settled on
-	 * still holds the rows, so the panel is never drawn wider than the drag placed it.
+	 * <p>Nothing is given up by it. The text size is capped so that the width the drag settled
+	 * on still holds the rows, so the panel is never drawn wider than the drag placed it.
 	 */
-	static double narrowestWidth(StatsPanel panel, int shortestHeight, double min, double max) {
-		return Math.clamp(panel.minWidth(shortestHeight), min, max);
+	static double narrowestWidth(StatsPanel panel, int smallestTextSize, double min, double max) {
+		return Math.clamp(panel.minWidth(smallestTextSize), min, max);
 	}
 
 	/**
-	 * The tallest a grip may drag a stats panel's height to once its width is settled: the
-	 * largest text size that width still holds the rows at. Without it a mostly-vertical drag
-	 * would grow the text and shove the panel's far horizontal edge away from a pointer that is
-	 * not dragging it.
+	 * The largest text size a grip may drag a stats panel to once its width is settled: the
+	 * largest that width still holds the rows at. Without it a mostly-vertical drag would grow
+	 * the text and shove the panel's far horizontal edge away from a pointer that is not
+	 * dragging it.
 	 */
-	static double tallestHeight(StatsPanel panel, int settledWidth, double min, double max) {
-		return Math.clamp(panel.maxHeightForWidth(settledWidth), min, max);
+	static double largestTextSize(StatsPanel panel, int settledWidth, double min, double max) {
+		return Math.clamp(panel.maxTextSizeForWidth(settledWidth), min, max);
 	}
 
 	/**
@@ -427,6 +429,11 @@ final class ModulePositionEditor {
 	 * scored by how near its resulting corner is to the pointer, and the nearest takes it. A rest
 	 * the setting cannot actually reach, because it is out of range or because the module lays
 	 * itself out in whole pixels, is passed over for one it can.
+	 *
+	 * <p>A stats panel's text size needs no rests of its own, and once had them. It is now a
+	 * whole number of font sizes, so every value the drag can reach is already one the font is
+	 * drawn at, and two panels set to the same number are already set to the same size — there
+	 * is nothing between to be pulled off of. See {@link StatsPanel#textSize()}.
 	 */
 	static double resize(Corner corner, Bounds rendered, double value, Sizing sizing,
 			double pointerX, double pointerY, List<Bounds> bounds,
@@ -498,28 +505,10 @@ final class ModulePositionEditor {
 				}
 			}
 		}
-		// A stats panel's height also rests where its text comes out at a size worth having.
-		// These rest on a value rather than on a line, so they carry no marker and draw no
-		// guide; they are scored against the pointer beside every other rest, and the nearest
-		// of all of them still wins.
-		for (int rest : textSizeRests(rendered.module, bounds, width, height)) {
-			if (Math.abs(rest - free) > distance) continue;
-			double reaching = settled(rest, sizing, limit);
-			if (reaching != rest) continue;
-			int candidateHeight = (int) Math.round(height * reaching + heightOffset);
-			double error = squared(rendered.width - wantedWidth)
-					+ squared(candidateHeight - wantedHeight);
-			candidates.add(new ResizeCandidate(reaching, error, null));
-			if (error < bestError) {
-				best = reaching;
-				bestError = error;
-			}
-		}
 		if (candidates.isEmpty()) return new Resize(best, trueBounds, List.of());
 		List<Marker> markers = new ArrayList<>();
 		for (ResizeCandidate candidate : candidates) {
-			if (candidate.marker != null && Double.compare(candidate.value, best) == 0
-					&& !markers.contains(candidate.marker)) {
+			if (Double.compare(candidate.value, best) == 0 && !markers.contains(candidate.marker)) {
 				markers.add(candidate.marker);
 			}
 		}
@@ -528,61 +517,6 @@ final class ModulePositionEditor {
 
 	private static double squared(double value) {
 		return value * value;
-	}
-
-	/**
-	 * The text sizes the font is drawn at losslessly, as multiples of the size Minecraft draws
-	 * it at, which a stats panel's height rests on.
-	 *
-	 * <p><b>Whole multiples, because those are the ones that need no interpolation.</b> The
-	 * glyphs are a bitmap. At a whole multiple every pixel of a glyph covers the same whole
-	 * number of pixels on screen — and the GUI scale the whole HUD is drawn through is a whole
-	 * number too, so the product still is — and the letter that comes out is the letter the font
-	 * has, enlarged. At 1.3× some strokes land on two pixels and their neighbours on one, so the
-	 * same letter is a different shape in different words. Half sizes are no better in kind:
-	 * 0.5× has to throw away every other row of the glyph to fit, which is a smaller letter than
-	 * the font has rather than the one it has.
-	 *
-	 * <p>Absolute multiples, not multiples of whatever size the panel is at now. One is the font
-	 * as the game draws it and the size every panel ships at; these are fixed points on screen,
-	 * so a drag's answer does not depend on the size the drag started from.
-	 *
-	 * <p>Four of them is a short list, and deliberately: matching a panel already on screen is
-	 * what makes two panels agree, and this list is for the different question of landing on a
-	 * size the font is actually drawn at. Everything between remains reachable — these are an
-	 * aim, not a ladder — it is just not crisp.
-	 */
-	private static final double[] TEXT_SIZES = { 1.0, 2.0, 3.0, 4.0 };
-
-	/**
-	 * The heights that put this module's text on one of those sizes, or on the size a stats
-	 * panel already on screen is drawn at.
-	 *
-	 * <p>The second list is the one that does the work. Panels butted into a stack are meant to
-	 * read as one instrument, and nothing says "not one instrument" like two sections of it set
-	 * in different sizes — but a panel's height is its rows times its text size, so matching a
-	 * four-row panel to a two-row one is arithmetic rather than something the eye can do at a
-	 * drag's speed. Offering the answer as a rest is the whole of the fix.
-	 *
-	 * <p>Empty for anything that is not a stats panel's height: no other module's size setting
-	 * carries text with it.
-	 */
-	private static List<Integer> textSizeRests(Module moving, List<Bounds> bounds,
-			double widthGrowth, double heightGrowth) {
-		if (moving.panel == null || widthGrowth > 0 || heightGrowth <= 0) return List.of();
-		int rows = moving.panel.layoutHeight();
-		List<Integer> rests = new ArrayList<>();
-		for (double size : TEXT_SIZES) addTextSize(rests, size, rows);
-		for (Bounds other : bounds) {
-			if (other.module.panel == null || other.module == moving) continue;
-			addTextSize(rests, other.module.panel.scale(), rows);
-		}
-		return rests;
-	}
-
-	private static void addTextSize(List<Integer> rests, double size, int rows) {
-		int height = (int) Math.round(size * rows);
-		if (height > 0 && !rests.contains(height)) rests.add(height);
 	}
 
 	/**
@@ -595,7 +529,6 @@ final class ModulePositionEditor {
 		List<Guide> vertical = new ArrayList<>();
 		List<Guide> horizontal = new ArrayList<>();
 		for (Marker marker : resize.markers) {
-			if (marker == null) continue;
 			int line = marker.vertical
 					? corner.left ? resized.x : resized.x + resized.width
 					: corner.top ? resized.y : resized.y + resized.height;
