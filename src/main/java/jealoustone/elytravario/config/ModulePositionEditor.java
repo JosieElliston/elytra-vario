@@ -368,19 +368,39 @@ final class ModulePositionEditor {
 	}
 
 	/**
-	 * The smallest a grip may drag this setting to: the setting's own range, or what the module
-	 * will actually draw where that is larger.
+	 * The narrowest a grip may drag a stats panel's width to: its rows at the shortest height
+	 * the height setting itself allows, which is the narrowest the panel is ever drawn.
 	 *
-	 * <p>The stats panel is drawn no narrower than its rows need at the text size its height is
-	 * asking for, so the grip stops where the panel stops rather than writing widths that would
-	 * leave the box sitting still while the number under it kept falling. A text size extreme
-	 * enough to need more than the setting can hold leaves the drag at the top of its range
-	 * rather than out of it.
+	 * <p><b>At the shortest height, and not at the height the panel happens to have.</b> A
+	 * panel's width floor rises with its text size and its text size is its height, so reading
+	 * the floor off the panel as it stands makes this event's width depend on the last event's
+	 * height — and {@link #tallestHeight} makes this event's height depend on this event's
+	 * width. Together those two close a loop with fixed points a drag cannot leave: a panel
+	 * sitting exactly on its content floor cannot get narrower, because the height it has
+	 * demands that width, and cannot get taller, because the width it has forbids that height,
+	 * so it stands still under a pointer asking for something else entirely until the pointer
+	 * happens to ask for something the loop admits.
+	 *
+	 * <p>Both bounds are therefore read from this drag rather than from the panel: the width
+	 * against a constant, and the height against the width this same event just settled. The
+	 * pair that comes out is a function of where the pointer is and of nothing else, which is
+	 * the only way a drag can be undone by dragging back.
+	 *
+	 * <p>Nothing is given up by it. The height is capped so that the width the drag settled on
+	 * still holds the rows, so the panel is never drawn wider than the drag placed it.
 	 */
-	static double smallest(String sizeKey, double min, double max) {
-		StatsPanel panel = StatsPanel.byWidthKey(sizeKey);
-		if (panel == null) return min;
-		return Math.clamp(panel.minWidth(), min, max);
+	static double narrowestWidth(StatsPanel panel, int shortestHeight, double min, double max) {
+		return Math.clamp(panel.minWidth(shortestHeight), min, max);
+	}
+
+	/**
+	 * The tallest a grip may drag a stats panel's height to once its width is settled: the
+	 * largest text size that width still holds the rows at. Without it a mostly-vertical drag
+	 * would grow the text and shove the panel's far horizontal edge away from a pointer that is
+	 * not dragging it.
+	 */
+	static double tallestHeight(StatsPanel panel, int settledWidth, double min, double max) {
+		return Math.clamp(panel.maxHeightForWidth(settledWidth), min, max);
 	}
 
 	/**

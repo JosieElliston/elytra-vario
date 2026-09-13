@@ -21,6 +21,54 @@ class ModulePositionEditorTest {
 				ModulePositionEditor.Module.STATS_BOUNCE_DISTANCE.sizeKeys);
 	}
 
+	/**
+	 * Neither bound on a stats panel's two size settings may be read off the panel as it is
+	 * currently drawn, or a drag stops being a function of where the pointer is.
+	 *
+	 * <p>The width floor rises with the text size, which is the height, and the height's cap
+	 * falls with the width. Read live, those two close a loop: a panel sitting on its content
+	 * floor cannot get narrower, because the height it has demands that width, and cannot get
+	 * taller, because the width it has forbids that height. It stands still under a pointer
+	 * asking for something else until the pointer happens to ask for something the loop admits,
+	 * and a drag cannot be undone by dragging back. The pair here, 220 by 52, is one such fixed
+	 * point measured off a real drag that sat in it for three and a half seconds.
+	 */
+	@Test
+	void neitherStatsBoundMovesWithThePanelsCurrentSize() {
+		StatsPanel panel = StatsPanel.BOUNCE_TICKS;
+		int wasHeight = VarioConfig.statsBounceTicksHeight;
+		int wasWidth = VarioConfig.statsBounceTicksWidth;
+		try {
+			// The narrowest the panel is ever drawn: its rows at the shortest height the setting
+			// allows, and the same answer whatever height the panel is at now.
+			double narrowest = ModulePositionEditor.narrowestWidth(panel, 16, 32, 1200);
+			assertEquals(panel.minWidth(16), narrowest);
+			for (int height : new int[] { 16, 28, 52, 200, 1200 }) {
+				VarioConfig.statsBounceTicksHeight = height;
+				assertEquals(narrowest,
+						ModulePositionEditor.narrowestWidth(panel, 16, 32, 1200), "" + height);
+			}
+			// And the height's cap follows the width the drag settled on rather than the one the
+			// panel is drawn at, so the pair it used to stick on can now be left.
+			VarioConfig.statsBounceTicksHeight = 52;
+			VarioConfig.statsBounceTicksWidth = 220;
+			assertEquals(220, panel.width());
+			assertEquals(52, panel.height());
+			assertEquals(panel.maxHeightForWidth(93),
+					ModulePositionEditor.tallestHeight(panel, 93, 16, 1200));
+			assertTrue(ModulePositionEditor.tallestHeight(panel, 93, 16, 1200) < 52);
+			// Whatever it caps at, the width that produced that cap still holds the rows, so the
+			// panel is never drawn wider than the drag placed it.
+			for (int width : new int[] { 68, 93, 150, 220, 400 }) {
+				int tallest = (int) ModulePositionEditor.tallestHeight(panel, width, 16, 1200);
+				assertTrue(panel.minWidth(tallest) <= width, "" + width);
+			}
+		} finally {
+			VarioConfig.statsBounceTicksHeight = wasHeight;
+			VarioConfig.statsBounceTicksWidth = wasWidth;
+		}
+	}
+
 	@Test
 	void preferredModuleWinsOverPaintOrderWhenBoundsOverlap() {
 		var stats = new ModulePositionEditor.Bounds(

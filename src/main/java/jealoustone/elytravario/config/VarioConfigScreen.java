@@ -10,6 +10,7 @@ import jealoustone.elytravario.ElytraVario;
 import jealoustone.elytravario.ElytraVarioClient;
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
+import jealoustone.elytravario.hud.StatsPanel;
 import jealoustone.elytravario.hud.VarioHudElement;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
@@ -542,23 +543,34 @@ public final class VarioConfigScreen extends Screen {
 		// immutable origin and answers only the axis it grows. Stats panels establish width first;
 		// their height is then limited to the text size that width can contain, preventing the
 		// content minimum from pushing the horizontal edge away from the pointer.
+		//
+		// Both of those limits are read from this drag rather than from the panel as it is
+		// currently drawn. That is the whole of what keeps the answer a function of where the
+		// pointer is: see ModulePositionEditor#narrowestWidth.
+		int settledWidth = resizeOrigin.width();
 		for (String key : module.sizeKeys) {
 			ConfigOptions.Option size = option(key);
 			ModulePositionEditor.Growth growth = ModulePositionEditor.growth(key);
 			double maximum = size.max() / size.factor();
-			if (module.panel != null && key.equals(module.panel.heightKey())) {
-				maximum = Math.min(maximum, module.panel.maxHeightForWidth(module.panel.width()));
-			}
 			double minimum = size.min() / size.factor();
+			if (module.panel != null && key.equals(module.panel.widthKey())) {
+				minimum = ModulePositionEditor.narrowestWidth(module.panel,
+						shortestHeight(module.panel), minimum, maximum);
+			}
+			if (module.panel != null && key.equals(module.panel.heightKey())) {
+				maximum = ModulePositionEditor.tallestHeight(module.panel, settledWidth,
+						minimum, maximum);
+			}
 			maximum = Math.max(minimum, maximum);
 			ModulePositionEditor.Resize resize = ModulePositionEditor.resizeWithMarkers(
 					corner, resizeOrigin, resizeOriginValues.get(key),
-					new ModulePositionEditor.Sizing(growth,
-							ModulePositionEditor.smallest(key, minimum, maximum),
-							maximum, size.integral()),
+					new ModulePositionEditor.Sizing(growth, minimum, maximum, size.integral()),
 					pointerX, pointerY, bounds, width, height,
 					VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
 			resizes.add(resize);
+			if (module.panel != null && key.equals(module.panel.widthKey())) {
+				settledWidth = (int) Math.round(resize.value());
+			}
 			if (growth.width() > 0) trueWidth = resize.trueBounds().width();
 			if (growth.height() > 0) trueHeight = resize.trueBounds().height();
 			String next = size.format(resize.value());
@@ -601,6 +613,12 @@ public final class VarioConfigScreen extends Screen {
 		}
 		snapVerticalGuides = List.copyOf(vertical);
 		snapHorizontalGuides = List.copyOf(horizontal);
+	}
+
+	/** The shortest this panel's height setting may be set to, from the setting's own range. */
+	private int shortestHeight(StatsPanel panel) {
+		ConfigOptions.Option size = option(panel.heightKey());
+		return (int) Math.ceil(size.min() / size.factor());
 	}
 
 	/** Shows what the in-world editor wrote in the boxes that show the same settings. */

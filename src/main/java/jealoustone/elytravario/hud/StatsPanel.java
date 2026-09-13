@@ -335,7 +335,17 @@ public enum StatsPanel {
 	public double scale() { return (double) height() / layoutHeight(); }
 
 	/** The narrowest width that keeps this panel's columns apart at its current text size. */
-	public int minWidth() { return (int) Math.ceil(minLayoutWidth * scale()); }
+	public int minWidth() { return minWidth(height()); }
+
+	/**
+	 * The same floor at a height this panel is not currently set to, which the position editor
+	 * asks for: a drag needs a floor that does not move as the drag moves the height, or the two
+	 * settings chase each other from one event to the next. See
+	 * {@link jealoustone.elytravario.config.ModulePositionEditor#narrowestWidth}.
+	 */
+	public int minWidth(int height) {
+		return (int) Math.ceil(minLayoutWidth * (double) height / layoutHeight());
+	}
 
 	/**
 	 * The tallest this panel can be while its contents still fit in {@code width} pixels.
