@@ -12,6 +12,7 @@ import static jealoustone.elytravario.hud.HudChrome.VALUE;
 
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
+import jealoustone.elytravario.flight.BounceTracker;
 import jealoustone.elytravario.flight.EnergyField;
 import jealoustone.elytravario.flight.FlightRecorder;
 import jealoustone.elytravario.flight.Sample;
@@ -27,7 +28,7 @@ import net.minecraft.util.Mth;
 import org.joml.Matrix3x2fStack;
 
 /**
- * Draws the four readout panels and the velocity-space chart.
+ * Draws the readout panels and the velocity-space chart.
  *
  * <p>Which rows each panel carries, how wide and how tall it is, and whether it is drawn at all
  * are {@link StatsPanel}'s; this draws them.
@@ -61,6 +62,7 @@ public final class VarioHudElement implements HudElement {
 	 */
 	private static final String DELTA_COLUMN = "-000.0 b";
 	private static final String ABSOLUTE_COLUMN = "-0000.0";
+	private static final String BOUNCE_COLUMN = "-000.00";
 
 	/**
 	 * While set, the chart stretches whatever field it last built instead of building one for
@@ -119,11 +121,8 @@ public final class VarioHudElement implements HudElement {
 					boxWidth, boxHeight, screenWidth, screenHeight);
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(at.x(), at.y());
-			// Each dimension is scaled onto exactly the box the settings name rather than by one
-			// shared factor. The two factors differ only by the pixel the layout width was
-			// rounded to — under half a percent apart even at the narrowest a panel goes — so
-			// this is a rounding remainder rather than a stretch, and it keeps the drawn border
-			// on the same box the position editor puts its grips around.
+			// Each setting controls its own axis; the small difference caused by layout-width
+			// rounding keeps the transformed contents on the exact configured box.
 			graphics.pose().scale((float) boxWidth / panel.layoutWidth(),
 					(float) boxHeight / panel.layoutHeight());
 			drawPanel(graphics, minecraft.font, panel, sample, 0, 0);
@@ -189,7 +188,112 @@ public final class VarioHudElement implements HudElement {
 				if (VarioConfig.showCycleGain) row = row(graphics, font, panel, x, row, "GAIN",
 						Double.isFinite(gain) ? fmt("%+.1f b", gain) : "--", rateColor(gain));
 			}
+			case BOUNCE_VELOCITY -> drawVelocityMatrix(graphics, font, panel, x, row);
+			case BOUNCE_DISTANCE -> drawDistanceMatrix(graphics, font, panel, x, row);
+			case BOUNCE_TICKS -> drawTicksMatrix(graphics, font, panel, x, row);
 		}
+	}
+
+	private void drawVelocityMatrix(GuiGraphicsExtractor graphics, Font font, StatsPanel panel,
+			int x, int y) {
+		BounceTracker.Event[] events = { recorder.bounceTouch(), recorder.bounceLeave(),
+				recorder.bounceDeploy() };
+		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "VEL b/s",
+				new String[] { "T", "L", "D" }, BOUNCE_COLUMN);
+		y += LINE;
+		if (VarioConfig.showBounceVelocityX) y = matrixRow(graphics, font, matrix, x, y, "X",
+				events, sample -> sample.vx() * TPS, true, 2);
+		if (VarioConfig.showBounceVelocityXz) y = matrixRow(graphics, font, matrix, x, y, "XZ",
+				events, sample -> sample.horizontalSpeed() * TPS, false, 2);
+		if (VarioConfig.showBounceVelocityXyz) matrixRow(graphics, font, matrix, x, y, "XYZ",
+				events, sample -> sample.speed() * TPS, false, 2);
+	}
+
+	private void drawDistanceMatrix(GuiGraphicsExtractor graphics, Font font, StatsPanel panel,
+			int x, int y) {
+		BounceTracker.Event touch = recorder.bounceTouch();
+		BounceTracker.Event leave = recorder.bounceLeave();
+		BounceTracker.Event deploy = recorder.bounceDeploy();
+		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "DELTA b",
+				new String[] { "T", "L", "D" }, BOUNCE_COLUMN);
+		y += LINE;
+		BounceTracker.Event[][] spans = { null, { touch, leave }, { leave, deploy } };
+		if (VarioConfig.showBounceDistanceX) y = distanceRow(graphics, font, matrix, x, y, "X",
+				spans, (a, b) -> b.x() - a.x(), true);
+		if (VarioConfig.showBounceDistanceXz) y = distanceRow(graphics, font, matrix, x, y, "XZ",
+				spans, (a, b) -> Math.hypot(b.x() - a.x(), b.z() - a.z()), false);
+		if (VarioConfig.showBounceDistanceXyz) distanceRow(graphics, font, matrix, x, y, "XYZ",
+				spans, (a, b) -> distance(a, b), false);
+	}
+
+	private void drawTicksMatrix(GuiGraphicsExtractor graphics, Font font, StatsPanel panel,
+			int x, int y) {
+		BounceTracker.Event touch = recorder.bounceTouch();
+		BounceTracker.Event leave = recorder.bounceLeave();
+		BounceTracker.Event deploy = recorder.bounceDeploy();
+		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "TICKS",
+				new String[] { "T", "L", "D" }, BOUNCE_COLUMN);
+		if (!VarioConfig.showBounceTicks) return;
+		long[] values = { -1, BounceTracker.ticks(touch, leave),
+				BounceTracker.ticks(leave, deploy) };
+		for (int column = 0; column < values.length; column++) {
+			String value = values[column] < 0 ? "--" : Long.toString(values[column]);
+			graphics.text(font, value, matrix.left(column, font.width(value)), y + LINE,
+					values[column] < 0 ? VALUE : rateColor(values[column]), true);
+		}
+	}
+
+	private MatrixLayout matrixHeading(GuiGraphicsExtractor graphics, Font font, StatsPanel panel,
+			int x, int y, String label, String[] headings, String template) {
+		int[] widths = new int[headings.length];
+		for (int i = 0; i < widths.length; i++) {
+			widths[i] = Math.max(font.width(headings[i]), font.width(template));
+		}
+		MatrixLayout matrix = MatrixLayout.rightAligned(
+				x + panel.layoutWidth() - PAD, PAD, widths);
+		graphics.text(font, label, x + PAD, y, LABEL, true);
+		for (int column = 0; column < headings.length; column++) {
+			graphics.text(font, headings[column], matrix.left(column, font.width(headings[column])),
+					y, MUTED, true);
+		}
+		return matrix;
+	}
+
+	private int matrixRow(GuiGraphicsExtractor graphics, Font font, MatrixLayout matrix,
+			int x, int y, String label, BounceTracker.Event[] events,
+			java.util.function.ToDoubleFunction<Sample> measure, boolean signed, int decimals) {
+		graphics.text(font, label, x + PAD, y, LABEL, true);
+		for (int column = 0; column < events.length; column++) {
+			double measured = events[column] == null
+					? Double.NaN : measure.applyAsDouble(events[column].sample());
+			String value = Double.isFinite(measured)
+					? fmt((signed ? "%+." : "%.") + decimals + "f", measured) : "--";
+			graphics.text(font, value, matrix.left(column, font.width(value)), y,
+					Double.isFinite(measured) ? rateColor(measured) : VALUE, true);
+		}
+		return y + LINE;
+	}
+
+	private int distanceRow(GuiGraphicsExtractor graphics, Font font, MatrixLayout matrix,
+			int x, int y, String label, BounceTracker.Event[][] spans,
+			java.util.function.ToDoubleBiFunction<Sample, Sample> measure, boolean signed) {
+		graphics.text(font, label, x + PAD, y, LABEL, true);
+		for (int column = 0; column < spans.length; column++) {
+			BounceTracker.Event from = spans[column] == null ? null : spans[column][0];
+			BounceTracker.Event to = spans[column] == null ? null : spans[column][1];
+			double measured = from == null || to == null ? Double.NaN
+					: measure.applyAsDouble(from.sample(), to.sample());
+			String value = from == null || to == null ? "--" : fmt(signed ? "%+.1f" : "%.1f",
+					measured);
+			graphics.text(font, value, matrix.left(column, font.width(value)), y,
+					Double.isFinite(measured) ? rateColor(measured) : VALUE, true);
+		}
+		return y + LINE;
+	}
+
+	private static double distance(Sample a, Sample b) {
+		return Math.sqrt(Math.pow(a.x() - b.x(), 2) + Math.pow(a.y() - b.y(), 2)
+				+ Math.pow(a.z() - b.z(), 2));
 	}
 
 	private int row(GuiGraphicsExtractor graphics, Font font, StatsPanel panel, int x, int y,
@@ -344,8 +448,10 @@ public final class VarioHudElement implements HudElement {
 		String delta = known ? fmt("%+.1f b", change) : "--";
 		String absolute = fmt("%.1f", current);
 
-		int deltaRight = x + panel.layoutWidth() - PAD;
-		int absoluteRight = deltaRight - font.width(DELTA_COLUMN) - PAD;
+		MatrixLayout matrix = MatrixLayout.rightAligned(x + panel.layoutWidth() - PAD, PAD,
+				font.width(ABSOLUTE_COLUMN), font.width(DELTA_COLUMN));
+		int absoluteRight = matrix.right(0);
+		int deltaRight = matrix.right(1);
 
 		// Coloured like the rate readouts, and for the same reason: below the last apex is
 		// energy still owed, above it is a cycle that has already paid for itself. The
@@ -479,7 +585,7 @@ public final class VarioHudElement implements HudElement {
 		return originY + (int) Math.round(Mth.clamp(py, 0.0, chartHeight() - 1.0));
 	}
 
-	private static int rateColor(double rate) {
+	static int rateColor(double rate) {
 		if (rate > 0.05) {
 			return VarioConfig.positiveColor;
 		}

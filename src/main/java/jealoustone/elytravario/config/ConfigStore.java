@@ -35,11 +35,7 @@ public final class ConfigStore {
 	private static final Map<String, String> RETIRED_MARKER_KEYS = Map.of(
 			"showMarkers", "showLadderMarkers",
 			"markersGlidingOnly", "ladderMarkersGlidingOnly");
-	/**
-	 * The rows the retired single Flight Stats panel drew, in the two groups it ruled a line
-	 * between. Only {@link #splitStatsPanel} needs them now, to work out how tall that panel
-	 * was; each row's own setting survived the split untouched and merely moved subpage.
-	 */
+	/** Rows from the retired single Flight Stats panel, used to recover its text scale. */
 	private static final List<String> SPEED_ROWS = List.of("showPitch", "showGlideRatio",
 			"showHorizontalSpeed", "showTotalSpeed", "showVerticalSpeed",
 			"showHorizontalAcceleration", "showTotalAcceleration", "showVerticalAcceleration");
@@ -115,31 +111,23 @@ public final class ConfigStore {
 	/**
 	 * Turns the retired single Flight Stats panel into the four it became, drawn where it was.
 	 *
-	 * <p>The whole of what that panel was is a position, a width and a height — the rows it
-	 * carried are unchanged settings that merely moved subpage — so the split is a matter of
-	 * dividing its box rather than of inventing anything. Each new panel keeps the old
-	 * position's x and the old width, takes the height its own rows want at the <em>old
-	 * panel's text size</em>, and is stacked under the one before it with their borders sharing
-	 * a column, which is the overlap the editor now snaps to. So a migrated HUD reads at the
-	 * size it read at, in the order it read in, with one extra rule where there was one before.
-	 *
-	 * <p>Finding that text size is the only arithmetic here, and it is the retired layout run
-	 * backwards: the old panel laid its rows out at a fixed line height, added a rule between
-	 * its halves when both had rows, and scaled the lot onto the height it was given.
-	 *
-	 * <p>The height itself was, in turn, three different retired settings — an on-screen width
-	 * and, behind Advanced, the layout width it was scaled from; before that a scale. Each of
-	 * them fixed the height too, so each is read here the way the panel used to read it.
-	 *
-	 * <p>A panel whose rows are all switched off is given the size its rows <em>would</em> want
-	 * and is not stacked, since it is not drawn: it is the size it would appear at if one of
-	 * them were switched back on, rather than a box left at some default.
+	 * <p>Each original panel keeps the retired position's x and width, takes the height its rows
+	 * need at the retired panel's text size, and stacks under its predecessor with a shared border
+	 * column. A panel with every row off is sized for its possible rows but is not stacked.
 	 *
 	 * <p>One save replaces every retired key. This can go once no config file predates the split.
 	 */
 	private static void splitStatsPanel(JsonObject root, Map<String, String> values) {
 		// A file naming the panels was written after the split and says what it means.
-		if (root.has(StatsPanel.OTHER.yKey())) return;
+		if (root.has(StatsPanel.OTHER.yKey()) || root.has(StatsPanel.OTHER.showKey())) return;
+		// An unrelated partial config has no retired stats geometry to preserve.
+		if (java.util.stream.Stream.of("panelWidth", "statsWidth", "statsSize", "panelScale",
+				"statsHeight", "statsX", "statsY", "originX", "originY", "panelOpacity",
+				"showPanelBorder", "showPitch", "showGlideRatio", "showHorizontalSpeed",
+				"showTotalSpeed", "showVerticalSpeed", "showHorizontalAcceleration",
+				"showTotalAcceleration", "showVerticalAcceleration", "showKineticEnergy",
+				"showPotentialEnergy", "showTotalEnergy", "showCycleGain")
+				.noneMatch(root::has)) return;
 		long layoutWidth = root.has("panelWidth")
 				? root.get("panelWidth").getAsLong() : RETIRED_PANEL_WIDTH;
 		long width;
@@ -160,7 +148,10 @@ public final class ConfigStore {
 		double scale = (double) height / retiredLayoutHeight;
 		long x = number(root, "statsX", "originX", RETIRED_PANEL_X);
 		long top = number(root, "statsY", "originY", RETIRED_PANEL_Y);
-		for (StatsPanel panel : StatsPanel.values()) {
+		// Only the four panels split out of the retired instrument belong in this migration.
+		// Bounce panels did not exist in that file and keep their own factory positions.
+		for (StatsPanel panel : List.of(StatsPanel.OTHER, StatsPanel.SPEED,
+				StatsPanel.ACCEL, StatsPanel.ENERGY)) {
 			int rows = rows(values, panel.rowKeys());
 			int drawn = rows > 0 ? rows : panel.rowKeys().size();
 			long panelHeight = Math.clamp(
@@ -179,7 +170,7 @@ public final class ConfigStore {
 		}
 	}
 
-	/** How tall the retired panel laid itself out, rows and the rule between its halves. */
+	/** How tall the retired panel laid itself out, including its optional separator row. */
 	private static int retiredLayoutHeight(Map<String, String> values) {
 		int speed = rows(values, SPEED_ROWS);
 		int energy = rows(values, ENERGY_ROWS);

@@ -24,8 +24,14 @@ public record Sample(
 		float pitch,
 		float yaw,
 		double gravity,
-		boolean gliding
+		boolean gliding,
+		boolean grounded
 ) {
+	/** Compatibility constructor for synthetic flight samples, which are airborne by default. */
+	public Sample(double x, double y, double z, double vx, double vy, double vz, float pitch,
+			float yaw, double gravity, boolean gliding) {
+		this(x, y, z, vx, vy, vz, pitch, yaw, gravity, gliding, false);
+	}
 	public double horizontalSpeed() {
 		return Math.sqrt(vx * vx + vz * vz);
 	}

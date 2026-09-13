@@ -31,6 +31,8 @@ josie's todo/notes, don't edit this, tho you should include it in commits
     - advanced on/off is bad, it should just show all, and communicate importance differently
     - steal sodiums?
     - better color picker
+- vel graph: draw marker and trail in a different color for on-ground, off-ground, flying
+- stats panel resizing; somehow keep the text same size, but you can resize in both axes. probably need text size snapping.
 - e-bounce
     - ground touch
         - vel
@@ -44,15 +46,15 @@ josie's todo/notes, don't edit this, tho you should include it in commits
         - not time or distance from ground touch for fewer things
     - for the distance and time, for eg the leave column, you show leave-touch.
 
-|             | touch | leave | deploy |
-| ----------- | ----- | ----- | ------ |
-| vel x       |       |       |        |
-| vel xz      |       |       |        |
-| vel xyz     |       |       |        |
-| delta x     | .     |       |        |
-| delta xz    | .     |       |        |
-| delta xyz   | .     |       |        |
-| delta ticks | .     |       |        |
+|           | touch | leave | deploy |
+| --------- | ----- | ----- | ------ |
+| vel x     |       |       |        |
+| vel xz    |       |       |        |
+| vel xyz   |       |       |        |
+| delta x   | .     |       |        |
+| delta xz  | .     |       |        |
+| delta xyz | .     |       |        |
+| ticks     | .     |       |        |
 
 ## myopic metrics
 

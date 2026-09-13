@@ -11,6 +11,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 class ConfigStoreTest {
 	@TempDir Path directory;
+	private static final java.util.List<StatsPanel> LEGACY_PANELS = java.util.List.of(
+			StatsPanel.OTHER, StatsPanel.SPEED, StatsPanel.ACCEL, StatsPanel.ENERGY);
 
 	@Test void defaultsAreValidAndRoundTrip() {
 		var defaults = ConfigOptions.defaults();
@@ -104,7 +106,7 @@ class ConfigStoreTest {
 		var values = ConfigStore.decode("{\"originX\":\"12\",\"originY\":\"34\"}");
 		// Every panel keeps the old left edge, and they stack from the old top edge down with
 		// each one's border sharing a column with the one above it.
-		for (var panel : StatsPanel.values()) assertEquals("12", values.get(panel.xKey()));
+		for (var panel : LEGACY_PANELS) assertEquals("12", values.get(panel.xKey()));
 		assertEquals("34", values.get(StatsPanel.OTHER.yKey()));
 		assertEquals("61", values.get(StatsPanel.SPEED.yKey()));
 		assertEquals("98", values.get(StatsPanel.ACCEL.yKey()));
@@ -117,7 +119,7 @@ class ConfigStoreTest {
 		assertEquals("132", values.get("chartSize"));
 		// The panel was 132 layout pixels wide and, with every row on, 138 tall, so a scale of
 		// 1.25 drew it 165 by 173 and every new panel is that width and that text size.
-		for (var panel : StatsPanel.values()) assertEquals("165", values.get(panel.widthKey()));
+		for (var panel : LEGACY_PANELS) assertEquals("165", values.get(panel.widthKey()));
 		assertEquals("35", values.get(StatsPanel.OTHER.heightKey()));
 		assertEquals("48", values.get(StatsPanel.SPEED.heightKey()));
 		assertEquals("48", values.get(StatsPanel.ACCEL.heightKey()));
@@ -129,12 +131,11 @@ class ConfigStoreTest {
 	@Test void theRetiredSingleStatsSizeBecomesTheSizeItWasDrawnAt() {
 		var values = ConfigStore.decode("{\"statsSize\":198,\"panelWidth\":132}");
 		// The width it named exactly, and the rows at the text size its scale of 1.5 gave them.
-		for (var panel : StatsPanel.values()) assertEquals("198", values.get(panel.widthKey()));
+		for (var panel : LEGACY_PANELS) assertEquals("198", values.get(panel.widthKey()));
 		assertEquals("42", values.get(StatsPanel.OTHER.heightKey()));
 		assertEquals("57", values.get(StatsPanel.SPEED.heightKey()));
 		assertEquals("57", values.get(StatsPanel.ACCEL.heightKey()));
 		assertEquals("72", values.get(StatsPanel.ENERGY.heightKey()));
-		// Which is the old panel's 207 pixels back, less the three shared border columns.
 		assertEquals("4", values.get(StatsPanel.OTHER.yKey()));
 		assertEquals("157", values.get(StatsPanel.ENERGY.yKey()));
 		assertFalse(ConfigStore.encode(values).contains("statsSize"));
@@ -151,7 +152,7 @@ class ConfigStoreTest {
 				+ "\"showVerticalAcceleration\":\"false\"}");
 		assertEquals("72", values.get(StatsPanel.ENERGY.heightKey()));
 		// The three panels left with no rows are not stacked, since they are not drawn, but
-		// they are still sized for the rows they would draw at the same text size.
+		// retain their origin for when a row is switched back on.
 		assertEquals("4", values.get(StatsPanel.ENERGY.yKey()));
 		assertEquals("4", values.get(StatsPanel.OTHER.yKey()));
 		assertEquals("42", values.get(StatsPanel.OTHER.heightKey()));
@@ -162,7 +163,7 @@ class ConfigStoreTest {
 		// Only the layout width was ever changed: the panel stayed 132 pixels wide on screen and
 		// was drawn at two thirds size to fit 198 pixels of layout into them.
 		var values = ConfigStore.decode("{\"panelWidth\":198}");
-		for (var panel : StatsPanel.values()) assertEquals("132", values.get(panel.widthKey()));
+		for (var panel : LEGACY_PANELS) assertEquals("132", values.get(panel.widthKey()));
 		assertEquals("19", values.get(StatsPanel.OTHER.heightKey()));
 		assertEquals("25", values.get(StatsPanel.SPEED.heightKey()));
 		assertEquals("32", values.get(StatsPanel.ENERGY.heightKey()));
@@ -171,8 +172,7 @@ class ConfigStoreTest {
 	@Test void theNewerRetiredWidthAndHeightWinOverTheOlderSingleSize() {
 		var values = ConfigStore.decode("{\"statsSize\":198,\"statsWidth\":90,"
 				+ "\"statsHeight\":120}");
-		for (var panel : StatsPanel.values()) assertEquals("90", values.get(panel.widthKey()));
-		// 120 against the 138 the rows laid out in, so every panel is at that same text size.
+		for (var panel : LEGACY_PANELS) assertEquals("90", values.get(panel.widthKey()));
 		assertEquals("24", values.get(StatsPanel.OTHER.heightKey()));
 		assertEquals("33", values.get(StatsPanel.SPEED.heightKey()));
 		assertEquals("42", values.get(StatsPanel.ENERGY.heightKey()));
@@ -181,7 +181,7 @@ class ConfigStoreTest {
 	@Test void theRetiredPanelChromeReachesAllFourPanels() {
 		var values = ConfigStore.decode("{\"panelOpacity\":\"30\","
 				+ "\"showPanelBorder\":\"false\"}");
-		for (var panel : StatsPanel.values()) {
+		for (var panel : LEGACY_PANELS) {
 			assertEquals("30", values.get(panel.opacityKey()), panel.name());
 			assertEquals("false", values.get(panel.borderKey()), panel.name());
 		}

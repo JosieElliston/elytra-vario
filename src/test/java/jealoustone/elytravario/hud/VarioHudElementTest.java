@@ -6,6 +6,20 @@ import jealoustone.elytravario.VarioConfig;
 import org.junit.jupiter.api.Test;
 
 class VarioHudElementTest {
+	@Test void signedValuesUseTheSharedPositiveAndNegativePalette() {
+		int positive = VarioConfig.positiveColor;
+		int negative = VarioConfig.negativeColor;
+		try {
+			VarioConfig.positiveColor = 0xFF123456;
+			VarioConfig.negativeColor = 0xFF654321;
+			assertEquals(0xFF123456, VarioHudElement.rateColor(1));
+			assertEquals(0xFF654321, VarioHudElement.rateColor(-1));
+		} finally {
+			VarioConfig.positiveColor = positive;
+			VarioConfig.negativeColor = negative;
+		}
+	}
+
 	@Test void theConfiguredChartSizeIsAnExactPixelWidth() {
 		int chartSize = VarioConfig.chartSize;
 		try {

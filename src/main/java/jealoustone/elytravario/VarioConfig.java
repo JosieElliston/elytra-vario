@@ -383,23 +383,13 @@ public final class VarioConfig {
 	public static boolean showGrid = true;
 	public static boolean showAxisLabels = true;
 	/**
-	 * The four Flight Stats panels, each placed, sized and switched on its own. See
+	 * The Flight Stats panels, each placed, sized and switched on its own. See
 	 * {@link jealoustone.elytravario.hud.StatsPanel}, which names every one of these settings
 	 * and is the only thing that reads them.
 	 *
-	 * <p><b>The height sets the text size.</b> The rows are laid out at a fixed line height and
-	 * the panel is scaled to the height asked for, so a panel is always exactly as tall as its
-	 * rows need and never has a gap at the bottom. The width is then free, and buys nothing but
-	 * the distance between a label and the value right-aligned against the far edge — which is
-	 * the only dead space on a panel. Below {@link jealoustone.elytravario.hud.StatsPanel#minWidth()}
-	 * a width is drawn at that minimum instead: past there the columns have met.
-	 *
-	 * <p><b>The widths are independent, and the defaults are all 132 anyway.</b> A shared width
-	 * is what a single panel had to give every row, and it is the thing worth being able to
-	 * give up — the speed rows want 116 layout pixels and the pitch and glide rows want 86, so
-	 * one width for both is thirty pixels of gap on the narrower one. The defaults match
-	 * because a set of panels wants to line up until you have a reason to break it, and 132 is
-	 * what the single panel was.
+	 * <p><b>Height sets text size and width sets horizontal spacing.</b> Each panel's two
+	 * dimensions are independent, so its label/value gap can be changed without changing its
+	 * text. A width below the content minimum is drawn at that minimum.
 	 *
 	 * <p><b>The default positions stack the four with their borders sharing a column.</b> Each
 	 * panel's top is its predecessor's bottom less one, which is the editor's overlap snap
@@ -441,6 +431,31 @@ public final class VarioConfig {
 	public static int statsEnergyHeight = 48;
 	public static double statsEnergyOpacity = 176.0 / 255.0;
 	public static boolean showStatsEnergyBorder = true;
+
+	public static boolean showStatsBounceVelocity = true;
+	public static int statsBounceVelocityX = 135;
+	public static int statsBounceVelocityY = 4;
+	public static int statsBounceVelocityWidth = 200;
+	public static int statsBounceVelocityHeight = 48;
+	public static double statsBounceVelocityOpacity = 176.0 / 255.0;
+	public static boolean showStatsBounceVelocityBorder = true;
+
+	public static boolean showStatsBounceDistance = true;
+	public static int statsBounceDistanceX = 135;
+	public static int statsBounceDistanceY = 51;
+	public static int statsBounceDistanceWidth = 200;
+	public static int statsBounceDistanceHeight = 48;
+	public static double statsBounceDistanceOpacity = 176.0 / 255.0;
+	public static boolean showStatsBounceDistanceBorder = true;
+
+	public static boolean showStatsBounceTicks = true;
+	public static int statsBounceTicksX = 135;
+	public static int statsBounceTicksY = 98;
+	public static int statsBounceTicksWidth = 200;
+	public static int statsBounceTicksHeight = 28;
+	public static double statsBounceTicksOpacity = 176.0 / 255.0;
+	public static boolean showStatsBounceTicksBorder = true;
+
 	public static int energyReference = 2;
 	public static int positiveColor = 0xFF66DD77;
 	public static int negativeColor = 0xFFE2685F;
@@ -456,6 +471,13 @@ public final class VarioConfig {
 	public static boolean showPotentialEnergy = true;
 	public static boolean showTotalEnergy = true;
 	public static boolean showCycleGain = true;
+	public static boolean showBounceVelocityX = true;
+	public static boolean showBounceVelocityXz = true;
+	public static boolean showBounceVelocityXyz = true;
+	public static boolean showBounceDistanceX = true;
+	public static boolean showBounceDistanceXz = true;
+	public static boolean showBounceDistanceXyz = true;
+	public static boolean showBounceTicks = true;
 
 	/** The bar speedometer: vertical bars for |Y|, XZ, and XYZ speed on one shared scale. */
 	public static boolean showBarSpeedo = true;

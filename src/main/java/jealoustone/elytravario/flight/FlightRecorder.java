@@ -27,6 +27,7 @@ public final class FlightRecorder {
 	private int size;
 
 	private final CycleTracker cycles = new CycleTracker();
+	private final BounceTracker bounce = new BounceTracker();
 
 	private OptimalPitch optimalPitch;
 
@@ -74,10 +75,12 @@ public final class FlightRecorder {
 				player.getXRot(),
 				player.getYRot(),
 				player.getGravity(),
-				player.isFallFlying());
+				player.isFallFlying(),
+				player.onGround());
 
 		push(sample);
 		cycles.update(sample);
+		bounce.update(sample);
 
 		// Once per tick, not once per frame. The search is cheap — a couple of hundred ticks
 		// of vector arithmetic — but it is a function of the tick's state, so recomputing it
@@ -152,6 +155,9 @@ public final class FlightRecorder {
 		return cycles.lastCycleGain();
 	}
 
+	public BounceTracker.Event bounceTouch() { return bounce.touch(); }
+	public BounceTracker.Event bounceLeave() { return bounce.leave(); }
+	public BounceTracker.Event bounceDeploy() { return bounce.deploy(); }
 
 	private void push(Sample sample) {
 		head = (head + 1) % CAPACITY;
@@ -172,6 +178,7 @@ public final class FlightRecorder {
 		size = 0;
 		Arrays.fill(buffer, null);
 		cycles.reset();
+		bounce.reset();
 		optimalPitch = null;
 		lookahead = null;
 		lookaheadHorizon = 0;

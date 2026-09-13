@@ -22,10 +22,13 @@ final class ModulePositionEditor {
 		STATS_SPEED(StatsPanel.SPEED),
 		STATS_ACCEL(StatsPanel.ACCEL),
 		STATS_ENERGY(StatsPanel.ENERGY),
+		STATS_BOUNCE_VELOCITY(StatsPanel.BOUNCE_VELOCITY),
+		STATS_BOUNCE_DISTANCE(StatsPanel.BOUNCE_DISTANCE),
+		STATS_BOUNCE_TICKS(StatsPanel.BOUNCE_TICKS),
 		BAR_SPEEDOMETER(5, "barSpeedoX", "barSpeedoY", "barSpeedoHeight"),
 		DIAL_SPEEDOMETER(6, "dialSpeedoX", "dialSpeedoY", "dialSpeedoRadius");
 
-		/** The Flight Stats page, whose four modules are its four subpages. */
+		/** The Flight Stats page, whose modules are its subpages. */
 		private static final int STATS_PAGE = 4;
 
 		final int page;
