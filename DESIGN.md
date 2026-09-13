@@ -904,6 +904,10 @@ and the default, so that changing the reference never moves the floor under a wi
 The velocity matrix is the one panel whose heading row is not what sets its floor: `VEL b/s` is
 its longest label, but the headings it runs at are single letters right-aligned into columns
 reserved for a figure, so the rows of figures beneath need more width than the heading does.
+Elapsed ticks reserves the same `-000.00` columns as the other two even though a tick count
+needs neither the sign nor the decimals. The template is what fixes where a column's edges fall,
+so a narrower one would leave that panel's left column standing somewhere the other two have
+nothing, and three matrices set down at one width are meant to read as one grid.
 
 The grips stop at these, and a narrower width typed into the box is drawn at the minimum rather
 than refused, so a reading never turns into an overlap.
@@ -915,16 +919,42 @@ than refused, so a reading never turns into an overlap.
 | `SPEED XYZ` | Total speed. |
 | `SPEED Y` | Vertical speed; negative descending. |
 | `GLIDE` | Blocks forward per block down. Negative while climbing, where it reads as blocks forward per block *gained*. `--` only when level with speed, or stationary. |
+| `Y` `XZ` `XYZ` | On the e-bounce matrices: the same three quantities as `SPEED`, read at each event or over each interval. |
 | `KE` | Kinetic energy as a height: the altitude your speed is worth. |
 | `PE` `TE` | Potential and total energy, **measured from the last apex**: how far below the top of the cycle you are, and how much of it is recoverable. Green means you are above the last apex, which for `TE` is a cycle that has already paid for itself. The dimmed figure to the left is the same height against the world's origin, which is what F3 and a map agree with. `--` until an apex has been seen. |
 | `GAIN` | Total energy gained between the last two apexes: what the cycle was worth. |
 
 The three e-bounce matrices read as columns rather than rows. The velocity matrix has one column
-per event — `T` touch, `L` leave, `D` deploy — and `X`, `XZ`, `XYZ` as its rows. The other two
+per event — `T` touch, `L` leave, `D` deploy — and `Y`, `XZ`, `XYZ` as its rows. The other two
 measure an interval, which is only ever the difference against the event before it, so they have
 no touch column and their headings name the subtraction: `L-T` and `D-L`. At equal widths those
 two columns sit under the velocity matrix's `L` and `D`, since all three right-align onto the
 same edges.
+
+**The rows are the Speed panel's, and for the Speed panel's reason:** the signed vertical
+component first, then the two magnitudes. A single world axis is not among them — `X` alone says
+which way the world happens to be oriented rather than which way the bounce went, and `XZ` is
+the rotation-independent quantity that replaces it. So the velocity matrix's top row is vertical
+speed at each event, and the position matrix's top row is the height gained or lost over each
+interval.
+
+### Signs and the sign colors
+
+**A reading that can go negative always writes its sign; a magnitude never writes one.** That is
+one rule and it covers every row: `PITCH`, `GLIDE`, `SPEED Y`, all three accelerations, `GAIN`,
+the apex-relative `PE` and `TE`, and the `Y` row of both matrices show a leading `+` or `-`, and
+`SPEED XZ`, `SPEED XYZ`, `KE`, the `XZ` and `XYZ` matrix rows and the elapsed ticks show
+neither. A minus that only appears half the time is easy to read past, and a `+` on a figure
+that could not have been anything else is noise. The muted absolute figure beside `PE` and `TE`
+follows the rule too, and is muted all the same: muting says how loudly a figure asks to be
+read, not which conventions it is written in.
+
+**The positive and negative colors follow exactly the same line.** Only a reading that can cross
+zero is colored by which side of it it is on; a magnitude has a floor at zero rather than a
+crossing, so coloring it would report it positive on every frame and the color would stop being
+a reading at all. The contrast is what makes it one: green on these panels means the figure is
+above zero *and could have been below it*. The deadband is `rateColor`'s, so a reading sitting
+on zero is white rather than flickering between the two.
 
 ## The chart
 

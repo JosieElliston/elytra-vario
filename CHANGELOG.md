@@ -85,11 +85,24 @@ build identifier and released feature for feature; see its own changelog.
   stacked with by default, and it is available between any two modules and on either axis.
 
 - Three e-bounce panels read the last bounce as a matrix: **velocity** with a column per event —
-  `T` touch, `L` leave, `D` deploy — over `X`, `XZ` and `XYZ` rows, and **position delta** and
+  `T` touch, `L` leave, `D` deploy — over `Y`, `XZ` and `XYZ` rows, and **position delta** and
   **elapsed ticks** over the intervals between those events. An interval is only ever the
   difference against the event before it, so those two have no touch column and their headings
   name the subtraction, `L-T` and `D-L`. All three right-align onto the same column edges, so at
   equal widths the two interval columns sit under the velocity matrix's `L` and `D`.
+
+  The two three-row matrices carry the same three quantities the Speed panel does and in the
+  same order: the signed vertical component, then the two magnitudes. A single world axis is not
+  among them — `X` alone says which way the world happens to be oriented rather than which way
+  the bounce went, and `XZ` is the rotation-independent quantity that replaces it. So the top row
+  of the velocity matrix is vertical speed at each event, and the top row of the position matrix
+  is the height gained or lost over each interval.
+
+  Only that top row is colored by its sign. The two under it are a speed and a distance, and the
+  elapsed ticks are a count forwards from the earlier event, so none of the three can be
+  negative and coloring them would report them positive on every frame — the same rule the Speed
+  panel already followed, where vertical speed is colored and the two magnitudes beside it are
+  not.
 
   **A panel's width floor is now computed from the rows it draws** rather than typed in beside
   it. A row costs the panel's padding either side, its label, two pixels so that at the floor the
@@ -130,6 +143,13 @@ build identifier and released feature for feature; see its own changelog.
   borders sharing a column, so a migrated HUD reads at the size and in the order it read in. The
   cost of the split is that switching a row off no longer shortens the panel it is on: that
   panel keeps the height it was given and draws the rows that remain larger.
+- Every Flight Stats row that can go negative now writes its sign explicitly, and every row that
+  cannot writes none. `PITCH`, `GLIDE` and the muted absolute figure beside `PE` and `TE` were
+  the three that did not: all can go either way about a datum — nose up or nose down about
+  level, a negative glide ratio is a climb rather than a shallower descent, and a world has
+  floors below zero — and a leading minus that only appears half the time is easy to read past.
+  The absolute figure stays muted, since muting says how loudly a figure asks to be read rather
+  than which conventions it is written in.
 - Velocity Graph and Flight Stats now expose their exact integer pixel widths instead of
   floating-point scale factors, matching the speedometers' pixel size settings. Existing scale
   settings migrate to the widths they rendered at, and resizing now changes a whole-pixel size.

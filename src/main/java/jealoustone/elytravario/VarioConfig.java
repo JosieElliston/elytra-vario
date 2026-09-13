@@ -476,10 +476,10 @@ public final class VarioConfig {
 	public static boolean showPotentialEnergy = true;
 	public static boolean showTotalEnergy = true;
 	public static boolean showCycleGain = true;
-	public static boolean showBounceVelocityX = true;
+	public static boolean showBounceVelocityY = true;
 	public static boolean showBounceVelocityXz = true;
 	public static boolean showBounceVelocityXyz = true;
-	public static boolean showBounceDistanceX = true;
+	public static boolean showBounceDistanceY = true;
 	public static boolean showBounceDistanceXz = true;
 	public static boolean showBounceDistanceXyz = true;
 	public static boolean showBounceTicks = true;
