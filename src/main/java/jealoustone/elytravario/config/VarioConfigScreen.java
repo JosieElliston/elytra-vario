@@ -539,17 +539,23 @@ public final class VarioConfigScreen extends Screen {
 		int trueWidth = resizeOrigin.width();
 		int trueHeight = resizeOrigin.height();
 		// A module with two settings takes them one at a time. Each is solved against the same
-		// immutable origin and answers only the axis it grows, so neither can move what the
-		// other decides; the module lists them in the order a drag wants them applied.
+		// immutable origin and answers only the axis it grows. Stats panels establish width first;
+		// their height is then limited to the text size that width can contain, preventing the
+		// content minimum from pushing the horizontal edge away from the pointer.
 		for (String key : module.sizeKeys) {
 			ConfigOptions.Option size = option(key);
 			ModulePositionEditor.Growth growth = ModulePositionEditor.growth(key);
+			double maximum = size.max() / size.factor();
+			if (module.panel != null && key.equals(module.panel.heightKey())) {
+				maximum = Math.min(maximum, module.panel.maxHeightForWidth(module.panel.width()));
+			}
+			double minimum = size.min() / size.factor();
+			maximum = Math.max(minimum, maximum);
 			ModulePositionEditor.Resize resize = ModulePositionEditor.resizeWithMarkers(
 					corner, resizeOrigin, resizeOriginValues.get(key),
 					new ModulePositionEditor.Sizing(growth,
-							ModulePositionEditor.smallest(key, size.min() / size.factor(),
-									size.max() / size.factor()),
-							size.max() / size.factor(), size.integral()),
+							ModulePositionEditor.smallest(key, minimum, maximum),
+							maximum, size.integral()),
 					pointerX, pointerY, bounds, width, height,
 					VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
 			resizes.add(resize);

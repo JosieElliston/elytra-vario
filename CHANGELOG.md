@@ -132,6 +132,9 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Fixed
 
+- Resizing a Flight Stats panel vertically no longer makes its horizontal edge run away from
+  the pointer. A stats resize now establishes its width first and limits text growth to the
+  largest size that width can contain.
 - Resize snaps at a margin, a shared-border butt, or a screen margin now draw every target edge
   that produced the winning size. Their guides were previously discarded because validation
   compared the resized edge with the target edge instead of with its offset resting coordinate.

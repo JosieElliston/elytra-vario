@@ -13,6 +13,12 @@ import org.junit.jupiter.api.Test;
 
 class ModulePositionEditorTest {
 	@Test
+	void statsResizeEstablishesWidthBeforeHeight() {
+		assertEquals(List.of("statsBounceDistanceWidth", "statsBounceDistanceHeight"),
+				ModulePositionEditor.Module.STATS_BOUNCE_DISTANCE.sizeKeys);
+	}
+
+	@Test
 	void preferredModuleWinsOverPaintOrderWhenBoundsOverlap() {
 		var stats = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS_SPEED, 10, 10, 40, 40);

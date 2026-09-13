@@ -51,11 +51,11 @@ final class ModulePositionEditor {
 			this(page, null, null, xKey, yKey, sizeKeys);
 		}
 
-		// Height before width: a panel's narrowest width follows the text size its height sets,
-		// so a drag that changes both wants the height of the event it is answering.
+		// Width before height: the height is capped by the text size that the dragged width can
+		// contain, so increasing the height cannot make the far edge run away from the pointer.
 		Module(StatsPanel panel) {
 			this(STATS_PAGE, panel.group(), panel, panel.xKey(), panel.yKey(),
-					new String[] { panel.heightKey(), panel.widthKey() });
+					new String[] { panel.widthKey(), panel.heightKey() });
 		}
 
 		Module(int page, String group, StatsPanel panel, String xKey, String yKey,
