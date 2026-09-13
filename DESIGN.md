@@ -662,11 +662,12 @@ locked-aspect corner looks like anywhere else; for the bar speedometer, whose wi
 and labels rather than a setting, the same expression collapses to following the pointer
 vertically and ignoring the rest.
 
-**Two settings are solved one at a time, which is exact rather than approximate.** A stats
-panel's width and height are orthogonal — one slope each, on its own axis — so each
-least-squares solve falls entirely on the axis its setting grows, and neither can move what the
-other answers. It is the same arithmetic run twice, with the same rests, and not a joint solve
-simplified.
+**Two settings are solved one at a time.** A stats panel's width and height each answer one
+pointer axis. Width is established first, then height is capped at the largest text size whose
+content minimum fits inside that width. Inside that boundary the axes are orthogonal; at the
+boundary the cap is the necessary coupling. Without it, pulling a corner mostly vertically
+could enlarge the text first and then force the panel's far horizontal edge well past the
+pointer merely to contain it.
 
 **The box is affine in its settings, and the constant is measured rather than modelled.** A
 slope — the graph's aspect ratio, one per axis for a stats panel, two for the dial's diameter —

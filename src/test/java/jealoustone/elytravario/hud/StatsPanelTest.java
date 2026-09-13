@@ -15,6 +15,15 @@ import jealoustone.elytravario.VarioConfig;
 import org.junit.jupiter.api.Test;
 
 class StatsPanelTest {
+	@Test
+	void heightLimitIsTheInverseOfMinimumWidth() {
+		int layoutHeight = StatsPanel.BOUNCE_DISTANCE.layoutHeight();
+
+		assertEquals(layoutHeight, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(194));
+		assertEquals(layoutHeight - 1, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(193));
+		assertEquals(layoutHeight * 2, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(388));
+	}
+
 	@Test void everyPanelNamesTheSettingsItReads() {
 		for (StatsPanel panel : StatsPanel.values()) {
 			for (String key : List.of(panel.showKey(), panel.xKey(), panel.yKey(),

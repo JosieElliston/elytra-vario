@@ -256,6 +256,17 @@ public enum StatsPanel {
 	/** The narrowest width that keeps this panel's columns apart at its current text size. */
 	public int minWidth() { return (int) Math.ceil(minLayoutWidth * scale()); }
 
+	/**
+	 * The tallest this panel can be while its contents still fit in {@code width} pixels.
+	 *
+	 * <p>This is the inverse of {@link #minWidth()}. The floor is deliberate: the corresponding
+	 * minimum width uses a ceiling, so this is the greatest integer height guaranteed not to
+	 * make the rendered panel wider than the edge a resize has already placed.
+	 */
+	public int maxHeightForWidth(int width) {
+		return (int) Math.floorDiv((long) width * layoutHeight(), minLayoutWidth);
+	}
+
 	/** The panel's on-screen width, never narrower than its content. */
 	public int width() { return Math.max(configuredWidth(), minWidth()); }
 
