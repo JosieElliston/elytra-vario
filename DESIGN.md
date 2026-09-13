@@ -874,6 +874,30 @@ the rows that remain larger.
 **A width narrower than the rows need is drawn at the width they need**, and each panel has its
 own floor, where its own widest row has met itself.
 
+**The rows are scaled by one factor on both axes.** The box is filled first, in screen pixels on
+the exact rectangle the settings ask for, and only the rows go inside the transform — so the
+width setting buys unscaled space to the right of the figures rather than stretching the glyphs
+sideways to reach the box's corner. Scaling the two axes separately had made a panel's text a
+slightly different shape for every width it was given, which is not much on its own and is
+exactly the wrong thing when the point is that two panels at one text size look like one
+instrument.
+
+**Text size is continuous, and a resize rests on the sizes worth having.** A panel's text size is
+whatever its height divides out to, which is what keeps it exactly as tall as its rows and never
+leaves it a gap at the bottom — snapping the size to a ladder instead would put the dead space
+back, and put it back worst at the height that had none. But it does mean the one thing a drag
+cannot do by itself is land on a round size, and two panels at 1.03× and 0.97× neither match nor
+can be made to match by eye. So a stats panel's height rests at the halves of the font's own
+size, and at whatever size another stats panel on screen is currently drawn at. The second is the
+one that does the work: panels butted into a stack are meant to read as one instrument, and
+matching a four-row panel to a two-row one is arithmetic rather than something the eye can do at
+a drag's speed.
+
+These rest on a value rather than on a line, so unlike every other rest they draw no guide —
+there is no geometry to point at. They are scored against the pointer beside the edge rests and
+the nearest of all of them wins, and anything more than a snap distance from one is left exactly
+where it was asked for: they are an aim, not a ladder.
+
 **The floors are computed from the rows, not written down.** A row costs the panel's four pixels
 of padding either side, its label, two pixels of clearance so that at the floor the label and
 the figure beside it are still two separate words, its own leftmost figure, and then a pad and a

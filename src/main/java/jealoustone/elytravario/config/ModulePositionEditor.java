@@ -478,10 +478,27 @@ final class ModulePositionEditor {
 				}
 			}
 		}
+		// A stats panel's height also rests where its text comes out at a size worth having.
+		// These rest on a value rather than on a line, so they carry no marker and draw no
+		// guide; they are scored against the pointer beside every other rest, and the nearest
+		// of all of them still wins.
+		for (int rest : textSizeRests(rendered.module, bounds, width, height)) {
+			if (Math.abs(rest - free) > distance) continue;
+			double reaching = settled(rest, sizing, limit);
+			if (reaching != rest) continue;
+			int candidateHeight = (int) Math.round(height * reaching + heightOffset);
+			double error = squared(rendered.width - wantedWidth)
+					+ squared(candidateHeight - wantedHeight);
+			candidates.add(new ResizeCandidate(reaching, error, null));
+			if (error < bestError) {
+				best = reaching;
+				bestError = error;
+			}
+		}
 		if (candidates.isEmpty()) return new Resize(best, trueBounds, List.of());
 		List<Marker> markers = new ArrayList<>();
 		for (ResizeCandidate candidate : candidates) {
-			if (Double.compare(candidate.value, best) == 0
+			if (candidate.marker != null && Double.compare(candidate.value, best) == 0
 					&& !markers.contains(candidate.marker)) {
 				markers.add(candidate.marker);
 			}
@@ -494,6 +511,50 @@ final class ModulePositionEditor {
 	}
 
 	/**
+	 * Text sizes a stats panel's height comes to rest on, as multiples of the font's own size.
+	 *
+	 * <p>Halves, and nothing finer. A panel's text size is whatever its height divides out to,
+	 * which is what keeps a panel exactly as tall as its rows and never leaves it a gap at the
+	 * bottom — but it also means the one thing a drag cannot do is land on a round size, and two
+	 * panels at 1.03× and 0.97× are two panels that do not match and cannot be made to by eye.
+	 * These are the sizes worth aiming at. Finer steps would not be worth aiming at and would
+	 * make the drag sticky everywhere: on a one-row panel a quarter step is already under two
+	 * snap distances apart.
+	 */
+	private static final double[] TEXT_SIZES = { 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0 };
+
+	/**
+	 * The heights that put this module's text on one of those sizes, or on the size a stats
+	 * panel already on screen is drawn at.
+	 *
+	 * <p>The second list is the one that does the work. Panels butted into a stack are meant to
+	 * read as one instrument, and nothing says "not one instrument" like two sections of it set
+	 * in different sizes — but a panel's height is its rows times its text size, so matching a
+	 * four-row panel to a two-row one is arithmetic rather than something the eye can do at a
+	 * drag's speed. Offering the answer as a rest is the whole of the fix.
+	 *
+	 * <p>Empty for anything that is not a stats panel's height: no other module's size setting
+	 * carries text with it.
+	 */
+	private static List<Integer> textSizeRests(Module moving, List<Bounds> bounds,
+			double widthGrowth, double heightGrowth) {
+		if (moving.panel == null || widthGrowth > 0 || heightGrowth <= 0) return List.of();
+		int rows = moving.panel.layoutHeight();
+		List<Integer> rests = new ArrayList<>();
+		for (double size : TEXT_SIZES) addTextSize(rests, size, rows);
+		for (Bounds other : bounds) {
+			if (other.module.panel == null || other.module == moving) continue;
+			addTextSize(rests, other.module.panel.scale(), rows);
+		}
+		return rests;
+	}
+
+	private static void addTextSize(List<Integer> rests, double size, int rows) {
+		int height = (int) Math.round(size * rows);
+		if (height > 0 && !rests.contains(height)) rests.add(height);
+	}
+
+	/**
 	 * The winning answer's guides which the resized module genuinely landed on. A module lays
 	 * itself out in whole pixels and its aspect ratio can make the secondary dimension
 	 * fractional, so applying an answer can round away from a line it reached arithmetically;
@@ -503,6 +564,7 @@ final class ModulePositionEditor {
 		List<Guide> vertical = new ArrayList<>();
 		List<Guide> horizontal = new ArrayList<>();
 		for (Marker marker : resize.markers) {
+			if (marker == null) continue;
 			int line = marker.vertical
 					? corner.left ? resized.x : resized.x + resized.width
 					: corner.top ? resized.y : resized.y + resized.height;

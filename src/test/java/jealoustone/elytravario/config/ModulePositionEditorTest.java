@@ -9,6 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jealoustone.elytravario.VarioConfig;
+import jealoustone.elytravario.hud.StatsPanel;
+
 import org.junit.jupiter.api.Test;
 
 class ModulePositionEditorTest {
@@ -253,6 +256,73 @@ class ModulePositionEditorTest {
 		// So the same corner can change one dimension and leave the other exactly as it was.
 		assertEquals(40, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				bounds, 40, height, 190, 140, List.of(), 320, 240, 4, 0));
+	}
+
+	/**
+	 * A stats panel's height rests where its text comes out at a round size, so a drag can land
+	 * on one instead of having to be typed to it.
+	 */
+	@Test
+	void aStatsHeightRestsOnARoundTextSize() {
+		StatsPanel panel = StatsPanel.SPEED;
+		int rows = panel.layoutHeight();
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS_SPEED, 100, 100, 150, rows);
+		var height = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
+
+		// Three pixels past 1.5x, dragged from the bottom edge, lands on 1.5x exactly.
+		int oneAndAHalf = rows * 3 / 2;
+		assertEquals(oneAndAHalf, ModulePositionEditor.resize(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, rows, height,
+				250, 100 + oneAndAHalf + 3, List.of(), 320, 400, 4, 4));
+		// Far enough from every round size and the drag is left where it asked to be. The rests
+		// are an aim, not a ladder: any height in between is still reachable.
+		int between = rows * 5 / 4;
+		assertEquals(between, ModulePositionEditor.resize(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, rows, height,
+				250, 100 + between, List.of(), 320, 400, 4, 4));
+	}
+
+	/**
+	 * And it rests on the size another panel on screen is already drawn at, which is the rest
+	 * that matters: matching a four-row panel to a two-row one is arithmetic otherwise.
+	 */
+	@Test
+	void aStatsHeightRestsOnAnotherPanelsTextSize() {
+		int was = VarioConfig.statsOtherHeight;
+		try {
+			// Put the Other panel at 1.25x, a size no round rest offers.
+			int otherRows = StatsPanel.OTHER.layoutHeight();
+			VarioConfig.statsOtherHeight = otherRows * 5 / 4;
+			assertEquals(1.25, StatsPanel.OTHER.scale());
+
+			int rows = StatsPanel.SPEED.layoutHeight();
+			var other = new ModulePositionEditor.Bounds(ModulePositionEditor.Module.STATS_OTHER,
+					100, 4, 150, VarioConfig.statsOtherHeight);
+			var moving = new ModulePositionEditor.Bounds(ModulePositionEditor.Module.STATS_SPEED,
+					100, 100, 150, rows);
+			var height = new ModulePositionEditor.Sizing(
+					new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
+
+			int matched = rows * 5 / 4;
+			assertEquals(matched, ModulePositionEditor.resize(
+					ModulePositionEditor.Corner.BOTTOM_RIGHT, moving, rows, height,
+					250, 100 + matched + 3, List.of(other, moving), 320, 400, 4, 4));
+		} finally {
+			VarioConfig.statsOtherHeight = was;
+		}
+	}
+
+	/** A module that carries no text has no text size to rest on. */
+	@Test
+	void onlyStatsPanelsRestOnATextSize() {
+		var bounds = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.BAR_SPEEDOMETER, 100, 100, 60, 40);
+		var height = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
+		assertEquals(43, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				bounds, 40, height, 160, 143, List.of(), 320, 400, 4, 4));
 	}
 
 	@Test
