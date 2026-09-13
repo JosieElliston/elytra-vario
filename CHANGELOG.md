@@ -143,6 +143,30 @@ build identifier and released feature for feature; see its own changelog.
   borders sharing a column, so a migrated HUD reads at the size and in the order it read in. The
   cost of the split is that switching a row off no longer shortens the panel it is on: that
   panel keeps the height it was given and draws the rows that remain larger.
+- Every Flight Stats panel now has a heading row saying what its figures are measured in, and
+  its rows are labelled by what tells them apart rather than by the panel they are on. `SPEED Y`,
+  `SPEED XZ` and `SPEED XYZ` against figures each carrying their own `b/s` are now `SPEED b/s`
+  over `Y`, `XZ` and `XYZ`; Acceleration and Energy likewise, under `ACCEL b/s²` and `ENERGY b`.
+  This is what the e-bounce matrices have done since they arrived, under `VEL b/s` and
+  `DELTA b`, and it was the only place a unit was written once rather than once a row.
+
+  A unit is a fact about a panel rather than about any row of it, and writing it per row cost
+  twice over: the suffix on every figure, and a label repeating `SPEED` three times to introduce
+  the one letter that actually differed. The heading costs a row and gives back three labels'
+  worth of width — Speed's minimum width falls from 116 to 66 — so the three panels are a row
+  taller by default and can be placed in half the width. *Other* keeps its per-row labels,
+  because a pitch in degrees and a dimensionless ratio have no unit in common for a heading to
+  state.
+
+  Energy's heading also names its two columns, `ABS` for the height against the world's origin
+  and `REL` for the height against the last apex, since they are the one pair of columns on any
+  panel that are different kinds of thing. Kinetic energy now sits under `ABS` and the cycle's
+  gain under `REL`, each under the heading that describes it, where both used to be drawn
+  against the panel's right edge whatever the column there meant. The names appear only in the
+  mode that draws both columns.
+
+  On the elapsed-ticks matrix, `TICKS` moves down a row. It names the figures, not the `L-T` and
+  `D-L` above them, and every other label on every panel is drawn beside the figures it names.
 - Every Flight Stats row that can go negative now writes its sign explicitly, and every row that
   cannot writes none. `PITCH`, `GLIDE` and the muted absolute figure beside `PE` and `TE` were
   the three that did not: all can go either way about a datum — nose up or nose down about

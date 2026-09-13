@@ -52,32 +52,40 @@ public enum StatsPanel {
 	 * Vertical, horizontal and total speed, in that order: the signed one first, since it is the
 	 * one being flown by, and the two magnitudes under it.
 	 *
-	 * <p>Its floor is 116: {@code SPEED XYZ} is 52 pixels of label and the template is 54, a
-	 * straight-down terminal velocity being the widest speed that is ever actually read.
+	 * <p>Its floor is 66, which its figures set. The heading row carries the units and nothing
+	 * else — there is one column here, so there is nothing to name — and {@code SPEED b/s} at 52
+	 * is eight pixels short of what {@code XYZ} against a speed comes to.
 	 */
-	SPEED("statsSpeed", row("SPEED XYZ", "-00.00 b/s"),
+	SPEED("statsSpeed", widest(
+			row("SPEED b/s", ""),
+			row("XYZ", BOUNCE_COLUMN)),
 			"showVerticalSpeed", "showHorizontalSpeed", "showTotalSpeed"),
 
 	/**
-	 * The same three quantities differentiated, and within a pixel of the same floor at 115:
-	 * {@code ACCEL XYZ} measures the same 52 pixels as {@code SPEED XYZ}, and an acceleration is
-	 * a pixel inside a speed, the superscript being narrower than a digit. A two-digit
-	 * acceleration runs six wider than the template and encroaches on its label, which is what a
-	 * figure that runs long does on any of these panels.
+	 * The same three quantities differentiated, at a floor of 67.
+	 *
+	 * <p>The one panel whose heading row is a pixel wider than its figures: {@code ACCEL b/s²}
+	 * is 57 against {@code SPEED b/s}'s 52, because it carries the superscript as well. A
+	 * two-digit acceleration runs six wider than the template and encroaches on its label, which
+	 * is what a figure that runs long does on any of these panels.
 	 */
-	ACCEL("statsAccel", row("ACCEL XYZ", "+0.00 b/s²"), "showVerticalAcceleration",
-			"showHorizontalAcceleration", "showTotalAcceleration"),
+	ACCEL("statsAccel", widest(
+			row("ACCEL b/s²", ""),
+			row("XYZ", BOUNCE_COLUMN)),
+			"showVerticalAcceleration", "showHorizontalAcceleration", "showTotalAcceleration"),
 
 	/**
 	 * Kinetic, potential and total energy, and what the last cycle gained.
 	 *
-	 * <p>Its labels are the shortest of the panels and its floor is still 106, because
-	 * {@code PE} and {@code TE} carry two figures rather than one. Declared in that two-column
-	 * mode — the widest of the three energy references, and the default — so that changing the
-	 * reference never moves the floor under a width that has already been set.
+	 * <p>The only panel with two columns of different kinds, and its heading is what names them:
+	 * {@code ABS} is the height against the world's origin and {@code REL} the height against
+	 * the last apex. Its floor of 110 is that heading row — the longest label of the three
+	 * headings, and both columns beside it — rather than any row of figures. Declared in the
+	 * two-column mode, the widest of the three energy references and the default, so that
+	 * changing the reference never moves the floor under a width that has already been set.
 	 */
 	ENERGY("statsEnergy", widest(
-			row("KE", DELTA_COLUMN),
+			row("ENERGY b", "ABS", DELTA_COLUMN),
 			row("TE", ABSOLUTE_COLUMN, DELTA_COLUMN),
 			row("GAIN", DELTA_COLUMN)),
 			"showKineticEnergy", "showPotentialEnergy", "showTotalEnergy", "showCycleGain"),
@@ -121,8 +129,12 @@ public enum StatsPanel {
 	/**
 	 * Leave-touch and deploy-leave elapsed ticks as the same two columns.
 	 *
-	 * <p>Its one row of figures carries no label of its own — the panel's heading says what they
-	 * are — so the heading row is what sets the floor, at 98.
+	 * <p>The one panel whose heading row has no label at its left. {@code TICKS} names the row of
+	 * figures, not the row of column names above it, so that is the row it is drawn on — a label
+	 * standing beside {@code L-T} and {@code D-L} is a label for headings rather than for
+	 * readings. That puts the longest label of any matrix on the row carrying two full columns,
+	 * which is why this panel's floor is 118 and not the 98 it was when {@code TICKS} sat on the
+	 * heading row.
 	 *
 	 * <p>Its columns are the same {@link MatrixLayout#BOUNCE_COLUMN} the two matrices above it
 	 * reserve, even though a tick count needs neither a sign nor a decimal point. The template
@@ -131,8 +143,8 @@ public enum StatsPanel {
 	 * one width are meant to read as one grid.
 	 */
 	BOUNCE_TICKS("statsBounceTicks", widest(
-			row("TICKS", "L-T", BOUNCE_COLUMN),
-			row("", BOUNCE_COLUMN, BOUNCE_COLUMN)),
+			row("", "L-T", BOUNCE_COLUMN),
+			row("TICKS", BOUNCE_COLUMN, BOUNCE_COLUMN)),
 			"showBounceTicks");
 
 	/** The height of one row in the shared unscaled layout. */
@@ -277,12 +289,13 @@ public enum StatsPanel {
 	public int rows() {
 		return switch (this) {
 			case OTHER -> count(VarioConfig.showPitch, VarioConfig.showGlideRatio);
-			case SPEED -> count(VarioConfig.showVerticalSpeed, VarioConfig.showHorizontalSpeed,
-					VarioConfig.showTotalSpeed);
-			case ACCEL -> count(VarioConfig.showVerticalAcceleration,
+			case SPEED -> headedRows(VarioConfig.showVerticalSpeed,
+					VarioConfig.showHorizontalSpeed, VarioConfig.showTotalSpeed);
+			case ACCEL -> headedRows(VarioConfig.showVerticalAcceleration,
 					VarioConfig.showHorizontalAcceleration, VarioConfig.showTotalAcceleration);
-			case ENERGY -> count(VarioConfig.showKineticEnergy, VarioConfig.showPotentialEnergy,
-					VarioConfig.showTotalEnergy, VarioConfig.showCycleGain);
+			case ENERGY -> headedRows(VarioConfig.showKineticEnergy,
+					VarioConfig.showPotentialEnergy, VarioConfig.showTotalEnergy,
+					VarioConfig.showCycleGain);
 			case BOUNCE_VELOCITY -> headedRows(VarioConfig.showBounceVelocityY,
 					VarioConfig.showBounceVelocityXz, VarioConfig.showBounceVelocityXyz);
 			case BOUNCE_DISTANCE -> headedRows(VarioConfig.showBounceDistanceY,
@@ -291,6 +304,12 @@ public enum StatsPanel {
 		};
 	}
 
+	/**
+	 * A panel whose top row says what its figures are measured in, and which columns they stand
+	 * in where it has more than one. The heading is not a row that can be switched off: it is
+	 * what lets the rows under it be labelled {@code Y} rather than {@code SPEED Y}, so a panel
+	 * showing any row at all shows it. A panel showing none is not drawn, heading included.
+	 */
 	private static int headedRows(boolean... switches) {
 		int content = count(switches);
 		return content == 0 ? 0 : content + 1;

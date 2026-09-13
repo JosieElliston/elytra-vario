@@ -29,19 +29,21 @@ class StatsPanelTest {
 	 * template, a label or the padding shows up as a specific pixel count rather than as a panel
 	 * that quietly stopped being placeable where it used to be.
 	 *
-	 * <p>Three of them — 86, 116 and 106 — are the figures the panels carried before the floors
-	 * were computed, when they had been measured through the font by hand. Acceleration is the
-	 * one that moved, from a typed 116 to a measured 115: the superscript on {@code b/s²} is a
-	 * pixel narrower than the digit a speed has in its place.
+	 * <p>Speed and acceleration are the two the units heading paid for: 116 and 115 when every
+	 * row read {@code SPEED XYZ} against a figure carrying its own {@code b/s}, and 66 and 67 now
+	 * that the unit is said once at the top and the rows are labelled {@code XYZ}. Acceleration
+	 * is the wider of the two by a pixel, and for the opposite reason it used to be the narrower:
+	 * its floor is its heading rather than its figures, and {@code ACCEL b/s²} carries the
+	 * superscript that {@code SPEED b/s} does not.
 	 */
 	@Test void eachFloorIsTheWidestRowThePanelDeclares() {
 		assertEquals(86, StatsPanel.OTHER.minWidth());
-		assertEquals(116, StatsPanel.SPEED.minWidth());
-		assertEquals(115, StatsPanel.ACCEL.minWidth());
-		assertEquals(106, StatsPanel.ENERGY.minWidth());
+		assertEquals(66, StatsPanel.SPEED.minWidth());
+		assertEquals(67, StatsPanel.ACCEL.minWidth());
+		assertEquals(110, StatsPanel.ENERGY.minWidth());
 		assertEquals(150, StatsPanel.BOUNCE_VELOCITY.minWidth());
 		assertEquals(110, StatsPanel.BOUNCE_DISTANCE.minWidth());
-		assertEquals(98, StatsPanel.BOUNCE_TICKS.minWidth());
+		assertEquals(118, StatsPanel.BOUNCE_TICKS.minWidth());
 	}
 
 	/** No panel is defaulted narrower than its own rows need, so none is drawn wider than placed. */
@@ -143,9 +145,11 @@ class StatsPanelTest {
 	}
 
 	@Test void eachPanelKeepsItsOwnContentMinimum() {
-		assertTrue(StatsPanel.OTHER.minWidth() < StatsPanel.ACCEL.minWidth());
-		assertTrue(StatsPanel.ACCEL.minWidth() < StatsPanel.SPEED.minWidth());
-		assertTrue(StatsPanel.SPEED.minWidth() < StatsPanel.BOUNCE_VELOCITY.minWidth());
+		assertTrue(StatsPanel.SPEED.minWidth() < StatsPanel.ACCEL.minWidth());
+		assertTrue(StatsPanel.ACCEL.minWidth() < StatsPanel.OTHER.minWidth());
+		assertTrue(StatsPanel.OTHER.minWidth() < StatsPanel.ENERGY.minWidth());
+		assertTrue(StatsPanel.ENERGY.minWidth() < StatsPanel.BOUNCE_TICKS.minWidth());
+		assertTrue(StatsPanel.BOUNCE_TICKS.minWidth() < StatsPanel.BOUNCE_VELOCITY.minWidth());
 	}
 
 	@Test void aPanelWithEveryRowOffIsNotDrawn() {

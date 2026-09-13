@@ -892,12 +892,12 @@ A two-digit acceleration is the usual one, six pixels over.
 | Panel | Floor | The row that sets it |
 | --- | --- | --- |
 | Other | 86 | `GLIDE` at 28 against `-00.00 : 1` at 48 — the ratio is signed, which is what makes it the wider row |
-| Speed | 116 | `SPEED XYZ` at 52 against `-00.00 b/s` at 54, a straight-down terminal velocity being the widest speed actually read |
-| Acceleration | 115 | `ACCEL XYZ` measures the same 52; `+0.00 b/s²` is 53, a pixel inside a speed because the superscript is narrower than a digit |
-| Energy | 106 | `TE` at 12, then the two columns: 38, a pad, 42 |
+| Speed | 66 | `XYZ` at 18 against a 38-pixel column; the heading `SPEED b/s` at 52 is eight short of that |
+| Acceleration | 67 | the heading `ACCEL b/s²` at 57, a pixel past its own figures, because it carries the superscript |
+| Energy | 110 | the heading `ENERGY b` at 46 against `ABS` and then the `REL` column: 18, a pad, 32 |
 | E-bounce velocity | 150 | `XYZ` at 18 against three 38-pixel columns and the two pads between them |
-| E-bounce delta | 110 | both rows at once: the heading `DELTA b` at 40 against `L-T`, and `XYZ` against two columns |
-| E-bounce ticks | 98 | the heading `TICKS` at 28 against `L-T`; the figures under it carry no label of their own |
+| E-bounce delta | 110 | the heading `DELTA b` at 40 against `L-T` and then a column |
+| E-bounce ticks | 118 | `TICKS` at 28 against both columns — the longest label of any matrix, on the row that carries two |
 
 Energy's floor is measured in the two-column mode, the widest of the three energy references
 and the default, so that changing the reference never moves the floor under a width already set.
@@ -912,17 +912,36 @@ nothing, and three matrices set down at one width are meant to read as one grid.
 The grips stop at these, and a narrower width typed into the box is drawn at the minimum rather
 than refused, so a reading never turns into an overlap.
 
+**A panel's unit is written once, on its heading row.** A panel is one kind of reading, so what
+it is measured in is a fact about the panel rather than about any row of it. Written on every row
+it cost twice over: the suffix on the figure, and a label saying `SPEED` three times over to
+introduce a `Y`, an `XZ` and an `XYZ` that were the whole of what those rows differed by. So
+Speed heads itself `SPEED b/s`, Acceleration `ACCEL b/s²` and Energy `ENERGY b`, exactly as the
+e-bounce matrices have always headed themselves `VEL b/s` and `DELTA b`, and the rows beneath are
+labelled by the only thing that tells them apart. It costs a row and saves three labels' worth of
+width, which is why Speed's floor fell from 116 to 66.
+
+The heading cannot be switched off. It is what lets a row be called `Y` rather than `SPEED Y`, so
+a panel drawing any row draws it; a panel drawing none is not drawn at all, heading included.
+*Other* is the one panel without one, because its two rows are a pitch in degrees and a
+dimensionless ratio — there is no one unit for a heading to state.
+
+**Energy's heading also names its columns**, since it is the one panel whose two columns are
+different kinds of thing: `ABS` is the height against the world's origin and `REL` the height
+against the last apex. Kinetic energy is an absolute and the cycle's gain is a difference, so
+each sits under the heading that describes it, and only potential and total energy fill both.
+The names appear only in the mode that draws both columns; one column has nothing to
+distinguish, and there the heading is the bare units label the other panels carry.
+
 | Row | Meaning |
 | --- | --- |
 | `PITCH` | Raw Minecraft pitch: **negative is looking up**. Matches F3 and elytrasim rather than the aviation convention. |
-| `SPEED XZ` | Horizontal speed. |
-| `SPEED XYZ` | Total speed. |
-| `SPEED Y` | Vertical speed; negative descending. |
 | `GLIDE` | Blocks forward per block down. Negative while climbing, where it reads as blocks forward per block *gained*. `--` only when level with speed, or stationary. |
-| `Y` `XZ` `XYZ` | On the e-bounce matrices: the same three quantities as `SPEED`, read at each event or over each interval. |
+| `Y` `XZ` `XYZ` | Vertical, horizontal and total — of speed on the Speed panel, of its rate of change on Acceleration, and of an e-bounce velocity or displacement on the two matrices. Only `Y` is signed. |
 | `KE` | Kinetic energy as a height: the altitude your speed is worth. |
-| `PE` `TE` | Potential and total energy, **measured from the last apex**: how far below the top of the cycle you are, and how much of it is recoverable. Green means you are above the last apex, which for `TE` is a cycle that has already paid for itself. The dimmed figure to the left is the same height against the world's origin, which is what F3 and a map agree with. `--` until an apex has been seen. |
+| `PE` `TE` | Potential and total energy, **measured from the last apex**: how far below the top of the cycle you are, and how much of it is recoverable. Green means you are above the last apex, which for `TE` is a cycle that has already paid for itself. The dimmed figure under `ABS` is the same height against the world's origin, which is what F3 and a map agree with. `--` until an apex has been seen. |
 | `GAIN` | Total energy gained between the last two apexes: what the cycle was worth. |
+| `TICKS` | Elapsed ticks over each interval. Drawn on the row of figures rather than on the row of column names above it, because that is what it names. |
 
 The three e-bounce matrices read as columns rather than rows. The velocity matrix has one column
 per event — `T` touch, `L` leave, `D` deploy — and `Y`, `XZ`, `XYZ` as its rows. The other two
