@@ -79,10 +79,10 @@ public final class VarioConfigScreen extends YACLScreen {
 			Map<String, Option<?>> options) {
 		ConfigCategory.Builder category = ConfigCategory.createBuilder().name(text("page." + page));
 		Map<String, OptionGroup.Builder> groups = new LinkedHashMap<>();
+		category.option(layoutOption(pageModule(page)));
 		addKeyBindings(category, page);
 
 		if (page == 0) {
-			category.option(layoutOption(null));
 			category.option(ButtonOption.createBuilder()
 					.name(text("keyBindings"))
 					.text(text("keyBindings.edit"))
@@ -92,9 +92,6 @@ public final class VarioConfigScreen extends YACLScreen {
 						minecraft.gui.setScreen(new KeyBindsScreen(screen, minecraft.options));
 					}).build());
 		}
-		ModulePositionEditor.Module pageModule = pageModule(page);
-		if (pageModule != null) category.option(layoutOption(pageModule));
-
 		for (ConfigOptions.Option spec : ConfigOptions.all()) {
 			if (spec.page() != page || geometry(spec.key())) continue;
 			Option<?> option = option(spec, values);
