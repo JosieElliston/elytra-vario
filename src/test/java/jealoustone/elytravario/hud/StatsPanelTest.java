@@ -19,9 +19,9 @@ class StatsPanelTest {
 	void heightLimitIsTheInverseOfMinimumWidth() {
 		int layoutHeight = StatsPanel.BOUNCE_DISTANCE.layoutHeight();
 
-		assertEquals(layoutHeight, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(194));
-		assertEquals(layoutHeight - 1, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(193));
-		assertEquals(layoutHeight * 2, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(388));
+		assertEquals(layoutHeight, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(152));
+		assertEquals(layoutHeight - 1, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(151));
+		assertEquals(layoutHeight * 2, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(304));
 	}
 
 	@Test void everyPanelNamesTheSettingsItReads() {

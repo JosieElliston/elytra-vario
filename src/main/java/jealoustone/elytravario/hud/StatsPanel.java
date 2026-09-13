@@ -67,12 +67,19 @@ public enum StatsPanel {
 	BOUNCE_VELOCITY("statsBounceVelocity", 194, "showBounceVelocityX",
 			"showBounceVelocityXz", "showBounceVelocityXyz"),
 
-	/** Leave-touch and deploy-leave position differences as columns. */
-	BOUNCE_DISTANCE("statsBounceDistance", 194, "showBounceDistanceX",
+	/**
+	 * Leave-touch and deploy-leave position differences as columns.
+	 *
+	 * <p>An interval is only ever measured against the event before it, so there is no column
+	 * for touch: two columns rather than the velocity matrix's three, and a floor one column
+	 * and its pad — 42 pixels — inside that panel's. The two are still right-aligned onto the
+	 * same edges, so at equal widths the columns line up under {@code L} and {@code D}.
+	 */
+	BOUNCE_DISTANCE("statsBounceDistance", 152, "showBounceDistanceX",
 			"showBounceDistanceXz", "showBounceDistanceXyz"),
 
-	/** Leave-touch and deploy-leave elapsed ticks as columns. */
-	BOUNCE_TICKS("statsBounceTicks", 194, "showBounceTicks");
+	/** Leave-touch and deploy-leave elapsed ticks as columns, two of them as above. */
+	BOUNCE_TICKS("statsBounceTicks", 152, "showBounceTicks");
 
 	/** The height of one row in the shared unscaled layout. */
 	public static final int LINE = 10;

@@ -64,6 +64,16 @@ public final class VarioHudElement implements HudElement {
 	private static final String ABSOLUTE_COLUMN = "-0000.0";
 	private static final String BOUNCE_COLUMN = "-000.00";
 
+	/** One column per e-bounce event: touch, leave, deploy. */
+	private static final String[] BOUNCE_EVENTS = { "T", "L", "D" };
+
+	/**
+	 * One column per interval between those events, named by the subtraction it is. There is no
+	 * interval column for touch itself — it is where the count starts — so these matrices carry
+	 * two columns where the per-event ones carry three, right-aligned onto the same two edges.
+	 */
+	private static final String[] BOUNCE_SPANS = { "L-T", "D-L" };
+
 	/**
 	 * While set, the chart stretches whatever field it last built instead of building one for
 	 * the size it is now.
@@ -199,7 +209,7 @@ public final class VarioHudElement implements HudElement {
 		BounceTracker.Event[] events = { recorder.bounceTouch(), recorder.bounceLeave(),
 				recorder.bounceDeploy() };
 		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "VEL b/s",
-				new String[] { "T", "L", "D" }, BOUNCE_COLUMN);
+				BOUNCE_EVENTS, BOUNCE_COLUMN);
 		y += LINE;
 		if (VarioConfig.showBounceVelocityX) y = matrixRow(graphics, font, matrix, x, y, "X",
 				events, sample -> sample.vx() * TPS, true, 2);
@@ -215,9 +225,9 @@ public final class VarioHudElement implements HudElement {
 		BounceTracker.Event leave = recorder.bounceLeave();
 		BounceTracker.Event deploy = recorder.bounceDeploy();
 		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "DELTA b",
-				new String[] { "T", "L", "D" }, BOUNCE_COLUMN);
+				BOUNCE_SPANS, BOUNCE_COLUMN);
 		y += LINE;
-		BounceTracker.Event[][] spans = { null, { touch, leave }, { leave, deploy } };
+		BounceTracker.Event[][] spans = { { touch, leave }, { leave, deploy } };
 		if (VarioConfig.showBounceDistanceX) y = distanceRow(graphics, font, matrix, x, y, "X",
 				spans, (a, b) -> b.x() - a.x(), true);
 		if (VarioConfig.showBounceDistanceXz) y = distanceRow(graphics, font, matrix, x, y, "XZ",
@@ -232,10 +242,9 @@ public final class VarioHudElement implements HudElement {
 		BounceTracker.Event leave = recorder.bounceLeave();
 		BounceTracker.Event deploy = recorder.bounceDeploy();
 		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "TICKS",
-				new String[] { "T", "L", "D" }, BOUNCE_COLUMN);
+				BOUNCE_SPANS, BOUNCE_COLUMN);
 		if (!VarioConfig.showBounceTicks) return;
-		long[] values = { -1, BounceTracker.ticks(touch, leave),
-				BounceTracker.ticks(leave, deploy) };
+		long[] values = { BounceTracker.ticks(touch, leave), BounceTracker.ticks(leave, deploy) };
 		for (int column = 0; column < values.length; column++) {
 			String value = values[column] < 0 ? "--" : Long.toString(values[column]);
 			graphics.text(font, value, matrix.left(column, font.width(value)), y + LINE,
@@ -279,8 +288,8 @@ public final class VarioHudElement implements HudElement {
 			java.util.function.ToDoubleBiFunction<Sample, Sample> measure, boolean signed) {
 		graphics.text(font, label, x + PAD, y, LABEL, true);
 		for (int column = 0; column < spans.length; column++) {
-			BounceTracker.Event from = spans[column] == null ? null : spans[column][0];
-			BounceTracker.Event to = spans[column] == null ? null : spans[column][1];
+			BounceTracker.Event from = spans[column][0];
+			BounceTracker.Event to = spans[column][1];
 			double measured = from == null || to == null ? Double.NaN
 					: measure.applyAsDouble(from.sample(), to.sample());
 			String value = from == null || to == null ? "--" : fmt(signed ? "%+.1f" : "%.1f",
