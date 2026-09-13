@@ -279,7 +279,7 @@
 	"config.elytra-vario.showCycleGain": "Show cycle gain",
 	"config.elytra-vario.showCycleGain.tooltip": "Show this readout on Flight Stats' Energy panel.",
 	"config.elytra-vario.energyReference": "Energy reference",
-	"config.elytra-vario.energyReference.tooltip": "Reference for potential and total energy on the Energy panel. Since-apex values require a detected apex; absolute values do not. Both draws the two side by side, which is the widest this panel's rows go and so what its minimum width is measured against.",
+	"config.elytra-vario.energyReference.tooltip": "Reference for potential and total energy on the Energy panel. Since-apex values require a detected apex; absolute values do not. Both draws the two side by side under ABS and REL headings, with kinetic energy under ABS and the cycle gain under REL; it is the widest this panel goes and so what its minimum width is measured against.",
 	"config.elytra-vario.energyReference.0": "Absolute",
 	"config.elytra-vario.energyReference.1": "Since last apex",
 	"config.elytra-vario.energyReference.2": "Both",

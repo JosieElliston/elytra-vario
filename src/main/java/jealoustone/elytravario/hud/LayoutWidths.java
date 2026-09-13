@@ -11,8 +11,9 @@ package jealoustone.elytravario.hud;
  * <p>Every advance below is confirmed by a string that was measured through the real font when
  * the panels were first sized. {@code GLIDE} at 28 gives {@code I} as the one narrow capital,
  * {@code -78.40 b/s} at 54 gives the digits, the stop and the space, {@code -12.34 : 1} at 48
- * the colon, {@code -90.0°} at 31 the degree sign, and {@code +15.09 b/s²} at 59 the
- * superscript. {@link LayoutWidthsTest} holds those five, so a wrong advance here is a failing
+ * the colon, {@code -90.0°} at 31 the degree sign, {@code +15.09 b/s²} at 59 the superscript,
+ * and {@code ABS REL} at 40 the two capitals the panel headings added.
+ * {@link LayoutWidthsTest} holds those six, so a wrong advance here is a failing
  * test rather than a panel that crowds its own figures.
  *
  * <p>The table covers the glyphs the panels draw and nothing else: a template written with a
@@ -28,7 +29,7 @@ public final class LayoutWidths {
 	private static final int[] NARROW_ADVANCE = { 4, 2, 2, 4, 5, 5 };
 
 	/** The rest of what the panels draw, every glyph of it {@link #FULL} wide. */
-	private static final String WIDE = "-+/0123456789ACDEGHKLNPSTVXYZbs";
+	private static final String WIDE = "-+/0123456789ABCDEGHKLNPRSTVXYZbs";
 
 	/**
 	 * The least gap left between a label and the figure beside it. Two pixels is a third of a

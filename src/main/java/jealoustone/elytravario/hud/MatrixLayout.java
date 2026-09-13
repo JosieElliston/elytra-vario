@@ -13,8 +13,11 @@ public final class MatrixLayout {
 	 * live here rather than beside the drawing because a panel's width floor is measured from
 	 * the same templates it reserves its columns with — see {@link StatsPanel}. A value wider
 	 * than its template is not clipped, it just encroaches on the column to its left.
+	 *
+	 * <p>None of them carries a unit, because no figure in a column does: a panel says what it
+	 * is measured in once, on its heading row.
 	 */
-	public static final String DELTA_COLUMN = "-000.0 b";
+	public static final String DELTA_COLUMN = "-000.0";
 	public static final String ABSOLUTE_COLUMN = "-0000.0";
 	public static final String BOUNCE_COLUMN = "-000.00";
 
