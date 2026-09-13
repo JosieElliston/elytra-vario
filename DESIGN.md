@@ -688,6 +688,16 @@ against another module:
 
 and against the screen: the near edge a margin in or the far edge a margin in.
 
+In general, snapping starts from the closest legal unsnapped transform requested by the pointer,
+then analytically generates every reachable transform which satisfies one of those edge
+relations. Its moving edge must be within the snap distance of the rest on the axis which offers
+the relation, measured in rendered screen space. A free move, or a resize whose settings control
+its dimensions independently, chooses the nearest candidate independently on each axis so that a
+corner can take two alignments at once. A coupled size such as the graph's width or the dial's
+radius instead chooses the candidate whose dragged corner is closest to the pointer in both
+dimensions. After applying the answer, the editor measures the final integer bounds and draws
+every target edge whose exact relation is satisfied by them.
+
 A resize holds one edge still, so it can only take the rests its moving lines can reach, which is
 that same list read line by line. The dragged edge takes the rest of its own kind — a right edge
 on a right edge, a left edge on a left edge — the margin clearance and the butt on its own side,
@@ -718,9 +728,9 @@ proposes a size, and the size whose resulting corner is closest to the mouse in 
 chooses the answer. Every marker which independently produces that same answer appears with it;
 constraints proposing another size are not carried into rendering. A rest the setting cannot
 actually reach is passed over for one it can, which happens whenever a module's size comes in
-steps, as the dial's diameter does. The winning markers are checked
-against the module as it ends up rather than merely against the size that was aimed at, so a line
-appears only where an edge genuinely lies on it after layout rounding.
+steps, as the dial's diameter does. The winning markers are checked against the module as it ends
+up rather than merely against the size that was aimed at, so a line appears only where its exact
+flush, margin or butt relation is genuinely satisfied after layout rounding.
 
 The calculation is always made from the box and setting at the start of the drag. Feeding the
 previous frame's rounded box back into the next frame would make the arithmetic depend on which

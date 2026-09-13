@@ -581,6 +581,64 @@ class ModulePositionEditorTest {
 	}
 
 	@Test
+	void resizeGuidesDrawTheTargetEdgeForAMarginSnap() {
+		var other = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS_SPEED, 104, 20, 40, 60);
+		var before = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 40, 100, 59, 40);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(1, 0), 4, 200, true);
+		var resize = ModulePositionEditor.resizeWithMarkers(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				before, 59, sizing, 99, 140, List.of(other), 320, 240, 4, 4);
+		var landed = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 40, 100, 60, 40);
+
+		assertEquals(60, resize.value());
+		assertEquals(List.of(new ModulePositionEditor.Guide(104, 20, 80)),
+				ModulePositionEditor.resizeGuides(resize, landed,
+						ModulePositionEditor.Corner.BOTTOM_RIGHT).vertical());
+	}
+
+	@Test
+	void resizeGuidesDrawTheTargetEdgeForAButtedSnap() {
+		var other = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.STATS_SPEED, 100, 20, 40, 60);
+		var before = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 40, 100, 59, 40);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(1, 0), 4, 200, true);
+		var resize = ModulePositionEditor.resizeWithMarkers(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				before, 59, sizing, 99, 140, List.of(other), 320, 240, 4, 2);
+		var landed = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 40, 100, 61, 40);
+
+		assertEquals(61, resize.value());
+		assertEquals(List.of(new ModulePositionEditor.Guide(100, 20, 80)),
+				ModulePositionEditor.resizeGuides(resize, landed,
+						ModulePositionEditor.Corner.BOTTOM_RIGHT).vertical());
+	}
+
+	@Test
+	void resizeGuidesDrawTheScreenEdgeForAScreenMarginSnap() {
+		var before = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 40, 100, 274, 40);
+		var sizing = new ModulePositionEditor.Sizing(
+				new ModulePositionEditor.Growth(1, 0), 4, 300, true);
+		var resize = ModulePositionEditor.resizeWithMarkers(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT,
+				before, 274, sizing, 314, 140, List.of(), 320, 240, 4, 4);
+		var landed = new ModulePositionEditor.Bounds(
+				ModulePositionEditor.Module.CHART, 40, 100, 276, 40);
+
+		assertEquals(276, resize.value());
+		assertEquals(List.of(new ModulePositionEditor.Guide(320, 0, 240, 319)),
+				ModulePositionEditor.resizeGuides(resize, landed,
+						ModulePositionEditor.Corner.BOTTOM_RIGHT).vertical());
+	}
+
+	@Test
 	void resizeMarkersNeverCombineDifferentAnswers() {
 		var right = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS_SPEED, 160, 20, 40, 40);

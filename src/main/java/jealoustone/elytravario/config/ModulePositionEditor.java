@@ -121,7 +121,8 @@ final class ModulePositionEditor {
 	record Resize(double value, Bounds trueBounds, List<Marker> markers) { }
 	private record Candidate(int position, Guide guide) { }
 	private record AxisSnap(int position, List<Guide> guides) { }
-	private record Marker(boolean vertical, Guide guide) { }
+	/** A target guide and the coordinate where the moving edge must rest to earn it. */
+	private record Marker(boolean vertical, int rest, Guide guide) { }
 	private record ResizeCandidate(double value, double error, Marker marker) { }
 
 	/** Bounds in paint order; callers search backwards so the topmost overlapping module wins. */
@@ -467,7 +468,7 @@ final class ModulePositionEditor {
 				double error = squared(candidateWidth - wantedWidth)
 						+ squared(candidateHeight - wantedHeight);
 				candidates.add(new ResizeCandidate(reaching, error,
-						new Marker(vertical, candidate.guide)));
+						new Marker(vertical, candidate.position, candidate.guide)));
 				if (error < bestError) {
 					best = reaching;
 					bestError = error;
@@ -502,7 +503,7 @@ final class ModulePositionEditor {
 			int line = marker.vertical
 					? corner.left ? resized.x : resized.x + resized.width
 					: corner.top ? resized.y : resized.y + resized.height;
-			if (line != marker.guide.coordinate) continue;
+			if (line != marker.rest) continue;
 			List<Guide> guides = marker.vertical ? vertical : horizontal;
 			if (!guides.contains(marker.guide)) guides.add(marker.guide);
 		}
