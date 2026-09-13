@@ -143,6 +143,11 @@ build identifier and released feature for feature; see its own changelog.
   borders sharing a column, so a migrated HUD reads at the size and in the order it read in. The
   cost of the split is that switching a row off no longer shortens the panel it is on: that
   panel keeps the height it was given and draws the rows that remain larger.
+- Migrating a Flight Stats panel from before the split now keeps the text size it was drawn at,
+  heading rows included. Each of the four panels it becomes takes the height *its own* rows want
+  at the retired panel's text size, which is no longer the height the retired panel would have
+  given those rows: three of the four draw a units heading it never had, and measuring without
+  it cost them a fifth of their text size on the way across.
 - Every figure column on every Flight Stats panel now reserves the same width, so a stack of
   panels butted together at one width has one grid of columns rather than several that nearly
   agree. A column is placed by measuring back from the panel's right edge, so the three separate
