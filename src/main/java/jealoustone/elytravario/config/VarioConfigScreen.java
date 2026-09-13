@@ -341,7 +341,7 @@ public final class VarioConfigScreen extends YACLScreen {
 	private static Option<?> option(ConfigOptions.Option spec, Map<String, String> values) {
 		if (spec.toggle()) return Option.<Boolean>createBuilder()
 				.name(text(spec.key())).description(description(spec))
-				.stateManager(StateManager.createInstant(
+				.stateManager(new LivePreviewStateManager<>(
 						(Boolean) spec.parse(spec.defaultValue()),
 						() -> Boolean.parseBoolean(values.get(spec.key())),
 						value -> set(spec, values, value)))
@@ -349,7 +349,7 @@ public final class VarioConfigScreen extends YACLScreen {
 
 		if (spec.color()) return Option.<Color>createBuilder()
 				.name(text(spec.key())).description(description(spec))
-				.stateManager(StateManager.createInstant(
+				.stateManager(new LivePreviewStateManager<>(
 						new Color((Integer) spec.parse(spec.defaultValue()), true),
 						() -> new Color((Integer) spec.parse(values.get(spec.key())), true),
 						value -> set(spec, values, value.getRGB())))
@@ -361,7 +361,7 @@ public final class VarioConfigScreen extends YACLScreen {
 			for (int i = 0; i < spec.choices(); i++) choices.add(i);
 			return Option.<Integer>createBuilder()
 					.name(text(spec.key())).description(description(spec))
-					.stateManager(StateManager.createInstant(
+					.stateManager(new LivePreviewStateManager<>(
 							(Integer) spec.parse(spec.defaultValue()),
 							() -> (Integer) spec.parse(values.get(spec.key())),
 							value -> set(spec, values, value)))
@@ -372,7 +372,7 @@ public final class VarioConfigScreen extends YACLScreen {
 
 		if (spec.integral() && spec.factor() == 1) return Option.<Integer>createBuilder()
 				.name(text(spec.key())).description(description(spec))
-				.stateManager(StateManager.createInstant(
+				.stateManager(new LivePreviewStateManager<>(
 						Integer.parseInt(spec.defaultValue()),
 						() -> Integer.parseInt(values.get(spec.key())),
 						value -> setDisplayed(spec, values, value.doubleValue())))
@@ -382,7 +382,7 @@ public final class VarioConfigScreen extends YACLScreen {
 		double defaultValue = Double.parseDouble(spec.defaultValue());
 		if (exactField(spec.key())) return Option.<Double>createBuilder()
 				.name(text(spec.key())).description(description(spec))
-				.stateManager(StateManager.createInstant(defaultValue,
+				.stateManager(new LivePreviewStateManager<>(defaultValue,
 						() -> Double.parseDouble(values.get(spec.key())),
 						value -> setDisplayed(spec, values, value)))
 				.controller(option -> DoubleFieldControllerBuilder.create(option)
@@ -390,7 +390,7 @@ public final class VarioConfigScreen extends YACLScreen {
 
 		return Option.<Double>createBuilder()
 				.name(text(spec.key())).description(description(spec))
-				.stateManager(StateManager.createInstant(defaultValue,
+				.stateManager(new LivePreviewStateManager<>(defaultValue,
 						() -> Double.parseDouble(values.get(spec.key())),
 						value -> setDisplayed(spec, values, value)))
 				.controller(option -> DoubleSliderControllerBuilder.create(option)
