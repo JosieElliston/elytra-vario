@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.isxander.yacl3.api.ButtonOption;
 import dev.isxander.yacl3.api.ConfigCategory;
 import dev.isxander.yacl3.api.Option;
@@ -23,17 +24,23 @@ import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import dev.isxander.yacl3.gui.YACLScreen;
 import jealoustone.elytravario.ElytraVario;
+import jealoustone.elytravario.ElytraVarioClient;
 import jealoustone.elytravario.VarioInstrument;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 /** YACL-backed settings. All controls preview immediately; Cancel restores the opening values. */
 public final class VarioConfigScreen extends YACLScreen {
 	private final int initialPage;
 	private boolean selectedInitialPage;
+	private KeyBindController.Element capturingKey;
 
 	private VarioConfigScreen(YetAnotherConfigLib yacl, Screen parent, int initialPage) {
 		super(yacl, parent);
@@ -82,6 +89,7 @@ public final class VarioConfigScreen extends YACLScreen {
 		VisibilityPair visibility = visibility(page);
 		Option<Visibility> visibilityOption = visibilities.get(page);
 		category.option(visibilityOption);
+		addKeyBindings(category, page);
 
 		if (page == 0) {
 			category.option(layoutOption(null, committed));
@@ -117,6 +125,67 @@ public final class VarioConfigScreen extends YACLScreen {
 		for (OptionGroup.Builder group : groups.values()) category.group(group.build());
 		setAvailability(page, visibilities, dependentOptions);
 		return category.build();
+	}
+
+	private static void addKeyBindings(ConfigCategory.Builder category, int page) {
+		if (page == 0) {
+			category.option(keyBinding("visibilityKey", ElytraVarioClient.visibilityKey()));
+			category.option(keyBinding("settingsKey", ElytraVarioClient.settingsKey()));
+			return;
+		}
+		for (VarioInstrument instrument : VarioInstrument.values()) {
+			if (spec(instrument.showKey()).page() == page) {
+				category.option(keyBinding("toggleKey", instrument.key()));
+				return;
+			}
+		}
+	}
+
+	private static Option<InputConstants.Key> keyBinding(String label, KeyMapping mapping) {
+		InputConstants.Key current = mapping == null
+				? InputConstants.UNKNOWN : InputConstants.getKey(mapping.saveString());
+		InputConstants.Key defaultKey = mapping == null ? InputConstants.UNKNOWN : mapping.getDefaultKey();
+		return Option.<InputConstants.Key>createBuilder()
+				.name(text(label))
+				.description(OptionDescription.of(text(label + ".tooltip")))
+				.available(mapping != null)
+				.stateManager(StateManager.createInstant(defaultKey, () -> current,
+						key -> bind(mapping, key)))
+				.customController(KeyBindController::new)
+				.build();
+	}
+
+	private static void bind(KeyMapping mapping, InputConstants.Key key) {
+		if (mapping == null) return;
+		mapping.setKey(key);
+		KeyMapping.resetMapping();
+		Minecraft.getInstance().options.save();
+	}
+
+	void capture(KeyBindController.Element element) {
+		if (capturingKey != null && capturingKey != element) capturingKey.cancelCapture();
+		capturingKey = element;
+	}
+
+	@Override
+	public boolean keyPressed(KeyEvent event) {
+		if (capturingKey != null) {
+			capturingKey.accept(event.key() == GLFW.GLFW_KEY_ESCAPE
+					? InputConstants.UNKNOWN : InputConstants.getKey(event));
+			capturingKey = null;
+			return true;
+		}
+		return super.keyPressed(event);
+	}
+
+	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
+		if (capturingKey != null) {
+			capturingKey.accept(InputConstants.Type.MOUSE.getOrCreate(event.button()));
+			capturingKey = null;
+			return true;
+		}
+		return super.mouseClicked(event, doubled);
 	}
 
 	private static ButtonOption layoutOption(ModulePositionEditor.Module module,
@@ -240,10 +309,40 @@ public final class VarioConfigScreen extends YACLScreen {
 			if (!key.equals(panel.showKey()) && !geometry(key)
 					&& ConfigOptions.all().stream().anyMatch(spec -> spec.key().equals(key)
 							&& panel.group().equals(spec.group()))) {
-				return pendingBoolean(options, panel.showKey());
+				if (!pendingBoolean(options, panel.showKey())) return false;
+				boolean hasRows = panel.rowKeys().stream()
+						.anyMatch(row -> pendingBoolean(options, row));
+				if ((key.equals(panel.opacityKey()) || key.equals(panel.borderKey())) && !hasRows) {
+					return false;
+				}
+				if (key.equals("energyReference")
+						&& !pendingBoolean(options, "showPotentialEnergy")
+						&& !pendingBoolean(options, "showTotalEnergy")) return false;
+				return true;
 			}
 		}
+		if (speedometerCommonEffect(key, "barSpeedo")) {
+			return pendingBoolean(options, "showBarSpeedoTotal")
+					|| pendingBoolean(options, "showBarSpeedoHorizontal")
+					|| pendingBoolean(options, "showBarSpeedoVertical");
+		}
+		if (speedometerCommonEffect(key, "dialSpeedo")) {
+			return pendingBoolean(options, "showDialSpeedoTotal")
+					|| pendingBoolean(options, "showDialSpeedoHorizontal")
+					|| pendingBoolean(options, "showDialSpeedoVertical");
+		}
 		return true;
+	}
+
+	private static boolean speedometerCommonEffect(String key, String prefix) {
+		return key.equals("show" + capitalize(prefix) + "Acceleration")
+				|| key.equals("show" + capitalize(prefix) + "MaxHorizontalSpeedMarkers")
+				|| key.equals("show" + capitalize(prefix) + "TerminalVelocityMarkers")
+				|| key.equals(prefix + "PeggedColor");
+	}
+
+	private static String capitalize(String value) {
+		return Character.toUpperCase(value.charAt(0)) + value.substring(1);
 	}
 
 	private static boolean pendingBoolean(Map<String, Option<?>> options, String key) {
