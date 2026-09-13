@@ -21,7 +21,6 @@ josie's todo/notes, don't edit this, tho you should include it in commits
     - configurable base radius (must have odd base size) actually no we don't have base radius, this is implied by length
         - lines are expressible as 0 rad and (special case i think) 0 step down
     - build a gui editor for this
-- better color picker
 - make modules more unobtrusive
     - translucent
 - not fixed module render order?
@@ -29,8 +28,9 @@ josie's todo/notes, don't edit this, tho you should include it in commits
     - generally the ui elements are bad
         - on/off is just text
         - there aren't sliders
+    - advanced on/off is bad, it should just show all, and communicate importance differently
     - steal sodiums?
-- remove blue selected module highlight; it obscures the border.
+    - better color picker
 - e-bounce
     - ground touch
         - vel

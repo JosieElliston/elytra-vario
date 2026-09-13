@@ -33,8 +33,8 @@ final class ModulePositionEditor {
 		 * The subpage this module's settings are on, or null where its page carries only it.
 		 *
 		 * <p>It is what lets a page hold more than one module: the screen selects the module
-		 * whose subpage is showing, so arrow-key nudges and the quiet selected outline follow
-		 * the dropdown, and clicking a module in the world moves the dropdown to match.
+		 * whose subpage is showing, so arrow-key nudges follow the dropdown, and clicking a
+		 * module in the world moves the dropdown to match.
 		 */
 		final String group;
 		final String xKey;
