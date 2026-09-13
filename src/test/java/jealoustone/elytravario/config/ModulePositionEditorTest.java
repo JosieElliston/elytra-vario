@@ -307,11 +307,11 @@ class ModulePositionEditorTest {
 	}
 
 	/**
-	 * A stats panel's height rests where its text comes out at a round size, so a drag can land
-	 * on one instead of having to be typed to it.
+	 * A stats panel's height rests where its text comes out at a whole multiple of the size the
+	 * font is drawn at, which is where the glyphs need no interpolation to be drawn.
 	 */
 	@Test
-	void aStatsHeightRestsOnARoundTextSize() {
+	void aStatsHeightRestsOnASizeTheFontIsDrawnAtLosslessly() {
 		StatsPanel panel = StatsPanel.SPEED;
 		int rows = panel.layoutHeight();
 		var bounds = new ModulePositionEditor.Bounds(
@@ -319,17 +319,18 @@ class ModulePositionEditorTest {
 		var height = new ModulePositionEditor.Sizing(
 				new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
 
-		// Three pixels past 1.5x, dragged from the bottom edge, lands on 1.5x exactly.
+		// Three pixels past twice the font's size, dragged from the bottom edge, lands on it.
+		int twice = rows * 2;
+		assertEquals(twice, ModulePositionEditor.resize(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, rows, height,
+				250, 100 + twice + 3, List.of(), 320, 400, 4, 4));
+		// One and a half times is not a size the font is drawn at, so nothing pulls the drag on
+		// to it and the same three pixels past are kept. The rests are an aim, not a ladder:
+		// every height in between is still reachable, it is just not crisp.
 		int oneAndAHalf = rows * 3 / 2;
-		assertEquals(oneAndAHalf, ModulePositionEditor.resize(
+		assertEquals(oneAndAHalf + 3, ModulePositionEditor.resize(
 				ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, rows, height,
 				250, 100 + oneAndAHalf + 3, List.of(), 320, 400, 4, 4));
-		// Far enough from every round size and the drag is left where it asked to be. The rests
-		// are an aim, not a ladder: any height in between is still reachable.
-		int between = rows * 5 / 4;
-		assertEquals(between, ModulePositionEditor.resize(
-				ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, rows, height,
-				250, 100 + between, List.of(), 320, 400, 4, 4));
 	}
 
 	/**
