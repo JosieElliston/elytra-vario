@@ -681,8 +681,8 @@ entirely until the pointer happens to ask for something the loop admits, and the
 rush. **A drag's answer must be a function of where the pointer is and of nothing else** — not
 of how it got there — or dragging back does not undo dragging forward.
 
-Both are now whole multiples of the same layout width, so they are exact inverses: a width
-holds precisely the sizes whose floors fit inside it, with nothing lost to rounding either way.
+Both are counted in screen pixels per font pixel, so they are exact inverses: a width holds
+precisely the sizes whose floors fit inside it, with nothing lost to rounding either way.
 
 **The box is affine in its settings, and the constant is measured rather than modelled.** A
 slope — the graph's aspect ratio, one per axis for a stats panel, two for the dial's diameter —
@@ -885,36 +885,63 @@ the distance between a label and the value right-aligned against the far edge. T
 panel's only dead space, and a single size setting could not close it — narrowing the panel
 shrank the reading along with it.
 
-**The text size is a whole number, and the height is what follows from it.** That is the way
-round it has to be. The height was the setting once and the text size the quotient, and that
-made two things wrong at once. Switching a row off shrank the divisor and left the dividend
-where it was, so a checkbox reading *show total speed* also enlarged every letter on the panel;
-now it shortens the panel and leaves the letters alone, which is the only thing the checkbox
-claims to do. And a height free to be any pixel count made the text size free to be any
-fraction, so most panels sat at a size the font is not drawn at.
+**The text size is the setting and the height is what follows from it.** That is the way round
+it has to be. The height was the setting once and the text size the quotient, and that made two
+things wrong at once. Switching a row off shrank the divisor and left the dividend where it was,
+so a checkbox reading *show total speed* also enlarged every letter on the panel; now it
+shortens the panel and leaves the letters alone, which is the only thing the checkbox claims to
+do. And a height free to be any pixel count made the text size free to be any fraction, so most
+panels sat at a size the font is not drawn at.
 
-**Whole numbers are the sizes the glyphs are drawn at losslessly.** They are a bitmap: at a
-whole multiple every pixel of a glyph covers the same whole number of pixels on screen — and the
-GUI scale the HUD is drawn through is a whole number too, so the product still is — and the
-letter that comes out is the letter the font has, enlarged. At 1.3× some strokes land on two
-pixels and their neighbours on one, so the same letter is a different shape in different words.
-Halves are no better in kind: 0.5× throws away every other row of the glyph to fit, which is a
-smaller letter than the font has rather than the one it has. **Sizes that would interpolate are
-not merely avoided, they are inexpressible** — the setting counts font sizes, so there is
-nothing in between to land on.
+**What has to be whole is not the text size but the screen pixels one pixel of the font covers.**
+Minecraft's font is a bitmap — `ascii.png` is 128×128 with 8×8 cells and a declared height of 8,
+so one pixel of a glyph is one GUI pixel at a text size of one — and its atlas is sampled
+`NEAREST`, so nothing is ever blended. What goes wrong at 1.3× is not blurring but rounding:
+each glyph pixel claims whichever screen pixels are nearest, so some strokes come out two pixels
+wide and their neighbours one, and the same letter is a different shape in different words.
+
+A glyph pixel covers the text size times the GUI scale, and it is that **product** that must be
+whole. The GUI scale is itself a whole number — `Window.getGuiScale` returns an `int` — so the
+sizes that survive are the multiples of one over it:
+
+| GUI scale | text sizes the font is drawn at exactly |
+| --- | --- |
+| 1 | 1, 2, 3, … |
+| 2 | ½, 1, 1½, 2, … |
+| 3 | ⅓, ⅔, 1, 1⅓, … |
+| 4 | ¼, ½, ¾, 1, 1¼, … |
+
+**Whole text sizes are only the special case of a GUI scale of one**, which is the mistake this
+model replaced. Half size is not throwing away every other row of the glyph unless the GUI scale
+really is 1; at 4 it is a glyph pixel drawn two screen pixels across, which is as exact as a
+glyph pixel drawn four across. The smallest text there is is one screen pixel per glyph pixel,
+which is one over the GUI scale — a quarter of the font's nominal size at GUI scale 4.
+
+**So the quantizing happens where the panel is drawn, not where the setting is written.** The
+setting is a plain multiplier and knows nothing about the GUI scale; the GUI scale can change
+under a config that is already saved, and the same file has to stay sensible at every one of
+them. `StatsPanel.fontPixels` rounds the product to the nearest whole screen pixel per glyph
+pixel and everything else is derived from that, so **a size that would interpolate cannot be
+drawn even if a hand-edited file asks for one.**
 
 This is also what makes two panels agree. Butted into a stack they are meant to read as one
 instrument, and nothing says *not one instrument* like two sections of it set in different
-sizes; two panels showing the same number are now set to the same size, exactly, whatever their
-row counts. The editor used to carry a pair of resize rests for both of these jobs — one
-offering the whole multiples, one offering whatever size another panel on screen was drawn at —
-and both are gone with the need for them. A rest pulls a continuous value onto a good one; there
-is no continuous value left to pull.
+sizes; two panels showing the same number are set to the same size, exactly, whatever their row
+counts. The editor used to carry a pair of resize rests for both of these jobs — one offering
+sizes the font is drawn at, one offering whatever size another panel on screen was drawn at —
+and both are gone with the need for them. A rest pulls a continuous value onto a good one, and a
+drag can no longer produce a value that is not already good: a resize counts in steps of one
+over the GUI scale, so every value it can reach is one the font is drawn at.
 
-The cost is that a panel's height comes in steps of its whole layout, which is coarse: a
-four-row panel is 48 pixels tall or 96 and nothing between. Panels are aligned by moving them,
-not by sizing them, so this costs nothing at the edges — and the heights it forbids were all
-heights that drew interpolated text or left a gap under the last row.
+The panel's height is its rows times that size, so it comes in steps of one screen pixel per row
+rather than one whole layout — fine enough that alignment is not worth worrying about, and
+panels are aligned by moving them anyway. The box is rounded **up** to a whole GUI pixel, since
+the rows come to a whole number of *screen* pixels and not of GUI ones; the slack is under one
+GUI pixel and lands in the bottom padding.
+
+**Eight is the largest size offered**, because that is where the width setting runs out: the
+widest panel's rows need 150 pixels at size one and the width may be set to 1200, so a ninth
+size is one no panel could be made wide enough to hold.
 
 **A width narrower than the rows need is drawn at the width they need**, and each panel has its
 own floor, where its own widest row has met itself.

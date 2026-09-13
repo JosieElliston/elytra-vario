@@ -109,6 +109,11 @@ public final class VarioHudElement implements HudElement {
 
 		Minecraft minecraft = Minecraft.getInstance();
 
+		// Half of what decides the text sizes a stats panel can be drawn at, and the half that
+		// is not a setting. Told to the panels every frame rather than read once, since the
+		// player can change it in the video settings without this mod hearing about it.
+		StatsPanel.guiScale(minecraft.getWindow().getGuiScale());
+
 		// No hide-GUI check needed: Gui.extractRenderState skips the whole Hud pass when the
 		// GUI is hidden, so this element is never reached in that case.
 		if (minecraft.player == null) {

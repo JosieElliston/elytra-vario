@@ -336,8 +336,24 @@ final class ModulePositionEditor {
 	/** How many pixels of width and of height one unit of a module's size setting buys. */
 	record Growth(double width, double height) { }
 
-	/** A module's one size setting: how its box grows with it, and the range it may take. */
-	record Sizing(Growth growth, double min, double max, boolean integral) { }
+	/**
+	 * A module's one size setting: how its box grows with it, the range it may take, and the
+	 * increment it counts in.
+	 *
+	 * <p>The step is one for a setting held as a whole number of pixels, zero for one free to
+	 * take any value, and a fraction for a stats panel's text size, which counts in the sizes
+	 * the font is actually drawn at — one over the GUI scale. See
+	 * {@link jealoustone.elytravario.hud.StatsPanel#fontPixels()}.
+	 */
+	record Sizing(Growth growth, double min, double max, double step) {
+		/** Whether this setting counts in increments at all, rather than taking any value. */
+		boolean stepped() { return step > 0; }
+
+		/** The nearest value this setting can actually hold to the one asked for. */
+		double round(double value) {
+			return stepped() ? Math.rint(value / step) * step : value;
+		}
+	}
 
 	/**
 	 * How the module's box grows with one of its size settings.
@@ -352,7 +368,7 @@ final class ModulePositionEditor {
 	 */
 	static Growth growth(String sizeKey) {
 		// A stats panel's two settings are its two dimensions, each on its own. Its width is
-		// pixels; its height is its rows, so one more text size buys a whole layout of them.
+		// pixels; its height is its rows, so one whole text size buys a whole layout of them.
 		if (StatsPanel.byWidthKey(sizeKey) != null) return new Growth(1, 0);
 		StatsPanel sized = StatsPanel.byTextSizeKey(sizeKey);
 		if (sized != null) return new Growth(0, sized.layoutHeight());
@@ -371,7 +387,7 @@ final class ModulePositionEditor {
 
 	/**
 	 * The narrowest a grip may drag a stats panel's width to: its rows at the smallest text size
-	 * the setting itself allows, which is the narrowest the panel is ever drawn.
+	 * there is — one screen pixel per font pixel — which is the narrowest it is ever drawn.
 	 *
 	 * <p><b>At the smallest text size, and not at the size the panel happens to have.</b> A
 	 * panel's width floor rises with its text size, so reading the floor off the panel as it
@@ -391,8 +407,8 @@ final class ModulePositionEditor {
 	 * <p>Nothing is given up by it. The text size is capped so that the width the drag settled
 	 * on still holds the rows, so the panel is never drawn wider than the drag placed it.
 	 */
-	static double narrowestWidth(StatsPanel panel, int smallestTextSize, double min, double max) {
-		return Math.clamp(panel.minWidth(smallestTextSize), min, max);
+	static double narrowestWidth(StatsPanel panel, double min, double max) {
+		return Math.clamp(panel.minWidth(1), min, max);
 	}
 
 	/**
@@ -402,7 +418,23 @@ final class ModulePositionEditor {
 	 * dragging it.
 	 */
 	static double largestTextSize(StatsPanel panel, int settledWidth, double min, double max) {
-		return Math.clamp(panel.maxTextSizeForWidth(settledWidth), min, max);
+		return Math.clamp(
+				(double) panel.maxFontPixelsForWidth(settledWidth) / StatsPanel.guiScale(),
+				min, max);
+	}
+
+	/**
+	 * The increment a stats panel's text size counts in: one screen pixel per font pixel, which
+	 * is one over the GUI scale. Every value a drag can reach is therefore a size the bitmap
+	 * font is drawn at exactly. See {@link jealoustone.elytravario.hud.StatsPanel#fontPixels()}.
+	 */
+	static double textSizeStep() {
+		return 1.0 / StatsPanel.guiScale();
+	}
+
+	/** The smallest text size there is: the font at one screen pixel per font pixel. */
+	static double smallestTextSize() {
+		return textSizeStep();
 	}
 
 	/**
@@ -462,7 +494,9 @@ final class ModulePositionEditor {
 		double limit = Math.max(sizing.min(), Math.min(sizing.max(), Math.min(
 				fits(corner.left ? anchorX : screenWidth - anchorX, width, widthOffset),
 				fits(corner.top ? anchorY : screenHeight - anchorY, height, heightOffset))));
-		if (sizing.integral()) limit = Math.max(sizing.min(), Math.floor(limit));
+		if (sizing.stepped()) {
+			limit = Math.max(sizing.min(), Math.floor(limit / sizing.step()) * sizing.step());
+		}
 		double free = settled(solved, sizing, limit);
 		int freeWidth = (int) Math.round(width * free + widthOffset);
 		int freeHeight = (int) Math.round(height * free + heightOffset);
@@ -602,11 +636,11 @@ final class ModulePositionEditor {
 		return List.copyOf(guides);
 	}
 
-	/** A value in range, and in whole units where the setting counts in them. */
+	/** A value in range, and on an increment where the setting counts in them. */
 	private static double settled(double value, Sizing sizing, double limit) {
 		double capped = Math.clamp(value, sizing.min(), limit);
-		return sizing.integral()
-				? Math.clamp(Math.rint(capped), sizing.min(), limit) : capped;
+		return sizing.stepped()
+				? Math.clamp(sizing.round(capped), sizing.min(), limit) : capped;
 	}
 
 	/**
@@ -628,7 +662,7 @@ final class ModulePositionEditor {
 	/**
 	 * The setting that lands the line exactly on a rest, or {@code NaN} where none does.
 	 *
-	 * <p>A setting counting in whole units may not put a line on every coordinate, so the two
+	 * <p>A setting counting in increments may not put a line on every coordinate, so the two
 	 * values either side of the one the arithmetic asks for are tried before the rest is given
 	 * up on. Landing is checked rather than assumed,
 	 * because a rest that is merely close is a guide that does not line up with anything.
@@ -638,9 +672,9 @@ final class ModulePositionEditor {
 		double settled = settled(valueAt(rest, anchor, lower, slope, offset),
 				sizing, limit);
 		if (lineAt(anchor, lower, slope, offset, settled) == rest) return settled;
-		if (!sizing.integral()) return Double.NaN;
+		if (!sizing.stepped()) return Double.NaN;
 		for (int step = -1; step <= 1; step += 2) {
-			double beside = settled(settled + step, sizing, limit);
+			double beside = settled(settled + step * sizing.step(), sizing, limit);
 			if (lineAt(anchor, lower, slope, offset, beside) == rest) return beside;
 		}
 		return Double.NaN;

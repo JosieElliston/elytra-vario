@@ -36,17 +36,19 @@ class ModulePositionEditorTest {
 	@Test
 	void neitherStatsBoundMovesWithThePanelsCurrentSize() {
 		StatsPanel panel = StatsPanel.BOUNCE_TICKS;
-		int wasSize = VarioConfig.statsBounceTicksTextSize;
+		double wasSize = VarioConfig.statsBounceTicksTextSize;
 		int wasWidth = VarioConfig.statsBounceTicksWidth;
+		int wasScale = StatsPanel.guiScale();
 		try {
-			// The narrowest the panel is ever drawn: its rows at the smallest text size the
-			// setting allows, and the same answer whatever size the panel is at now.
-			double narrowest = ModulePositionEditor.narrowestWidth(panel, 1, 32, 1200);
+			StatsPanel.guiScale(1);
+			// The narrowest the panel is ever drawn: its rows at the smallest text size there
+			// is, and the same answer whatever size the panel is at now.
+			double narrowest = ModulePositionEditor.narrowestWidth(panel, 32, 1200);
 			assertEquals(panel.minWidth(1), narrowest);
-			for (int size : new int[] { 1, 2, 4, 8 }) {
+			for (double size : new double[] { 0.5, 1, 2, 4, 8 }) {
 				VarioConfig.statsBounceTicksTextSize = size;
 				assertEquals(narrowest,
-						ModulePositionEditor.narrowestWidth(panel, 1, 32, 1200), "" + size);
+						ModulePositionEditor.narrowestWidth(panel, 32, 1200), "" + size);
 			}
 			// And the text size's cap follows the width the drag settled on rather than the one
 			// the panel is drawn at, so the pair it used to stick on can now be left.
@@ -54,22 +56,47 @@ class ModulePositionEditorTest {
 			VarioConfig.statsBounceTicksWidth = 236;
 			assertEquals(236, panel.width());
 			assertEquals(panel.layoutHeight() * 2, panel.height());
-			assertEquals(panel.maxTextSizeForWidth(118),
-					ModulePositionEditor.largestTextSize(panel, 118, 1, 8));
-			assertTrue(ModulePositionEditor.largestTextSize(panel, 118, 1, 8) < 2);
+			assertEquals(1.0, ModulePositionEditor.largestTextSize(panel, 118, 0.0625, 8));
 			// Whatever it caps at, the width that produced that cap still holds the rows, so the
 			// panel is never drawn wider than the drag placed it.
 			for (int width : new int[] { 118, 150, 236, 400, 944 }) {
-				int largest = (int) ModulePositionEditor.largestTextSize(panel, width, 1, 8);
-				assertTrue(panel.minWidth(largest) <= width, "" + width);
+				double largest = ModulePositionEditor.largestTextSize(panel, width, 0.0625, 8);
+				assertTrue(panel.minWidth((int) Math.round(largest * StatsPanel.guiScale()))
+						<= width, "" + width);
 			}
 			// Below the panel's own floor nothing fits, and there the setting's range wins over
-			// the screen — the same policy the resize takes everywhere else. The drag can still
+			// the screen - the same policy the resize takes everywhere else. The drag can still
 			// reach the smallest size, which is the best the panel can do.
-			assertEquals(1, ModulePositionEditor.largestTextSize(panel, 68, 1, 8));
+			assertEquals(0.0625, ModulePositionEditor.largestTextSize(panel, 68, 0.0625, 8));
 		} finally {
+			StatsPanel.guiScale(wasScale);
 			VarioConfig.statsBounceTicksTextSize = wasSize;
 			VarioConfig.statsBounceTicksWidth = wasWidth;
+		}
+	}
+
+	/**
+	 * The floor and the cap stay exact inverses at every GUI scale: the cap names a size whose
+	 * own floor really does fit in the width the cap was taken from, and the next size up does
+	 * not. That is what keeps a resize from drawing a panel wider than it placed it.
+	 */
+	@Test
+	void theWidthFloorAndTheTextSizeCapAgreeAtEveryGuiScale() {
+		int wasScale = StatsPanel.guiScale();
+		try {
+			for (int gui = 1; gui <= 4; gui++) {
+				StatsPanel.guiScale(gui);
+				for (StatsPanel panel : StatsPanel.values()) {
+					for (int width = 8; width <= 600; width += 7) {
+						int largest = panel.maxFontPixelsForWidth(width);
+						String at = panel.name() + " gui " + gui + " width " + width;
+						if (largest >= 1) assertTrue(panel.minWidth(largest) <= width, at);
+						assertTrue(panel.minWidth(largest + 1) > width, at);
+					}
+				}
+			}
+		} finally {
+			StatsPanel.guiScale(wasScale);
 		}
 	}
 
@@ -259,7 +286,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 0, 0, 50, 50);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 1), 1, 200, true);
+				new ModulePositionEditor.Growth(1, 1), 1, 200, 1);
 
 		assertEquals(70, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				bounds, 50, sizing, 80, 60, List.of(), 320, 240, 4, 0));
@@ -271,7 +298,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.DIAL_SPEEDOMETER, 10, 10, 139, 70);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(2, 1), 12, 200, true);
+				new ModulePositionEditor.Growth(2, 1), 12, 200, 1);
 
 		assertEquals(32, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				bounds, 64, sizing, 85, 48, List.of(), 320, 240, 4, 0));
@@ -283,7 +310,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 10, 60, 120);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
+				new ModulePositionEditor.Growth(0, 1), 12, 200, 1);
 
 		assertEquals(126, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				bounds, 96, sizing, 300, 160, List.of(), 320, 240, 4, 0));
@@ -295,9 +322,9 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS_SPEED, 100, 100, 60, 40);
 		var width = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 0), 32, 1200, true);
+				new ModulePositionEditor.Growth(1, 0), 32, 1200, 1);
 		var height = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
+				new ModulePositionEditor.Growth(0, 1), 16, 1200, 1);
 
 		// Dragged from the corner opposite the pinned top left, each setting takes the distance
 		// on its own axis, and neither is pulled towards the other's.
@@ -311,52 +338,71 @@ class ModulePositionEditorTest {
 	}
 
 	/**
-	 * A drag can only ever land a stats panel on a whole text size, so the glyphs are never
-	 * interpolated and no rest is needed to keep them that way.
-	 *
-	 * <p>This replaces two rests that used to do that work. The first offered the whole
-	 * multiples as somewhere a continuous height could settle; there is no continuous height
-	 * left to settle, so it has nothing to pull the drag off of. The second offered the size
-	 * another panel on screen was drawn at, to save the user arithmetic; the size is now the
-	 * setting, so two panels showing the same number already agree and the arithmetic is gone
-	 * rather than automated.
+	 * A drag can only ever land a stats panel on a size the font is drawn at exactly, and which
+	 * sizes those are depends on the GUI scale: a glyph pixel covers the text size times the GUI
+	 * scale screen pixels, and it is that product that has to be whole. So the reachable sizes
+	 * are the multiples of one over the GUI scale -- quarters at 4, thirds at 3, and only the
+	 * whole numbers at 1.
 	 */
 	@Test
-	void aStatsPanelsTextSizeIsWholeWhereverTheDragLands() {
+	void aStatsPanelsTextSizeLandsOnlyOnSizesTheFontIsDrawnAt() {
 		StatsPanel panel = StatsPanel.SPEED;
 		int rows = panel.layoutHeight();
-		// One step of the setting is a whole layout of rows, which is one step of the font.
-		assertEquals(new ModulePositionEditor.Growth(0, rows),
-				ModulePositionEditor.growth(panel.textSizeKey()));
+		int wasScale = StatsPanel.guiScale();
+		try {
+			// One step of the setting is a whole layout of rows, which is one whole font size.
+			assertEquals(new ModulePositionEditor.Growth(0, rows),
+					ModulePositionEditor.growth(panel.textSizeKey()));
 
-		var bounds = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.STATS_SPEED, 100, 100, 150, rows);
-		var textSize = new ModulePositionEditor.Sizing(
-				ModulePositionEditor.growth(panel.textSizeKey()), 1, StatsPanel.MAX_TEXT_SIZE,
-				true);
+			for (int gui : new int[] { 1, 2, 3, 4 }) {
+				StatsPanel.guiScale(gui);
+				double step = ModulePositionEditor.textSizeStep();
+				assertEquals(1.0 / gui, step, "gui " + gui);
 
-		// Dragged to one and a half times the rows — the height the old rests existed to pull a
-		// drag away from — the nearer whole size answers, because nothing else can.
-		assertEquals(2, ModulePositionEditor.resize(
-				ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, 1, textSize,
-				250, 100 + rows * 3 / 2, List.of(), 320, 400, 4, 4));
+				var bounds = new ModulePositionEditor.Bounds(
+						ModulePositionEditor.Module.STATS_SPEED, 100, 100, 150, rows);
+				var textSize = new ModulePositionEditor.Sizing(
+						ModulePositionEditor.growth(panel.textSizeKey()),
+						step, StatsPanel.MAX_TEXT_SIZE, step);
 
-		// And every pointer position down the panel's range answers with a whole size, in range,
-		// whose panel is a whole number of layouts tall.
-		for (int y = 100; y <= 400; y++) {
-			double value = ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
-					bounds, 1, textSize, 250, y, List.of(), 320, 400, 4, 4);
-			assertEquals(Math.rint(value), value, "" + y);
-			assertTrue(value >= 1 && value <= StatsPanel.MAX_TEXT_SIZE, "" + y);
+				// Every pointer position down the panel's range answers with a size that is a
+				// whole number of screen pixels per font pixel, and stays in range.
+				for (int y = 100; y <= 400; y++) {
+					double value = ModulePositionEditor.resize(
+							ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, 1, textSize,
+							250, y, List.of(), 320, 400, 4, 4);
+					double fontPixels = value * gui;
+					String at = "gui " + gui + " y " + y;
+					assertEquals(Math.rint(fontPixels), fontPixels, 1e-9, at);
+					assertTrue(value >= step && value <= StatsPanel.MAX_TEXT_SIZE, at);
+				}
+			}
+
+			// At a GUI scale of 4 the drag reaches a quarter of the font's size, which is where
+			// the whole-numbers-only rule was wrong: a glyph pixel two screen pixels across at
+			// half size is as exact as one four across at full size.
+			StatsPanel.guiScale(4);
+			var small = new ModulePositionEditor.Bounds(
+					ModulePositionEditor.Module.STATS_SPEED, 100, 100, 150, rows);
+			var quarters = new ModulePositionEditor.Sizing(
+					ModulePositionEditor.growth(panel.textSizeKey()), 0.25, 8, 0.25);
+			assertEquals(0.5, ModulePositionEditor.resize(
+					ModulePositionEditor.Corner.BOTTOM_RIGHT, small, 1, quarters,
+					250, 100 + rows / 2, List.of(), 320, 400, 4, 4));
+			assertEquals(0.25, ModulePositionEditor.resize(
+					ModulePositionEditor.Corner.BOTTOM_RIGHT, small, 1, quarters,
+					250, 100 + rows / 4, List.of(), 320, 400, 4, 4));
+		} finally {
+			StatsPanel.guiScale(wasScale);
 		}
 	}
 
 	@Test
 	void resizeStopsAtTheScreenEdgeAndAtTheSettingsOwnRange() {
 		var wide = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
+				new ModulePositionEditor.Growth(1, 1), 4, 200, 1);
 		var narrow = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 1), 4, 30, true);
+				new ModulePositionEditor.Growth(1, 1), 4, 30, 1);
 		var atEdge = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 300, 200, 20, 20);
 		assertEquals(20, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
@@ -375,7 +421,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 100, 100, 40, 40);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
+				new ModulePositionEditor.Growth(1, 1), 4, 200, 1);
 
 		// The pinned corner is the bottom right, at (140, 140).
 		assertEquals(60, ModulePositionEditor.resize(ModulePositionEditor.Corner.TOP_LEFT,
@@ -388,7 +434,7 @@ class ModulePositionEditorTest {
 		// drag is only as steady as that round trip: here it is the dial's, at whole radii.
 		int radius = 40;
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(2, 1), 12, 200, true);
+				new ModulePositionEditor.Growth(2, 1), 12, 200, 1);
 		var bounds = new ModulePositionEditor.Bounds(ModulePositionEditor.Module.DIAL_SPEEDOMETER,
 				120, 100, 2 * radius + 11, radius + 6);
 		int pinnedRight = bounds.x() + bounds.width();
@@ -415,9 +461,9 @@ class ModulePositionEditorTest {
 		// The stats panel taken by its top left and pulled up and to the left, with the width
 		// and the height applied and the box measured again on every step, as the screen does.
 		var width = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 0), 32, 1200, true);
+				new ModulePositionEditor.Growth(1, 0), 32, 1200, 1);
 		var height = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
+				new ModulePositionEditor.Growth(0, 1), 16, 1200, 1);
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS_SPEED, 120, 100, 60, 40);
 		int pinnedRight = bounds.x() + bounds.width();
@@ -470,7 +516,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 40, 60, 60, 40);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
+				new ModulePositionEditor.Growth(0, 1), 12, 200, 1);
 
 		// Pinned at the top, the bottom edge is dragged to 97 and finds the other module's
 		// bottom edge three pixels further down.
@@ -492,7 +538,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 100, 100, 40, 40);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
+				new ModulePositionEditor.Growth(1, 1), 4, 200, 1);
 
 		// Every line moves off the one setting, so only one of them can land: dragged to
 		// (199, 199) the right edge is a pixel from a right edge and the bottom edge three from
@@ -509,7 +555,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.DIAL_SPEEDOMETER, 100, 100, 91, 46);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(2, 1), 12, 200, true);
+				new ModulePositionEditor.Growth(2, 1), 12, 200, 1);
 		// The right-edge rest four pixels away proposes radius 42. The bottom-edge rest only
 		// three pixels away proposes radius 43, but moves the full corner farther from the mouse.
 		var right = new ModulePositionEditor.Bounds(
@@ -529,7 +575,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.BAR_SPEEDOMETER, 10, 40, 60, 100);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
+				new ModulePositionEditor.Growth(0, 1), 12, 200, 1);
 
 		// Nothing is near the dragged edge at 199. The center it trails passes close to the
 		// screen's center line, but center lines are not snap targets.
@@ -550,7 +596,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.DIAL_SPEEDOMETER, 10, 60, 91, 46);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(2, 1), 12, 200, true);
+				new ModulePositionEditor.Growth(2, 1), 12, 200, 1);
 		// Offers a left edge to stop a margin short of, at 102, one pixel in from the dial's
 		// right edge, which would want a width of 92 and so a radius of 40.5. Its other rest,
 		// a pixel past that left edge, is six away and so out of reach at this snap distance.
@@ -574,7 +620,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 10, 100, 89, 89);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
+				new ModulePositionEditor.Growth(1, 1), 4, 200, 1);
 
 		// Grown towards the other module's left edge, the resized edge stops a margin short of
 		// it at 100, rather than butting flush against it: a width of 90 from a left edge at 10.
@@ -639,7 +685,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS_ACCEL, 10, 100, 89, 89);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 0), 4, 200, true);
+				new ModulePositionEditor.Growth(1, 0), 4, 200, 1);
 
 		// The dragged right edge is two pixels short of the other module's first column, and
 		// three short of a margin's clearance, so it grows onto the column: width 91 from a
@@ -659,7 +705,7 @@ class ModulePositionEditorTest {
 		var before = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 40, 40, 59, 39);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
+				new ModulePositionEditor.Growth(1, 1), 4, 200, 1);
 		var resize = ModulePositionEditor.resizeWithMarkers(
 				ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				before, 39, sizing, 99, 79, List.of(other), 320, 240, 4, 4);
@@ -689,7 +735,7 @@ class ModulePositionEditorTest {
 		var before = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 40, 100, 59, 40);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 0), 4, 200, true);
+				new ModulePositionEditor.Growth(1, 0), 4, 200, 1);
 		var resize = ModulePositionEditor.resizeWithMarkers(
 				ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				before, 59, sizing, 99, 140, List.of(other), 320, 240, 4, 4);
@@ -709,7 +755,7 @@ class ModulePositionEditorTest {
 		var before = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 40, 100, 59, 40);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 0), 4, 200, true);
+				new ModulePositionEditor.Growth(1, 0), 4, 200, 1);
 		var resize = ModulePositionEditor.resizeWithMarkers(
 				ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				before, 59, sizing, 99, 140, List.of(other), 320, 240, 4, 2);
@@ -727,7 +773,7 @@ class ModulePositionEditorTest {
 		var before = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 40, 100, 274, 40);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 0), 4, 300, true);
+				new ModulePositionEditor.Growth(1, 0), 4, 300, 1);
 		var resize = ModulePositionEditor.resizeWithMarkers(
 				ModulePositionEditor.Corner.BOTTOM_RIGHT,
 				before, 274, sizing, 314, 140, List.of(), 320, 240, 4, 4);
@@ -749,7 +795,7 @@ class ModulePositionEditorTest {
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.CHART, 100, 100, 40, 40);
 		var sizing = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(1, 1), 4, 200, true);
+				new ModulePositionEditor.Growth(1, 1), 4, 200, 1);
 
 		// The right-edge rest answers 100 and the bottom-edge rest answers 96. Only the nearer
 		// right-edge answer wins, so the solver must not return the bottom marker with it.
