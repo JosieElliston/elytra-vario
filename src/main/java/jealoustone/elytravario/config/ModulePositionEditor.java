@@ -130,13 +130,19 @@ final class ModulePositionEditor {
 
 	/** Bounds in paint order; callers search backwards so the topmost overlapping module wins. */
 	static List<Bounds> bounds(Font font, int screenWidth, int screenHeight, boolean gliding) {
+		return bounds(font, screenWidth, screenHeight, gliding, false);
+	}
+
+	/** Includes ghost bounds for hidden modules when used by the dedicated layout editor. */
+	static List<Bounds> bounds(Font font, int screenWidth, int screenHeight, boolean gliding,
+			boolean includeHidden) {
 		List<Bounds> result = new ArrayList<>();
-		if (!VarioConfig.enabled) return result;
+		if (!VarioConfig.enabled && !includeHidden) return result;
 
 		// The same test the HUD makes: a panel with every row switched off is not drawn, and
 		// so is not there to be dragged either.
 		for (StatsPanel panel : StatsPanel.values()) {
-			if (!panel.visible(gliding)) continue;
+			if (!includeHidden && !panel.visible(gliding)) continue;
 			int width = panel.width();
 			int height = panel.height();
 			HudPosition position = HudPosition.clamp(panel.x(), panel.y(),
@@ -147,19 +153,19 @@ final class ModulePositionEditor {
 		int chartHeight = VarioHudElement.chartHeight();
 		HudPosition chartPosition = HudPosition.clamp(VarioConfig.chartX, VarioConfig.chartY,
 				chartWidth, chartHeight, screenWidth, screenHeight);
-		if (VarioInstrument.CHART.visible(gliding)) {
+		if (includeHidden || VarioInstrument.CHART.visible(gliding)) {
 			result.add(new Bounds(Module.CHART, chartPosition.x(), chartPosition.y(),
 					chartWidth, chartHeight));
 		}
 
-		if (VarioInstrument.BAR_SPEEDOMETER.visible(gliding)) {
+		if (includeHidden || VarioInstrument.BAR_SPEEDOMETER.visible(gliding)) {
 			BarSpeedometerChart speedometerChart = BarSpeedometerChart.of(font);
 			HudPosition position = HudPosition.clamp(VarioConfig.barSpeedoX, VarioConfig.barSpeedoY,
 					speedometerChart.width(), speedometerChart.height(), screenWidth, screenHeight);
 			result.add(new Bounds(Module.BAR_SPEEDOMETER, position.x(), position.y(),
 					speedometerChart.width(), speedometerChart.height()));
 		}
-		if (VarioInstrument.DIAL_SPEEDOMETER.visible(gliding)) {
+		if (includeHidden || VarioInstrument.DIAL_SPEEDOMETER.visible(gliding)) {
 			DialSpeedometer dial = new DialSpeedometer(VarioConfig.dialSpeedoRadius,
 					VarioConfig.dialSpeedoMaxSpeed);
 			HudPosition position = HudPosition.clamp(VarioConfig.dialSpeedoX, VarioConfig.dialSpeedoY,

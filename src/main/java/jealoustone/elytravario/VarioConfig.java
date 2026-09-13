@@ -5,6 +5,8 @@ package jealoustone.elytravario;
  */
 public final class VarioConfig {
 	public static boolean enabled = true;
+	/** Whether the master HUD is visible only while the player is elytra gliding. */
+	public static boolean hudGlidingOnly = false;
 	/** Gap kept between snapped modules and between a snapped module and a screen edge. */
 	public static int positionMargin = 4;
 	/** Maximum drag distance, in scaled GUI pixels, at which an alignment takes hold. */
@@ -542,7 +544,8 @@ public final class VarioConfig {
 	public static double dialSpeedoOpacity = 0.25;
 
 	public static boolean visible(boolean shown, boolean glidingOnly, boolean gliding) {
-		return enabled && shown && (!glidingOnly || gliding);
+		return enabled && (!hudGlidingOnly || gliding)
+				&& shown && (!glidingOnly || gliding);
 	}
 
 	private VarioConfig() {

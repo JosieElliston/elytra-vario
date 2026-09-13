@@ -1,15 +1,55 @@
 package jealoustone.elytravario.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import jealoustone.elytravario.VarioConfig;
 import org.junit.jupiter.api.Test;
 
 class ConfigOptionsTest {
+	@Test void masterHudCanBeLimitedToGliding() {
+		Map<String, String> original = ConfigOptions.snapshot();
+		try {
+			Map<String, String> values = ConfigOptions.snapshot();
+			values.put("enabled", "true");
+			values.put("hudGlidingOnly", "true");
+			ConfigOptions.apply(values);
+			assertFalse(VarioConfig.visible(true, false, false));
+			assertTrue(VarioConfig.visible(true, false, true));
+
+			values.put("hudGlidingOnly", "false");
+			ConfigOptions.apply(values);
+			assertTrue(VarioConfig.visible(true, false, false));
+		} finally { ConfigOptions.apply(original); }
+	}
+
+	@Test void ordinarySettingsExcludeOnlyModuleGeometry() {
+		Set<String> geometry = ConfigOptions.all().stream()
+				.map(ConfigOptions.Option::key)
+				.filter(VarioConfigScreen::geometry)
+				.collect(Collectors.toSet());
+		assertEquals(Set.of(
+				"chartX", "chartY", "chartSize",
+				"statsOtherX", "statsOtherY", "statsOtherWidth", "statsOtherHeight",
+				"statsSpeedX", "statsSpeedY", "statsSpeedWidth", "statsSpeedHeight",
+				"statsAccelX", "statsAccelY", "statsAccelWidth", "statsAccelHeight",
+				"statsEnergyX", "statsEnergyY", "statsEnergyWidth", "statsEnergyHeight",
+				"statsBounceVelocityX", "statsBounceVelocityY",
+				"statsBounceVelocityWidth", "statsBounceVelocityHeight",
+				"statsBounceDistanceX", "statsBounceDistanceY",
+				"statsBounceDistanceWidth", "statsBounceDistanceHeight",
+				"statsBounceTicksX", "statsBounceTicksY",
+				"statsBounceTicksWidth", "statsBounceTicksHeight",
+				"barSpeedoX", "barSpeedoY", "barSpeedoHeight",
+				"dialSpeedoX", "dialSpeedoY", "dialSpeedoRadius"), geometry);
+	}
+
 	@Test void eachSpeedometerHasOneSubpagePerReading() {
 		assertEquals(List.of("barSpeedoTotal", "barSpeedoHorizontal", "barSpeedoVertical"),
 				ConfigOptions.groups(5));

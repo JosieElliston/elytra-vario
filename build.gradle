@@ -9,6 +9,7 @@ loom {
 
 repositories {
 	maven { url = "https://maven.terraformersmc.com/" }
+	maven { url = "https://maven.isxander.dev/releases" }
 	// Add repositories to retrieve artifacts from in here.
 	// You should only use this when depending on other mods because
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
@@ -19,6 +20,7 @@ repositories {
 dependencies {
 	// Remapped, unlike the 26.2 branch: this branch builds against Mojang mappings.
 	modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+	modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 	testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
 	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 	// To change the versions see the gradle.properties file
