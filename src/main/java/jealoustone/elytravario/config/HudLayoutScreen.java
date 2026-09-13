@@ -3,7 +3,6 @@ package jealoustone.elytravario.config;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -55,8 +54,6 @@ public final class HudLayoutScreen extends Screen {
 	 */
 	private static final int ROW_GAP = 8;
 	private final Screen parent;
-	/** Last values committed by the parent YACL screen; null when opened directly. */
-	private final Map<String, String> saveBase;
 	private final Map<String, String> settings = ConfigOptions.snapshot();
 	/** The boxes for the settings the in-world editor also writes: positions and sizes. */
 	private final Map<String, EditBox> editorBoxes = new HashMap<>();
@@ -104,18 +101,12 @@ public final class HudLayoutScreen extends Screen {
 	private final List<Button> contextButtons = new ArrayList<>();
 
 	public HudLayoutScreen(Screen parent) {
-		this(parent, null, null);
+		this(parent, null);
 	}
 
 	public HudLayoutScreen(Screen parent, ModulePositionEditor.Module module) {
-		this(parent, module, null);
-	}
-
-	HudLayoutScreen(Screen parent, ModulePositionEditor.Module module,
-			Map<String, String> saveBase) {
 		super(text("layout.title"));
 		this.parent = parent;
-		this.saveBase = saveBase;
 		if (module != null) {
 			page = module.page;
 			if (module.group != null) {
@@ -661,20 +652,7 @@ public final class HudLayoutScreen extends Screen {
 		if (!dirty || ConfigOptions.error(settings) != null) return;
 		dirty = false;
 		try {
-			Map<String, String> values = settings;
-			if (saveBase != null) {
-				values = new LinkedHashMap<>(saveBase);
-				for (ConfigOptions.Option option : ConfigOptions.all()) {
-					if (VarioConfigScreen.geometry(option.key())) {
-						values.put(option.key(), settings.get(option.key()));
-					}
-				}
-			}
-			ConfigStore.save(values);
-			if (saveBase != null) {
-				saveBase.clear();
-				saveBase.putAll(values);
-			}
+			ConfigStore.save(settings);
 		} catch (IOException | RuntimeException e) {
 			ElytraVario.LOGGER.error("Could not save Elytra Vario settings", e);
 			saveError = "save_error";
