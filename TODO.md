@@ -24,6 +24,7 @@ josie's todo/notes, don't edit this, tho you should include it in commits
 - make modules more unobtrusive
     - translucent
 - not fixed module render order?
+- the selected module (in the config) should always take priority for dragging
 - that we don't have comboboxes for submodules/markers/... is kinda a problem.
     - generally the ui elements are bad
         - on/off is just text
