@@ -9,9 +9,8 @@ import static jealoustone.elytravario.hud.HudChrome.LABEL;
 import static jealoustone.elytravario.hud.HudChrome.MUTED;
 import static jealoustone.elytravario.hud.HudChrome.PANEL_BG;
 import static jealoustone.elytravario.hud.HudChrome.VALUE;
-import static jealoustone.elytravario.hud.MatrixLayout.ABSOLUTE_COLUMN;
-import static jealoustone.elytravario.hud.MatrixLayout.BOUNCE_COLUMN;
-import static jealoustone.elytravario.hud.MatrixLayout.DELTA_COLUMN;
+import static jealoustone.elytravario.hud.MatrixLayout.HEIGHT_COLUMN;
+import static jealoustone.elytravario.hud.MatrixLayout.RATE_COLUMN;
 
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
@@ -213,7 +212,7 @@ public final class VarioHudElement implements HudElement {
 				boolean bothReferences = VarioConfig.energyReference == ENERGY_BOTH;
 				MatrixLayout energy = bothReferences
 						? matrixHeading(graphics, font, panel, x, row, ENERGY_UNITS,
-								ENERGY_COLUMNS, ABSOLUTE_COLUMN, DELTA_COLUMN)
+								ENERGY_COLUMNS, HEIGHT_COLUMN, HEIGHT_COLUMN)
 						: null;
 				row = bothReferences ? row + LINE : unitsRow(graphics, font, x, row, ENERGY_UNITS);
 				// Kinetic energy is an absolute and the cycle's gain is a difference, so each
@@ -244,7 +243,7 @@ public final class VarioHudElement implements HudElement {
 		BounceTracker.Event[] events = { recorder.bounceTouch(), recorder.bounceLeave(),
 				recorder.bounceDeploy() };
 		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "VEL b/s",
-				BOUNCE_EVENTS, BOUNCE_COLUMN);
+				BOUNCE_EVENTS, RATE_COLUMN);
 		y += LINE;
 		if (VarioConfig.showBounceVelocityY) y = matrixRow(graphics, font, matrix, x, y, "Y",
 				events, sample -> sample.vy() * TPS, true, 2);
@@ -260,7 +259,7 @@ public final class VarioHudElement implements HudElement {
 		BounceTracker.Event leave = recorder.bounceLeave();
 		BounceTracker.Event deploy = recorder.bounceDeploy();
 		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "DELTA b",
-				BOUNCE_SPANS, BOUNCE_COLUMN);
+				BOUNCE_SPANS, RATE_COLUMN);
 		y += LINE;
 		BounceTracker.Event[][] spans = { { touch, leave }, { leave, deploy } };
 		if (VarioConfig.showBounceDistanceY) y = distanceRow(graphics, font, matrix, x, y, "Y",
@@ -279,7 +278,7 @@ public final class VarioHudElement implements HudElement {
 		// No label on the heading row: TICKS names the figures, not the two column names above
 		// them, so it is drawn beside the figures like every other row label on every panel.
 		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "",
-				BOUNCE_SPANS, BOUNCE_COLUMN);
+				BOUNCE_SPANS, RATE_COLUMN);
 		if (!VarioConfig.showBounceTicks) return;
 		y += LINE;
 		graphics.drawString(font, "TICKS", x + PAD, y, LABEL, true);

@@ -144,6 +144,15 @@ and key-registration APIs, not behavior.
   borders sharing a column, so a migrated HUD reads at the size and in the order it read in. The
   cost of the split is that switching a row off no longer shortens the panel it is on: that
   panel keeps the height it was given and draws the rows that remain larger.
+- Every figure column on every Flight Stats panel now reserves the same width, so a stack of
+  panels butted together at one width has one grid of columns rather than several that nearly
+  agree. A column is placed by measuring back from the panel's right edge, so the three separate
+  templates agreed on the rightmost column — every panel aligns its last column onto its own
+  right edge whatever the template says — and disagreed on every column left of it, which put
+  the Energy panel's `ABS` column two pixels off the e-bounce matrices' left column. The
+  accident that makes one width enough is that seven glyphs and one stop measure the same
+  whether they are spent on three digits and two decimals or on four and one, so a two-decimal
+  speed and a one-decimal altitude want the same column.
 - Dragging a Flight Stats panel's height now rests on the text sizes worth having: the halves of
   the font's own size, and whatever size another stats panel on screen is currently drawn at.
   Text size stays continuous — it is whatever the height divides out to, which is what keeps a

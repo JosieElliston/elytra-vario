@@ -34,13 +34,16 @@ class StatsPanelTest {
 	 * that the unit is said once at the top and the rows are labelled {@code XYZ}. Acceleration
 	 * is the wider of the two by a pixel, and for the opposite reason it used to be the narrower:
 	 * its floor is its heading rather than its figures, and {@code ACCEL b/s²} carries the
-	 * superscript that {@code SPEED b/s} does not.
+	 * superscript that {@code SPEED b/s} does not. Energy moved from 106 to 116 across the two
+	 * changes together: its figures gave up their {@code b} to the heading and its heading took
+	 * the row back, and its {@code REL} column widened to the one width every figure column on
+	 * every panel now reserves.
 	 */
 	@Test void eachFloorIsTheWidestRowThePanelDeclares() {
 		assertEquals(86, StatsPanel.OTHER.minWidth());
 		assertEquals(66, StatsPanel.SPEED.minWidth());
 		assertEquals(67, StatsPanel.ACCEL.minWidth());
-		assertEquals(110, StatsPanel.ENERGY.minWidth());
+		assertEquals(116, StatsPanel.ENERGY.minWidth());
 		assertEquals(150, StatsPanel.BOUNCE_VELOCITY.minWidth());
 		assertEquals(110, StatsPanel.BOUNCE_DISTANCE.minWidth());
 		assertEquals(118, StatsPanel.BOUNCE_TICKS.minWidth());
