@@ -138,12 +138,21 @@ public final class VarioHudElement implements HudElement {
 			int boxHeight = panel.height();
 			HudPosition at = HudPosition.clamp(panel.x(), panel.y(),
 					boxWidth, boxHeight, screenWidth, screenHeight);
+			// Drawn here, in screen pixels on the exact box, rather than inside the transform.
+			// The rows are scaled by one factor on both axes, so a panel's text is the shape the
+			// font drew it and two panels at one text size are the same two panels whatever
+			// widths they were given. Scaling x and y separately to make the rows reach the box's
+			// corners stretched every glyph by the width setting's rounding — a fraction of a
+			// pixel, and different for every width. The box is filled here instead.
+			double opacity = panel.opacity();
+			if (opacity > 0) {
+				int background = ((int) Math.round(opacity * 255) << 24) | (PANEL_BG & 0xFFFFFF);
+				graphics.fill(at.x(), at.y(), at.x() + boxWidth, at.y() + boxHeight, background);
+			}
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(at.x(), at.y());
-			// Each setting controls its own axis; the small difference caused by layout-width
-			// rounding keeps the transformed contents on the exact configured box.
-			graphics.pose().scale((float) boxWidth / panel.layoutWidth(),
-					(float) boxHeight / panel.layoutHeight());
+			float scale = (float) panel.scale();
+			graphics.pose().scale(scale, scale);
 			drawPanel(graphics, minecraft.font, panel, sample, 0, 0);
 			graphics.pose().popMatrix();
 			// The contents scale with the panel, but its frame is always one screen pixel,
@@ -158,12 +167,6 @@ public final class VarioHudElement implements HudElement {
 
 	private void drawPanel(GuiGraphicsExtractor graphics, Font font, StatsPanel panel,
 			Sample sample, int x, int y) {
-		int width = panel.layoutWidth();
-		int height = panel.layoutHeight();
-		double opacity = panel.opacity();
-		int background = ((int) Math.round(opacity * 255) << 24) | (PANEL_BG & 0xFFFFFF);
-		if (opacity > 0) graphics.fill(x, y, x + width, y + height, background);
-
 		int row = y + PAD;
 		Sample previous = recorder.ago(1);
 

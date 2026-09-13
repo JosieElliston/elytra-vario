@@ -351,6 +351,12 @@ public enum StatsPanel {
 	/** The panel's on-screen width, never narrower than its content. */
 	public int width() { return Math.max(configuredWidth(), minWidth()); }
 
-	/** The width used for layout before scaling. */
-	public int layoutWidth() { return (int) Math.round(width() / scale()); }
+	/**
+	 * The width used for layout before scaling.
+	 *
+	 * <p>Rounded down rather than to nearest. The rows are scaled by exactly {@link #scale()} on
+	 * both axes, so this is the edge they are right-aligned onto multiplied back up; rounding it
+	 * up would put that edge a fraction of a pixel outside the box the panel was given.
+	 */
+	public int layoutWidth() { return (int) Math.floor(width() / scale()); }
 }

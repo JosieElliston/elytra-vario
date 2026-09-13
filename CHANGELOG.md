@@ -143,6 +143,25 @@ build identifier and released feature for feature; see its own changelog.
   borders sharing a column, so a migrated HUD reads at the size and in the order it read in. The
   cost of the split is that switching a row off no longer shortens the panel it is on: that
   panel keeps the height it was given and draws the rows that remain larger.
+- Dragging a Flight Stats panel's height now rests on the text sizes worth having: the halves of
+  the font's own size, and whatever size another stats panel on screen is currently drawn at.
+  Text size stays continuous — it is whatever the height divides out to, which is what keeps a
+  panel exactly as tall as its rows and never leaves it a gap at the bottom — but the one thing a
+  drag could not do by itself was land on a round one, and two panels at 1.03× and 0.97× neither
+  match nor can be made to match by eye.
+
+  The second list is the one that does the work. Panels butted into a stack are meant to read as
+  one instrument, and nothing says otherwise like two sections of it set in different sizes — but
+  a panel's height is its rows times its text size, so matching a four-row panel to a two-row one
+  is arithmetic rather than something the eye can do at a drag's speed. Offering the answer as a
+  rest is the whole of the fix. These rest on a value rather than on a line, so unlike every
+  other rest they draw no guide, and a height more than a snap distance from one is left exactly
+  where it was asked for.
+- A stats panel's rows are now scaled by one factor on both axes, and its background is filled on
+  the exact box instead. The width setting buys unscaled space to the right of the figures, as it
+  always did, but it no longer stretches the glyphs sideways to reach the box's corner: the two
+  axes were scaled separately, by a fraction of a pixel that differed with every width, so a
+  panel's text was a slightly different shape at every width it was given.
 - Every Flight Stats panel now has a heading row saying what its figures are measured in, and
   its rows are labelled by what tells them apart rather than by the panel they are on. `SPEED Y`,
   `SPEED XZ` and `SPEED XYZ` against figures each carrying their own `b/s` are now `SPEED b/s`
