@@ -929,9 +929,16 @@ instrument, and nothing says *not one instrument* like two sections of it set in
 sizes; two panels showing the same number are set to the same size, exactly, whatever their row
 counts. The editor used to carry a pair of resize rests for both of these jobs — one offering
 sizes the font is drawn at, one offering whatever size another panel on screen was drawn at —
-and both are gone with the need for them. A rest pulls a continuous value onto a good one, and a
-drag can no longer produce a value that is not already good: a resize counts in steps of one
-over the GUI scale, so every value it can reach is one the font is drawn at.
+and both are gone with the need for them.
+
+**The grid does both jobs.** A rest pulls a continuous value onto a good one, and a drag can no
+longer produce a value that is not already good: it counts in steps of one over the GUI scale,
+so every value it can reach is one the font is drawn at. Matching another panel needs no rest
+either, for a different reason — the reachable sizes are the same grid for every panel, so
+another panel's size is always one this one can take, and the grid is coarse enough in pixels
+to land on by hand. A four-row panel at GUI scale 2 steps in twenty-four pixels, six times the
+snap distance. The rest for it was written, tried and taken out again: at the sizes and scales
+these panels are actually used at it changed nothing a drag was already doing.
 
 The panel's height is its rows times that size, so it comes in steps of one screen pixel per row
 rather than one whole layout — fine enough that alignment is not worth worrying about, and
