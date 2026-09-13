@@ -19,9 +19,37 @@ class StatsPanelTest {
 	void heightLimitIsTheInverseOfMinimumWidth() {
 		int layoutHeight = StatsPanel.BOUNCE_DISTANCE.layoutHeight();
 
-		assertEquals(layoutHeight, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(152));
-		assertEquals(layoutHeight - 1, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(151));
-		assertEquals(layoutHeight * 2, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(304));
+		assertEquals(layoutHeight, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(110));
+		assertEquals(layoutHeight - 1, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(109));
+		assertEquals(layoutHeight * 2, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(220));
+	}
+
+	/**
+	 * The floors the declared rows come to. They are here as numbers so that a change to a
+	 * template, a label or the padding shows up as a specific pixel count rather than as a panel
+	 * that quietly stopped being placeable where it used to be.
+	 *
+	 * <p>Three of them — 86, 116 and 106 — are the figures the panels carried before the floors
+	 * were computed, when they had been measured through the font by hand. Acceleration is the
+	 * one that moved, from a typed 116 to a measured 115: the superscript on {@code b/s²} is a
+	 * pixel narrower than the digit a speed has in its place.
+	 */
+	@Test void eachFloorIsTheWidestRowThePanelDeclares() {
+		assertEquals(86, StatsPanel.OTHER.minWidth());
+		assertEquals(116, StatsPanel.SPEED.minWidth());
+		assertEquals(115, StatsPanel.ACCEL.minWidth());
+		assertEquals(106, StatsPanel.ENERGY.minWidth());
+		assertEquals(150, StatsPanel.BOUNCE_VELOCITY.minWidth());
+		assertEquals(110, StatsPanel.BOUNCE_DISTANCE.minWidth());
+		assertEquals(98, StatsPanel.BOUNCE_TICKS.minWidth());
+	}
+
+	/** No panel is defaulted narrower than its own rows need, so none is drawn wider than placed. */
+	@Test void theDefaultWidthIsTheWidestFloorAndEveryPanelShouldClearItsOwn() {
+		for (StatsPanel panel : StatsPanel.values()) {
+			assertEquals(150, panel.configuredWidth(), panel.name());
+			assertTrue(panel.minWidth() <= panel.configuredWidth(), panel.name());
+		}
 	}
 
 	@Test void everyPanelNamesTheSettingsItReads() {
@@ -68,23 +96,16 @@ class StatsPanelTest {
 		}
 	}
 
-	/** The default stack butts each panel onto the one above it, borders sharing a column. */
-	@Test void theDefaultPositionsShareOneColumnOfBorder() {
-		StatsPanel[] panels = { StatsPanel.OTHER, StatsPanel.SPEED,
-				StatsPanel.ACCEL, StatsPanel.ENERGY };
+	/**
+	 * The default layout is one vertical stack of all seven, in declaration order, each butted
+	 * onto the one above it so their borders share a column.
+	 */
+	@Test void theDefaultPositionsAreOneStackSharingOneColumnOfBorder() {
+		StatsPanel[] panels = StatsPanel.values();
 		for (int i = 1; i < panels.length; i++) {
 			assertEquals(panels[i - 1].y() + panels[i - 1].height() - 1, panels[i].y(),
 					panels[i].name());
 			assertEquals(panels[i - 1].x(), panels[i].x(), panels[i].name());
-		}
-	}
-
-	@Test void theDefaultBouncePanelsShareASecondColumnAndBorders() {
-		StatsPanel[] panels = { StatsPanel.BOUNCE_VELOCITY, StatsPanel.BOUNCE_DISTANCE,
-				StatsPanel.BOUNCE_TICKS };
-		for (int i = 1; i < panels.length; i++) {
-			assertEquals(panels[i - 1].y() + panels[i - 1].height() - 1, panels[i].y());
-			assertEquals(panels[i - 1].x(), panels[i].x());
 		}
 	}
 
@@ -122,8 +143,9 @@ class StatsPanelTest {
 	}
 
 	@Test void eachPanelKeepsItsOwnContentMinimum() {
-		assertTrue(StatsPanel.OTHER.minWidth() < StatsPanel.SPEED.minWidth());
-		assertEquals(StatsPanel.SPEED.minWidth(), StatsPanel.ACCEL.minWidth());
+		assertTrue(StatsPanel.OTHER.minWidth() < StatsPanel.ACCEL.minWidth());
+		assertTrue(StatsPanel.ACCEL.minWidth() < StatsPanel.SPEED.minWidth());
+		assertTrue(StatsPanel.SPEED.minWidth() < StatsPanel.BOUNCE_VELOCITY.minWidth());
 	}
 
 	@Test void aPanelWithEveryRowOffIsNotDrawn() {

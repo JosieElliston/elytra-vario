@@ -391,15 +391,20 @@ public final class VarioConfig {
 	 * dimensions are independent, so its label/value gap can be changed without changing its
 	 * text. A width below the content minimum is drawn at that minimum.
 	 *
-	 * <p><b>The default positions stack the four with their borders sharing a column.</b> Each
+	 * <p><b>The default positions stack all seven in one column, borders shared.</b> Each
 	 * panel's top is its predecessor's bottom less one, which is the editor's overlap snap
-	 * written out: four boxes butted together read as one panel ruled into sections, and that
-	 * rule is the one the old single panel drew between its speed and energy halves.
+	 * written out: boxes butted together read as one panel ruled into sections, and that rule is
+	 * the one the old single panel drew between its speed and energy halves. They share a left
+	 * edge and a width so the stack has one right edge too.
+	 *
+	 * <p>That shared width is 150, the widest of the panels' own floors — see
+	 * {@link jealoustone.elytravario.hud.StatsPanel#minWidth()} — so the stack is as narrow as
+	 * its widest member allows and no panel is drawn wider than it was placed.
 	 */
 	public static boolean showStatsOther = true;
 	public static int statsOtherX = 4;
 	public static int statsOtherY = 4;
-	public static int statsOtherWidth = 132;
+	public static int statsOtherWidth = 150;
 	/** The pitch and glide rows at their natural size. */
 	public static int statsOtherHeight = 28;
 	public static double statsOtherOpacity = 0.25;
@@ -408,7 +413,7 @@ public final class VarioConfig {
 	public static boolean showStatsSpeed = true;
 	public static int statsSpeedX = 4;
 	public static int statsSpeedY = 31;
-	public static int statsSpeedWidth = 132;
+	public static int statsSpeedWidth = 150;
 	/** The three speed rows at their natural size. */
 	public static int statsSpeedHeight = 38;
 	public static double statsSpeedOpacity = 0.25;
@@ -417,7 +422,7 @@ public final class VarioConfig {
 	public static boolean showStatsAccel = true;
 	public static int statsAccelX = 4;
 	public static int statsAccelY = 68;
-	public static int statsAccelWidth = 132;
+	public static int statsAccelWidth = 150;
 	/** The three acceleration rows at their natural size. */
 	public static int statsAccelHeight = 38;
 	public static double statsAccelOpacity = 0.25;
@@ -426,32 +431,32 @@ public final class VarioConfig {
 	public static boolean showStatsEnergy = true;
 	public static int statsEnergyX = 4;
 	public static int statsEnergyY = 105;
-	public static int statsEnergyWidth = 132;
+	public static int statsEnergyWidth = 150;
 	/** The four energy rows at their natural size. */
 	public static int statsEnergyHeight = 48;
 	public static double statsEnergyOpacity = 0.25;
 	public static boolean showStatsEnergyBorder = true;
 
 	public static boolean showStatsBounceVelocity = true;
-	public static int statsBounceVelocityX = 135;
-	public static int statsBounceVelocityY = 4;
-	public static int statsBounceVelocityWidth = 200;
+	public static int statsBounceVelocityX = 4;
+	public static int statsBounceVelocityY = 152;
+	public static int statsBounceVelocityWidth = 150;
 	public static int statsBounceVelocityHeight = 48;
 	public static double statsBounceVelocityOpacity = 0.25;
 	public static boolean showStatsBounceVelocityBorder = true;
 
 	public static boolean showStatsBounceDistance = true;
-	public static int statsBounceDistanceX = 135;
-	public static int statsBounceDistanceY = 51;
-	public static int statsBounceDistanceWidth = 200;
+	public static int statsBounceDistanceX = 4;
+	public static int statsBounceDistanceY = 199;
+	public static int statsBounceDistanceWidth = 150;
 	public static int statsBounceDistanceHeight = 48;
 	public static double statsBounceDistanceOpacity = 0.25;
 	public static boolean showStatsBounceDistanceBorder = true;
 
 	public static boolean showStatsBounceTicks = true;
-	public static int statsBounceTicksX = 135;
-	public static int statsBounceTicksY = 98;
-	public static int statsBounceTicksWidth = 200;
+	public static int statsBounceTicksX = 4;
+	public static int statsBounceTicksY = 246;
+	public static int statsBounceTicksWidth = 150;
 	public static int statsBounceTicksHeight = 28;
 	public static double statsBounceTicksOpacity = 0.25;
 	public static boolean showStatsBounceTicksBorder = true;

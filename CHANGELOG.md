@@ -74,21 +74,41 @@ build identifier and released feature for feature; see its own changelog.
   figure need, so one shared width had to satisfy the widest row on the panel: `SPEED XYZ`
   against a speed is 106 pixels of content, `GLIDE` against a ratio is 76, and the thirty
   between them was dead gap on every attitude row. The narrow panel can now be narrow. Each
-  panel keeps its own floor — 86, 116, 116 and 106 layout pixels — below which its own columns
-  would meet, every figure in those measured through the font.
-
-  The defaults stack the four down the left in the order the single panel read in, at the width
-  it had, so a default HUD is the panel it was plus one rule.
+  panel keeps its own floor, below which its own columns would meet.
 
 - Modules snap butted together as well as a margin apart, overlapping by one pixel so that their
   two borders land on one column and the pair reads as a single panel with a rule between it.
   Edge to edge would put two identical gray lines side by side — a two-pixel seam rather than a
   division — and the pixel each module gives up is one it was spending on saying where it ends,
   which the shared line now says for both. Moves and corner resizes both offer it, as they offer
-  every other rest, and the guide is drawn on the shared column. It is what the four stats panels
-  are stacked with by default, and it is available between any two modules and on either axis.
+  every other rest, and the guide is drawn on the shared column. It is what the stats panels are
+  stacked with by default, and it is available between any two modules and on either axis.
+
+- Three e-bounce panels read the last bounce as a matrix: **velocity** with a column per event —
+  `T` touch, `L` leave, `D` deploy — over `X`, `XZ` and `XYZ` rows, and **position delta** and
+  **elapsed ticks** over the intervals between those events. An interval is only ever the
+  difference against the event before it, so those two have no touch column and their headings
+  name the subtraction, `L-T` and `D-L`. All three right-align onto the same column edges, so at
+  equal widths the two interval columns sit under the velocity matrix's `L` and `D`.
+
+  **A panel's width floor is now computed from the rows it draws** rather than typed in beside
+  it. A row costs the panel's padding either side, its label, two pixels so that at the floor the
+  label and the figure beside it are still two separate words, its own leftmost figure, and a pad
+  and a full reserved column for every column to the right of it; the floor is the widest row.
+  The glyph advances that runs on are Minecraft's default font written out in `LayoutWidths`,
+  pinned by the strings the original panels were measured through the font by — which the
+  computation reproduces exactly for three of the four, acceleration moving from a typed 116 to a
+  measured 115 because the superscript on `b/s²` is a pixel narrower than the digit a speed has
+  in its place.
 
 ### Changed
+
+- The default Flight Stats layout is one vertical stack of all seven panels down the left edge,
+  in the order the single panel read in with the three matrices under it, every one of them 150
+  wide so the stack has one right edge as well as one left. The matrices previously sat in a
+  second column beside the other four at a width of 200. 150 is the widest of the seven floors,
+  which makes it the narrowest width the whole stack can be drawn at. Existing configs name their
+  own positions and are untouched.
 
 - Every module's background now defaults to a quarter opacity. The flight stats panels came in
   at 0.69 and the dial speedometer at 0.45, against the bar speedometer's 0.25; a HUD out of the

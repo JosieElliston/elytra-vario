@@ -1,5 +1,11 @@
 package jealoustone.elytravario.hud;
 
+import static jealoustone.elytravario.hud.LayoutWidths.row;
+import static jealoustone.elytravario.hud.LayoutWidths.widest;
+import static jealoustone.elytravario.hud.MatrixLayout.ABSOLUTE_COLUMN;
+import static jealoustone.elytravario.hud.MatrixLayout.BOUNCE_COLUMN;
+import static jealoustone.elytravario.hud.MatrixLayout.DELTA_COLUMN;
+
 import java.util.List;
 
 import jealoustone.elytravario.VarioConfig;
@@ -22,64 +28,96 @@ import jealoustone.elytravario.VarioInstrument;
  * and every one of them is this panel's prefix plus a suffix. Only the master switch, its
  * gliding-only companion and the positive and negative colors remain shared: the switch is what
  * the toggle key binds to, and the colors are a palette rather than a layout.
+ *
+ * <p><b>Each panel's width floor is computed from the rows it draws</b> rather than written
+ * down as a pixel count: every constant below states its widest rows as the label and the
+ * column templates that row carries, and {@link LayoutWidths#row} turns each into the narrowest
+ * width it can be read in. A row is declared here in the shape it is drawn in
+ * {@link VarioHudElement}, so adding a row or widening a template moves the floor with it, and
+ * a floor can be checked by reading the row rather than by trusting the number.
  */
 public enum StatsPanel {
 	/**
 	 * The two readings that are neither a speed nor an energy: attitude, and its efficiency.
 	 *
-	 * A glide ratio is signed because a climb reads as blocks forward per block gained.
+	 * <p>The narrowest of the panels, at 86, which the glide row sets: a ratio is the longer
+	 * figure, and it is signed because a climb reads as blocks forward per block gained.
 	 */
-	OTHER("statsOther", 86, "showPitch", "showGlideRatio"),
+	OTHER("statsOther", widest(
+			row("PITCH", "-90.0°"),
+			row("GLIDE", "-00.00 : 1")),
+			"showPitch", "showGlideRatio"),
 
 	/**
 	 * Vertical, horizontal and total speed, in that order: the signed one first, since it is the
 	 * one being flown by, and the two magnitudes under it.
 	 *
-	 * <p>{@code SPEED XYZ} is 52 pixels of label and a speed like {@code -78.40 b/s} — straight
-	 * down terminal velocity, so the widest that is ever actually read — is 54 of figure, the
-	 * padding takes eight, and two are left over.
+	 * <p>Its floor is 116: {@code SPEED XYZ} is 52 pixels of label and the template is 54, a
+	 * straight-down terminal velocity being the widest speed that is ever actually read.
 	 */
-	SPEED("statsSpeed", 116, "showVerticalSpeed", "showHorizontalSpeed", "showTotalSpeed"),
+	SPEED("statsSpeed", row("SPEED XYZ", "-00.00 b/s"),
+			"showVerticalSpeed", "showHorizontalSpeed", "showTotalSpeed"),
 
 	/**
-	 * The same three quantities differentiated, and the same width: {@code ACCEL XYZ} measures
-	 * the same 52 pixels as {@code SPEED XYZ}, and an acceleration like {@code +5.09 b/s²} much
-	 * the same as a speed. A two-digit acceleration runs to 59 and encroaches on its label,
-	 * which is what a figure that runs long does on any of these panels.
+	 * The same three quantities differentiated, and within a pixel of the same floor at 115:
+	 * {@code ACCEL XYZ} measures the same 52 pixels as {@code SPEED XYZ}, and an acceleration is
+	 * a pixel inside a speed, the superscript being narrower than a digit. A two-digit
+	 * acceleration runs six wider than the template and encroaches on its label, which is what a
+	 * figure that runs long does on any of these panels.
 	 */
-	ACCEL("statsAccel", 116, "showVerticalAcceleration", "showHorizontalAcceleration",
-			"showTotalAcceleration"),
+	ACCEL("statsAccel", row("ACCEL XYZ", "+0.00 b/s²"), "showVerticalAcceleration",
+			"showHorizontalAcceleration", "showTotalAcceleration"),
 
 	/**
 	 * Kinetic, potential and total energy, and what the last cycle gained.
 	 *
-	 * <p>Its labels are the shortest of the four and its widest row is still 106, because
-	 * {@code PE} and {@code TE} carry two figures rather than one: 12 pixels of label, then the
-	 * absolute column's 38, a pad, and the delta column's 42, with the panel's own padding
-	 * either side. Measured in that two-column mode — the widest of the three energy references,
-	 * and the default — so that changing the reference never moves the floor under a width that
-	 * has already been set.
+	 * <p>Its labels are the shortest of the panels and its floor is still 106, because
+	 * {@code PE} and {@code TE} carry two figures rather than one. Declared in that two-column
+	 * mode — the widest of the three energy references, and the default — so that changing the
+	 * reference never moves the floor under a width that has already been set.
 	 */
-	ENERGY("statsEnergy", 106, "showKineticEnergy", "showPotentialEnergy", "showTotalEnergy",
-			"showCycleGain"),
+	ENERGY("statsEnergy", widest(
+			row("KE", DELTA_COLUMN),
+			row("TE", ABSOLUTE_COLUMN, DELTA_COLUMN),
+			row("GAIN", DELTA_COLUMN)),
+			"showKineticEnergy", "showPotentialEnergy", "showTotalEnergy", "showCycleGain"),
 
-	/** Touch, leave and deploy velocities as columns, with X, XZ and XYZ as rows. */
-	BOUNCE_VELOCITY("statsBounceVelocity", 194, "showBounceVelocityX",
-			"showBounceVelocityXz", "showBounceVelocityXyz"),
+	/**
+	 * Touch, leave and deploy velocities as columns, with X, XZ and XYZ as rows.
+	 *
+	 * <p>The widest panel, at 150, and the one place a heading row costs less than the figures
+	 * under it: {@code VEL b/s} is the longest label here, but the headings it runs at are
+	 * single letters right-aligned in columns reserved for a whole figure, so it is the rows of
+	 * three figures that set the floor.
+	 */
+	BOUNCE_VELOCITY("statsBounceVelocity", widest(
+			row("VEL b/s", "T", BOUNCE_COLUMN, BOUNCE_COLUMN),
+			row("XYZ", BOUNCE_COLUMN, BOUNCE_COLUMN, BOUNCE_COLUMN)),
+			"showBounceVelocityX", "showBounceVelocityXz", "showBounceVelocityXyz"),
 
 	/**
 	 * Leave-touch and deploy-leave position differences as columns.
 	 *
 	 * <p>An interval is only ever measured against the event before it, so there is no column
-	 * for touch: two columns rather than the velocity matrix's three, and a floor one column
-	 * and its pad — 42 pixels — inside that panel's. The two are still right-aligned onto the
-	 * same edges, so at equal widths the columns line up under {@code L} and {@code D}.
+	 * for touch: two columns rather than the velocity matrix's three, and a floor of 110 where
+	 * that panel needs 150. The columns are still right-aligned onto the same edges, so at equal
+	 * widths they line up under that panel's {@code L} and {@code D}.
 	 */
-	BOUNCE_DISTANCE("statsBounceDistance", 152, "showBounceDistanceX",
-			"showBounceDistanceXz", "showBounceDistanceXyz"),
+	BOUNCE_DISTANCE("statsBounceDistance", widest(
+			row("DELTA b", "L-T", BOUNCE_COLUMN),
+			row("XYZ", BOUNCE_COLUMN, BOUNCE_COLUMN)),
+			"showBounceDistanceX", "showBounceDistanceXz", "showBounceDistanceXyz"),
 
-	/** Leave-touch and deploy-leave elapsed ticks as columns, two of them as above. */
-	BOUNCE_TICKS("statsBounceTicks", 152, "showBounceTicks");
+	/**
+	 * Leave-touch and deploy-leave elapsed ticks as the same two columns.
+	 *
+	 * <p>Its one row of figures carries no label of its own — the panel's heading says what they
+	 * are — so the heading row is what sets the floor, at 98.
+	 */
+	BOUNCE_TICKS("statsBounceTicks", widest(
+			row("TICKS", "L-T", BOUNCE_COLUMN),
+			row("", BOUNCE_COLUMN, BOUNCE_COLUMN)),
+			"showBounceTicks");
 
 	/** The height of one row in the shared unscaled layout. */
 	public static final int LINE = 10;
@@ -91,6 +129,7 @@ public enum StatsPanel {
 	private final List<String> rowKeys;
 
 	/**
+	 * @param minLayoutWidth the floor, from {@link LayoutWidths#row} over this panel's rows
 	 * @param rowKeys this panel's row switches, in the order the panel draws them
 	 */
 	StatsPanel(String prefix, int minLayoutWidth, String... rowKeys) {

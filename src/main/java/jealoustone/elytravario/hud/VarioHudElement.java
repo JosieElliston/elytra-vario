@@ -9,6 +9,9 @@ import static jealoustone.elytravario.hud.HudChrome.LABEL;
 import static jealoustone.elytravario.hud.HudChrome.MUTED;
 import static jealoustone.elytravario.hud.HudChrome.PANEL_BG;
 import static jealoustone.elytravario.hud.HudChrome.VALUE;
+import static jealoustone.elytravario.hud.MatrixLayout.ABSOLUTE_COLUMN;
+import static jealoustone.elytravario.hud.MatrixLayout.BOUNCE_COLUMN;
+import static jealoustone.elytravario.hud.MatrixLayout.DELTA_COLUMN;
 
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
@@ -48,21 +51,6 @@ public final class VarioHudElement implements HudElement {
 	private static final int PAD = StatsPanel.PAD;
 
 	private static final double ACCELERATION_ARROW_SECONDS = 1.0;
-
-	/**
-	 * Column templates for the rows that carry two figures. Each figure is right-aligned
-	 * inside a column reserved from these, so gaining or losing a digit cannot shove the
-	 * figure beside it sideways — and since every value has a fixed number of decimals and a
-	 * fixed suffix, right-alignment also pins the decimal point. The only motion left is a
-	 * leading digit appearing, which is the least a changing number can do.
-	 *
-	 * <p>Measured through the font rather than written as pixel counts, so they stay correct
-	 * if the font ever changes. A value wider than its template is not clipped, it just
-	 * encroaches on the column to its left.
-	 */
-	private static final String DELTA_COLUMN = "-000.0 b";
-	private static final String ABSOLUTE_COLUMN = "-0000.0";
-	private static final String BOUNCE_COLUMN = "-000.00";
 
 	/** One column per e-bounce event: touch, leave, deploy. */
 	private static final String[] BOUNCE_EVENTS = { "T", "L", "D" };
