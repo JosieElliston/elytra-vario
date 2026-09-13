@@ -210,16 +210,16 @@ public final class VarioHudElement implements HudElement {
 				// names them: the height against the world's origin, and the height against the
 				// last apex. Only in the mode that shows both — one column needs no column name,
 				// and the units label alone is what the speed and acceleration panels carry.
-				MatrixLayout energy = VarioConfig.energyReference == ENERGY_BOTH
+				boolean bothReferences = VarioConfig.energyReference == ENERGY_BOTH;
+				MatrixLayout energy = bothReferences
 						? matrixHeading(graphics, font, panel, x, row, ENERGY_UNITS,
 								ENERGY_COLUMNS, ABSOLUTE_COLUMN, DELTA_COLUMN)
 						: null;
-				if (energy == null) unitsRow(graphics, font, x, row, ENERGY_UNITS);
-				row += LINE;
+				row = bothReferences ? row + LINE : unitsRow(graphics, font, x, row, ENERGY_UNITS);
 				// Kinetic energy is an absolute and the cycle's gain is a difference, so each
 				// sits under the heading that describes it wherever both are drawn.
 				int absolute = 0;
-				int relative = energy == null ? 0 : 1;
+				int relative = bothReferences ? 1 : 0;
 				double gain = recorder.lastCycleGain();
 				if (VarioConfig.showKineticEnergy) row = columnRow(graphics, font, panel, energy,
 						absolute, x, row, "KE", fmt("%.1f", sample.kineticHeight()), VALUE);
