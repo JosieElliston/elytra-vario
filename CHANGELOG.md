@@ -140,25 +140,31 @@ and key-registration APIs, not behavior.
   setting could not close without shrinking the reading along with it. A width narrower than the
   rows need at the current text size is drawn at that minimum rather than refused, so a panel
   never becomes an overlap.
-- **A Flight Stats panel's text size is a whole number of font sizes, and sizes that would be
-  interpolated are inexpressible.** The glyphs are a bitmap: at a whole multiple every pixel of
-  a glyph covers the same whole number of pixels on screen — and the GUI scale the HUD is drawn
-  through is a whole number too, so the product still is — and the letter that comes out is the
-  letter the font has, enlarged. At 1.3× some strokes land on two pixels and their neighbours on
-  one, so the same letter is a different shape in different words. Halves are no better in kind:
-  0.5× throws away every other row of the glyph to fit.
+- **A Flight Stats panel's text size snaps to the sizes its font is actually drawn at, and
+  sizes that would be interpolated cannot be drawn at all.** Minecraft's font is a bitmap and
+  its atlas is sampled `NEAREST`, so nothing is ever blended — what goes wrong at a size like
+  1.3× is rounding, not blurring: each glyph pixel claims whichever screen pixels are nearest,
+  so some strokes come out two pixels wide and their neighbours one, and the same letter is a
+  different shape in different words.
+
+  A glyph pixel covers the text size times your GUI scale, and it is that *product* that has to
+  be whole. Your GUI scale is already a whole number, so the sizes that survive are the
+  multiples of one over it — quarters at GUI scale 4, thirds at 3, halves at 2, and only whole
+  numbers at 1. **The smallest text there is is one screen pixel per font pixel**, which is a
+  quarter of the font's nominal size at GUI scale 4.
+
+  The setting itself is a plain multiplier that knows nothing about your GUI scale, because you
+  can change that under a config that is already saved. It is snapped to a drawable size where
+  the panel is drawn instead, so the same file stays sharp at every GUI scale and a hand-edited
+  one cannot ask for blurred text.
+
+  Sizes run from a sixteenth to 8. Eight is where the width setting runs out — the widest
+  panel's rows need 150 pixels at size one, and the width may be set to 1200.
 
   This is also what makes two panels agree. Butted into a stack they are meant to read as one
   instrument, and nothing says otherwise like two sections of it set in different sizes; two
-  panels showing the same number are now set to the same size exactly, whatever their row
-  counts.
+  panels showing the same number are set to the same size exactly, whatever their row counts.
 
-  Sizes run from 1 to 8. Eight is where the width setting runs out — the widest panel's rows
-  need 150 pixels at size one, and the width may be set to 1200. The cost is that a panel's
-  height comes in steps of its whole layout: a four-row panel is 48 pixels tall or 96 and
-  nothing between. Panels are aligned by moving them rather than by sizing them, so that costs
-  nothing at the edges, and every height it forbids was one that drew interpolated text or left
-  a gap under the last row.
 - Switching a Flight Stats row off now shortens its panel instead of enlarging its text. The
   height used to be the setting and the text size the quotient, so turning off a row shrank the
   divisor and left the dividend where it was — a checkbox reading *show total speed* also made
@@ -168,8 +174,10 @@ and key-registration APIs, not behavior.
   reads at the size and in the order it read in. Each takes the size *its own* rows want, which
   is not the height the retired panel would have given them: three of the four draw a units
   heading it never had, and measuring without it cost them a fifth of their text size on the way
-  across. The retired size was a height over its rows and so could be any fraction, so this is
-  now a rounding where it was not already whole — a panel drawn at 1.5× opens at 2×.
+  across. The size carries over exactly, fraction and all, and is read back off whichever
+  dimension the old file actually stated rather than off one derived from the other — deriving
+  it rounded a panel up to the next whole pixel and then divided that rounding into its text
+  size.
 - Every figure column on every Flight Stats panel now reserves the same width, so a stack of
   panels butted together at one width has one grid of columns rather than several that nearly
   agree. A column is placed by measuring back from the panel's right edge, so the three separate

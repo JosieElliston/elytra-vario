@@ -160,6 +160,22 @@ public enum StatsPanel {
 	 * panel could be made wide enough to hold, so it is not offered.
 	 */
 	public static final int MAX_TEXT_SIZE = 8;
+
+	/**
+	 * The GUI scale the HUD is being drawn through, which is half of what decides the text sizes
+	 * a panel can be drawn at. See {@link #fontPixels()}.
+	 *
+	 * <p>Ambient rather than passed down, like the settings beside it, because it is the same
+	 * for every module in a frame and changes only when the player changes it in the video
+	 * settings. It holds still across a drag, so it cannot make a resize depend on anything but
+	 * the pointer. One is the fallback, under which the drawable sizes are the whole ones.
+	 */
+	private static int guiScale = 1;
+
+	/** Told to the panels once a frame by whatever is about to draw or edit them. */
+	public static void guiScale(int scale) { guiScale = Math.max(1, scale); }
+
+	public static int guiScale() { return guiScale; }
 	private final String prefix;
 	private final int minLayoutWidth;
 	private final List<String> rowKeys;
@@ -259,18 +275,8 @@ public enum StatsPanel {
 		};
 	}
 
-	/**
-	 * How many times the font's own size this panel's text is drawn at.
-	 *
-	 * <p>A whole number, and that is the point of it: the glyphs are a bitmap, so at a whole
-	 * multiple every pixel of a glyph covers the same whole number of pixels on screen — and the
-	 * GUI scale the whole HUD is drawn through is a whole number too, so the product still is.
-	 * The letter that comes out is the letter the font has, enlarged. At 1.3× some strokes land
-	 * on two pixels and their neighbours on one, so the same letter is a different shape in
-	 * different words; there is no size here that does that, because there is no way to express
-	 * one.
-	 */
-	public int textSize() {
+	/** How many times the font's own size this panel's text is set to, before quantizing. */
+	public double textSize() {
 		return switch (this) {
 			case OTHER -> VarioConfig.statsOtherTextSize;
 			case SPEED -> VarioConfig.statsSpeedTextSize;
@@ -280,6 +286,34 @@ public enum StatsPanel {
 			case BOUNCE_DISTANCE -> VarioConfig.statsBounceDistanceTextSize;
 			case BOUNCE_TICKS -> VarioConfig.statsBounceTicksTextSize;
 		};
+	}
+
+	/**
+	 * <b>How many screen pixels one pixel of the font covers, which is the number that has to be
+	 * whole.</b>
+	 *
+	 * <p>Minecraft's font is a bitmap — {@code ascii.png} is 128×128 with 8×8 cells and a
+	 * declared height of 8, so one pixel of a glyph is one GUI pixel at a text size of one — and
+	 * its atlas is sampled {@code NEAREST}, so nothing is ever blended. What goes wrong at a
+	 * size like 1.3× is not blurring but rounding: each glyph pixel claims whichever screen
+	 * pixels are nearest, so some strokes come out two pixels wide and their neighbours one, and
+	 * the same letter is a different shape in different words.
+	 *
+	 * <p>A glyph pixel covers the text size times the GUI scale, and it is <em>that product</em>
+	 * that must be whole. The GUI scale is a whole number ({@code Window.getGuiScale} returns an
+	 * {@code int}), so the sizes that survive are the multiples of one over it: at a GUI scale
+	 * of 4 those are ¼, ½, ¾, 1, 1¼ and so on, and at 3 they are thirds. <b>Whole text sizes are
+	 * only the special case of a GUI scale of one.</b> Half size is not throwing away every
+	 * other row of the glyph unless the GUI scale is 1 — at 4 it is a glyph pixel drawn two
+	 * screen pixels across, which is as exact as any other.
+	 *
+	 * <p>So the setting is quantized here rather than restricted where it is written: the set of
+	 * sizes a panel can be drawn at depends on a GUI scale the setting knows nothing about and
+	 * which can change under a config that is already saved. Never below one, which is the font
+	 * at one screen pixel per glyph pixel and the smallest text there is.
+	 */
+	public int fontPixels() {
+		return Math.max(1, (int) Math.round(textSize() * guiScale));
 	}
 
 	public double opacity() {
@@ -375,37 +409,44 @@ public enum StatsPanel {
 	 * total speed" also enlarged every letter on the panel. This way round a checkbox does the
 	 * one thing it says.
 	 *
-	 * <p>Nothing is lost by it: the box was only ever the rows plus {@link #PAD}, so a height
-	 * that was not a whole number of rows was dead space under the last one.
+	 * <p>Rounded up, because the rows come to a whole number of <em>screen</em> pixels rather
+	 * than a whole number of GUI pixels: at a GUI scale of 4 and a third of the font's size the
+	 * rows are three quarters of a GUI pixel short of the box. The slack is under one GUI pixel
+	 * and lands in the bottom padding.
 	 */
-	public int height() { return layoutHeight() * textSize(); }
+	public int height() {
+		return Math.ceilDiv(layoutHeight() * fontPixels(), guiScale);
+	}
 
 	/** How many times its own size the font is drawn at, as the renderer's scale factor. */
-	public double scale() { return textSize(); }
+	public double scale() { return (double) fontPixels() / guiScale; }
 
 	/** The narrowest width that keeps this panel's columns apart at its current text size. */
-	public int minWidth() { return minWidth(textSize()); }
+	public int minWidth() { return minWidth(fontPixels()); }
 
 	/**
 	 * The same floor at a text size this panel is not currently set to, which the position
 	 * editor asks for: a drag needs a floor that does not move as the drag moves the text size,
 	 * or the two settings chase each other from one event to the next. See
 	 * {@link jealoustone.elytravario.config.ModulePositionEditor#narrowestWidth}.
+	 *
+	 * @param fontPixels the text size in screen pixels per font pixel, as {@link #fontPixels()}
 	 */
-	public int minWidth(int textSize) {
-		return minLayoutWidth * textSize;
+	public int minWidth(int fontPixels) {
+		return Math.ceilDiv(minLayoutWidth * fontPixels, guiScale);
 	}
 
 	/**
-	 * The largest text size this panel's contents still fit in {@code width} pixels at.
+	 * The largest text size this panel's contents still fit in {@code width} pixels at, in
+	 * screen pixels per font pixel.
 	 *
-	 * <p>This is the inverse of {@link #minWidth(int)}, and exactly so now that both are whole
-	 * multiples of the same layout width: dividing down and multiplying back up returns a width
-	 * no greater than the one asked about, so a panel is never drawn wider than a resize placed
-	 * it. Zero where even one times the layout does not fit, which the caller clamps away.
+	 * <p>This is the exact inverse of {@link #minWidth(int)}: that one rounds a width up, so
+	 * this one divides the width back down in the same units and every size it returns is one
+	 * whose floor really does fit. A panel is therefore never drawn wider than a resize placed
+	 * it. Zero where even the smallest text does not fit, which the caller clamps away.
 	 */
-	public int maxTextSizeForWidth(int width) {
-		return width / minLayoutWidth;
+	public int maxFontPixelsForWidth(int width) {
+		return width * guiScale / minLayoutWidth;
 	}
 
 	/** The panel's on-screen width, never narrower than its content. */
@@ -418,5 +459,5 @@ public enum StatsPanel {
 	 * both axes, so this is the edge they are right-aligned onto multiplied back up; rounding it
 	 * up would put that edge a fraction of a pixel outside the box the panel was given.
 	 */
-	public int layoutWidth() { return width() / textSize(); }
+	public int layoutWidth() { return width() * guiScale / fontPixels(); }
 }

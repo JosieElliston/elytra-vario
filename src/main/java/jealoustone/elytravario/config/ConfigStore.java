@@ -144,9 +144,13 @@ public final class ConfigStore {
 			width = RETIRED_PANEL_WIDTH;
 		}
 		int retiredLayoutHeight = retiredLayoutHeight(values);
-		long height = root.has("statsHeight") ? root.get("statsHeight").getAsLong()
-				: Math.ceilDiv(width * retiredLayoutHeight, layoutWidth);
-		double scale = (double) height / retiredLayoutHeight;
+		// The retired panel was scaled by one factor on both axes, so either dimension recovers
+		// it. Taken from whichever the file actually stated: deriving the height from the width
+		// first, as this did while the answer was a whole number anyway, rounded a panel up to
+		// the next whole pixel and then divided that rounding back into the text size.
+		double scale = root.has("statsHeight")
+				? (double) root.get("statsHeight").getAsLong() / retiredLayoutHeight
+				: (double) width / layoutWidth;
 		long x = number(root, "statsX", "originX", RETIRED_PANEL_X);
 		long top = number(root, "statsY", "originY", RETIRED_PANEL_Y);
 		// Only the four panels split out of the retired instrument belong in this migration.
@@ -155,20 +159,20 @@ public final class ConfigStore {
 				StatsPanel.ACCEL, StatsPanel.ENERGY)) {
 			int rows = rows(values, panel.rowKeys());
 			int drawn = rows > 0 ? rows : panel.rowKeys().size();
-			// The retired panel's text size, rounded to one the split panels can be set to.
-			// That is the whole point of the migration — the same reading, the same size, in
-			// more boxes — and it is now a rounding rather than an exact carry: the old panel's
-			// size was a height divided by its rows and so could be any fraction, and there is
-			// no fraction here to put it in. A file drawn at 1.5× opens at 2×.
-			long textSize = Math.clamp(Math.round(scale), 1, StatsPanel.MAX_TEXT_SIZE);
+			// The retired panel's text size, carried across as it stood. That is the whole point
+			// of the migration: the same reading, the same size, in more boxes. It is quantized
+			// to a size the font is drawn at when it is used rather than here, because that
+			// depends on the GUI scale, which this file does not record and the player can
+			// change afterwards.
+			double textSize = Math.clamp(scale, 1.0 / 16, StatsPanel.MAX_TEXT_SIZE);
 			// The height it will actually be drawn at, for stacking the next panel under it.
 			// Asked of the panel rather than worked out here, so that a row the panel draws and
 			// this file never knew about — its units heading — is counted.
-			long panelHeight = panel.layoutHeightFor(drawn) * textSize;
+			long panelHeight = Math.round(panel.layoutHeightFor(drawn) * textSize);
 			values.put(panel.xKey(), Long.toString(Math.clamp(x, -4096, 4096)));
 			values.put(panel.yKey(), Long.toString(Math.clamp(top, -4096, 4096)));
 			values.put(panel.widthKey(), Long.toString(Math.clamp(width, 32, 1200)));
-			values.put(panel.textSizeKey(), Long.toString(textSize));
+			values.put(panel.textSizeKey(), format(panel.textSizeKey(), textSize));
 			if (root.has("panelOpacity")) {
 				values.put(panel.opacityKey(), root.get("panelOpacity").getAsString());
 			}
@@ -184,8 +188,7 @@ public final class ConfigStore {
 	 *
 	 * <p>The height was the setting and the text size the quotient; they have changed places, so
 	 * a file from before that swap says how tall to be and nothing about how large to write.
-	 * Dividing by the rows it was drawing recovers what it meant, rounded to a whole size — the
-	 * same rounding {@link #splitStatsPanel} does, and for the same reason.
+	 * Dividing by the rows it was drawing recovers exactly what it meant.
 	 *
 	 * <p>A panel with every row switched off is measured against the rows it could draw, since
 	 * that is what its height was set against. This can go once no config file predates the
@@ -200,9 +203,22 @@ public final class ConfigStore {
 			int rows = rows(values, panel.rowKeys());
 			int drawn = rows > 0 ? rows : panel.rowKeys().size();
 			double size = (double) root.get(retired).getAsLong() / panel.layoutHeightFor(drawn);
-			values.put(panel.textSizeKey(), Long.toString(
-					Math.clamp(Math.round(size), 1, StatsPanel.MAX_TEXT_SIZE)));
+			values.put(panel.textSizeKey(), format(panel.textSizeKey(),
+					Math.clamp(size, 1.0 / 16, StatsPanel.MAX_TEXT_SIZE)));
 		}
+	}
+
+	/**
+	 * Writes a value the way the settings screen would, so it parses back to the same number.
+	 *
+	 * <p>Through the option rather than formatted here, so that a migration and a hand edit of
+	 * the same setting are held to one notation and one precision.
+	 */
+	private static String format(String key, double value) {
+		for (var option : ConfigOptions.all()) {
+			if (option.key().equals(key)) return option.format(value);
+		}
+		throw new IllegalArgumentException(key);
 	}
 
 	/** How tall the retired panel laid itself out, including its optional separator row. */

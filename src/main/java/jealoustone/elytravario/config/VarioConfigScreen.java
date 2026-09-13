@@ -426,6 +426,11 @@ public final class VarioConfigScreen extends Screen {
 
 	private List<ModulePositionEditor.Bounds> moduleBounds() {
 		boolean gliding = minecraft.player != null && minecraft.player.isFallFlying();
+		// Every path that measures or drags a panel comes through here, so this is where the
+		// editor tells the panels the GUI scale their text sizes are quantized against. It is
+		// read afresh rather than cached: a resize must see the same scale the HUD is drawing
+		// at, and the video settings can change it while this screen is closed.
+		StatsPanel.guiScale(minecraft.getWindow().getGuiScale());
 		return ModulePositionEditor.bounds(font, width, height, gliding);
 	}
 
@@ -553,18 +558,22 @@ public final class VarioConfigScreen extends Screen {
 			ModulePositionEditor.Growth growth = ModulePositionEditor.growth(key);
 			double maximum = size.max() / size.factor();
 			double minimum = size.min() / size.factor();
+			double step = size.integral() ? 1 : 0;
 			if (module.panel != null && key.equals(module.panel.widthKey())) {
-				minimum = ModulePositionEditor.narrowestWidth(module.panel,
-						smallestTextSize(module.panel), minimum, maximum);
+				minimum = ModulePositionEditor.narrowestWidth(module.panel, minimum, maximum);
 			}
 			if (module.panel != null && key.equals(module.panel.textSizeKey())) {
+				// The text size counts in the sizes the font is drawn at, so the drag lands on
+				// one of those and never between two.
+				step = ModulePositionEditor.textSizeStep();
+				minimum = Math.max(minimum, ModulePositionEditor.smallestTextSize());
 				maximum = ModulePositionEditor.largestTextSize(module.panel, settledWidth,
 						minimum, maximum);
 			}
 			maximum = Math.max(minimum, maximum);
 			ModulePositionEditor.Resize resize = ModulePositionEditor.resizeWithMarkers(
 					corner, resizeOrigin, resizeOriginValues.get(key),
-					new ModulePositionEditor.Sizing(growth, minimum, maximum, size.integral()),
+					new ModulePositionEditor.Sizing(growth, minimum, maximum, step),
 					pointerX, pointerY, bounds, width, height,
 					VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
 			resizes.add(resize);
@@ -613,12 +622,6 @@ public final class VarioConfigScreen extends Screen {
 		}
 		snapVerticalGuides = List.copyOf(vertical);
 		snapHorizontalGuides = List.copyOf(horizontal);
-	}
-
-	/** The smallest this panel's text size may be set to, from the setting's own range. */
-	private int smallestTextSize(StatsPanel panel) {
-		ConfigOptions.Option size = option(panel.textSizeKey());
-		return (int) Math.ceil(size.min() / size.factor());
 	}
 
 	/** Shows what the in-world editor wrote in the boxes that show the same settings. */
