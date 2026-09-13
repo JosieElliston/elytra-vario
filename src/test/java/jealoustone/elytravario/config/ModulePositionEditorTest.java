@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
 
 class ModulePositionEditorTest {
 	@Test
-	void statsResizeEstablishesWidthBeforeHeight() {
-		assertEquals(List.of("statsBounceDistanceWidth", "statsBounceDistanceHeight"),
+	void statsResizeEstablishesWidthBeforeTextSize() {
+		assertEquals(List.of("statsBounceDistanceWidth", "statsBounceDistanceTextSize"),
 				ModulePositionEditor.Module.STATS_BOUNCE_DISTANCE.sizeKeys);
 	}
 
@@ -25,46 +25,50 @@ class ModulePositionEditorTest {
 	 * Neither bound on a stats panel's two size settings may be read off the panel as it is
 	 * currently drawn, or a drag stops being a function of where the pointer is.
 	 *
-	 * <p>The width floor rises with the text size, which is the height, and the height's cap
-	 * falls with the width. Read live, those two close a loop: a panel sitting on its content
-	 * floor cannot get narrower, because the height it has demands that width, and cannot get
-	 * taller, because the width it has forbids that height. It stands still under a pointer
-	 * asking for something else until the pointer happens to ask for something the loop admits,
-	 * and a drag cannot be undone by dragging back. The pair here, 220 by 52, is one such fixed
-	 * point measured off a real drag that sat in it for three and a half seconds.
+	 * <p>The width floor rises with the text size, and the text size's cap falls with the width.
+	 * Read live, those two close a loop: a panel sitting on its content floor cannot get
+	 * narrower, because the size it has demands that width, and cannot get larger, because the
+	 * width it has forbids that size. It stands still under a pointer asking for something else
+	 * until the pointer happens to ask for something the loop admits, and a drag cannot be
+	 * undone by dragging back. The bug this was written for was measured off a real drag that
+	 * sat in such a fixed point for three and a half seconds.
 	 */
 	@Test
 	void neitherStatsBoundMovesWithThePanelsCurrentSize() {
 		StatsPanel panel = StatsPanel.BOUNCE_TICKS;
-		int wasHeight = VarioConfig.statsBounceTicksHeight;
+		int wasSize = VarioConfig.statsBounceTicksTextSize;
 		int wasWidth = VarioConfig.statsBounceTicksWidth;
 		try {
-			// The narrowest the panel is ever drawn: its rows at the shortest height the setting
-			// allows, and the same answer whatever height the panel is at now.
-			double narrowest = ModulePositionEditor.narrowestWidth(panel, 16, 32, 1200);
-			assertEquals(panel.minWidth(16), narrowest);
-			for (int height : new int[] { 16, 28, 52, 200, 1200 }) {
-				VarioConfig.statsBounceTicksHeight = height;
+			// The narrowest the panel is ever drawn: its rows at the smallest text size the
+			// setting allows, and the same answer whatever size the panel is at now.
+			double narrowest = ModulePositionEditor.narrowestWidth(panel, 1, 32, 1200);
+			assertEquals(panel.minWidth(1), narrowest);
+			for (int size : new int[] { 1, 2, 4, 8 }) {
+				VarioConfig.statsBounceTicksTextSize = size;
 				assertEquals(narrowest,
-						ModulePositionEditor.narrowestWidth(panel, 16, 32, 1200), "" + height);
+						ModulePositionEditor.narrowestWidth(panel, 1, 32, 1200), "" + size);
 			}
-			// And the height's cap follows the width the drag settled on rather than the one the
-			// panel is drawn at, so the pair it used to stick on can now be left.
-			VarioConfig.statsBounceTicksHeight = 52;
-			VarioConfig.statsBounceTicksWidth = 220;
-			assertEquals(220, panel.width());
-			assertEquals(52, panel.height());
-			assertEquals(panel.maxHeightForWidth(93),
-					ModulePositionEditor.tallestHeight(panel, 93, 16, 1200));
-			assertTrue(ModulePositionEditor.tallestHeight(panel, 93, 16, 1200) < 52);
+			// And the text size's cap follows the width the drag settled on rather than the one
+			// the panel is drawn at, so the pair it used to stick on can now be left.
+			VarioConfig.statsBounceTicksTextSize = 2;
+			VarioConfig.statsBounceTicksWidth = 236;
+			assertEquals(236, panel.width());
+			assertEquals(panel.layoutHeight() * 2, panel.height());
+			assertEquals(panel.maxTextSizeForWidth(118),
+					ModulePositionEditor.largestTextSize(panel, 118, 1, 8));
+			assertTrue(ModulePositionEditor.largestTextSize(panel, 118, 1, 8) < 2);
 			// Whatever it caps at, the width that produced that cap still holds the rows, so the
 			// panel is never drawn wider than the drag placed it.
-			for (int width : new int[] { 68, 93, 150, 220, 400 }) {
-				int tallest = (int) ModulePositionEditor.tallestHeight(panel, width, 16, 1200);
-				assertTrue(panel.minWidth(tallest) <= width, "" + width);
+			for (int width : new int[] { 118, 150, 236, 400, 944 }) {
+				int largest = (int) ModulePositionEditor.largestTextSize(panel, width, 1, 8);
+				assertTrue(panel.minWidth(largest) <= width, "" + width);
 			}
+			// Below the panel's own floor nothing fits, and there the setting's range wins over
+			// the screen — the same policy the resize takes everywhere else. The drag can still
+			// reach the smallest size, which is the best the panel can do.
+			assertEquals(1, ModulePositionEditor.largestTextSize(panel, 68, 1, 8));
 		} finally {
-			VarioConfig.statsBounceTicksHeight = wasHeight;
+			VarioConfig.statsBounceTicksTextSize = wasSize;
 			VarioConfig.statsBounceTicksWidth = wasWidth;
 		}
 	}
@@ -307,71 +311,44 @@ class ModulePositionEditorTest {
 	}
 
 	/**
-	 * A stats panel's height rests where its text comes out at a whole multiple of the size the
-	 * font is drawn at, which is where the glyphs need no interpolation to be drawn.
+	 * A drag can only ever land a stats panel on a whole text size, so the glyphs are never
+	 * interpolated and no rest is needed to keep them that way.
+	 *
+	 * <p>This replaces two rests that used to do that work. The first offered the whole
+	 * multiples as somewhere a continuous height could settle; there is no continuous height
+	 * left to settle, so it has nothing to pull the drag off of. The second offered the size
+	 * another panel on screen was drawn at, to save the user arithmetic; the size is now the
+	 * setting, so two panels showing the same number already agree and the arithmetic is gone
+	 * rather than automated.
 	 */
 	@Test
-	void aStatsHeightRestsOnASizeTheFontIsDrawnAtLosslessly() {
+	void aStatsPanelsTextSizeIsWholeWhereverTheDragLands() {
 		StatsPanel panel = StatsPanel.SPEED;
 		int rows = panel.layoutHeight();
+		// One step of the setting is a whole layout of rows, which is one step of the font.
+		assertEquals(new ModulePositionEditor.Growth(0, rows),
+				ModulePositionEditor.growth(panel.textSizeKey()));
+
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS_SPEED, 100, 100, 150, rows);
-		var height = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
+		var textSize = new ModulePositionEditor.Sizing(
+				ModulePositionEditor.growth(panel.textSizeKey()), 1, StatsPanel.MAX_TEXT_SIZE,
+				true);
 
-		// Three pixels past twice the font's size, dragged from the bottom edge, lands on it.
-		int twice = rows * 2;
-		assertEquals(twice, ModulePositionEditor.resize(
-				ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, rows, height,
-				250, 100 + twice + 3, List.of(), 320, 400, 4, 4));
-		// One and a half times is not a size the font is drawn at, so nothing pulls the drag on
-		// to it and the same three pixels past are kept. The rests are an aim, not a ladder:
-		// every height in between is still reachable, it is just not crisp.
-		int oneAndAHalf = rows * 3 / 2;
-		assertEquals(oneAndAHalf + 3, ModulePositionEditor.resize(
-				ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, rows, height,
-				250, 100 + oneAndAHalf + 3, List.of(), 320, 400, 4, 4));
-	}
+		// Dragged to one and a half times the rows — the height the old rests existed to pull a
+		// drag away from — the nearer whole size answers, because nothing else can.
+		assertEquals(2, ModulePositionEditor.resize(
+				ModulePositionEditor.Corner.BOTTOM_RIGHT, bounds, 1, textSize,
+				250, 100 + rows * 3 / 2, List.of(), 320, 400, 4, 4));
 
-	/**
-	 * And it rests on the size another panel on screen is already drawn at, which is the rest
-	 * that matters: matching a four-row panel to a two-row one is arithmetic otherwise.
-	 */
-	@Test
-	void aStatsHeightRestsOnAnotherPanelsTextSize() {
-		int was = VarioConfig.statsOtherHeight;
-		try {
-			// Put the Other panel at 1.25x, a size no round rest offers.
-			int otherRows = StatsPanel.OTHER.layoutHeight();
-			VarioConfig.statsOtherHeight = otherRows * 5 / 4;
-			assertEquals(1.25, StatsPanel.OTHER.scale());
-
-			int rows = StatsPanel.SPEED.layoutHeight();
-			var other = new ModulePositionEditor.Bounds(ModulePositionEditor.Module.STATS_OTHER,
-					100, 4, 150, VarioConfig.statsOtherHeight);
-			var moving = new ModulePositionEditor.Bounds(ModulePositionEditor.Module.STATS_SPEED,
-					100, 100, 150, rows);
-			var height = new ModulePositionEditor.Sizing(
-					new ModulePositionEditor.Growth(0, 1), 16, 1200, true);
-
-			int matched = rows * 5 / 4;
-			assertEquals(matched, ModulePositionEditor.resize(
-					ModulePositionEditor.Corner.BOTTOM_RIGHT, moving, rows, height,
-					250, 100 + matched + 3, List.of(other, moving), 320, 400, 4, 4));
-		} finally {
-			VarioConfig.statsOtherHeight = was;
+		// And every pointer position down the panel's range answers with a whole size, in range,
+		// whose panel is a whole number of layouts tall.
+		for (int y = 100; y <= 400; y++) {
+			double value = ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
+					bounds, 1, textSize, 250, y, List.of(), 320, 400, 4, 4);
+			assertEquals(Math.rint(value), value, "" + y);
+			assertTrue(value >= 1 && value <= StatsPanel.MAX_TEXT_SIZE, "" + y);
 		}
-	}
-
-	/** A module that carries no text has no text size to rest on. */
-	@Test
-	void onlyStatsPanelsRestOnATextSize() {
-		var bounds = new ModulePositionEditor.Bounds(
-				ModulePositionEditor.Module.BAR_SPEEDOMETER, 100, 100, 60, 40);
-		var height = new ModulePositionEditor.Sizing(
-				new ModulePositionEditor.Growth(0, 1), 12, 200, true);
-		assertEquals(43, ModulePositionEditor.resize(ModulePositionEditor.Corner.BOTTOM_RIGHT,
-				bounds, 40, height, 160, 143, List.of(), 320, 400, 4, 4));
 	}
 
 	@Test

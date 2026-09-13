@@ -115,20 +115,25 @@ class ConfigStoreTest {
 	}
 
 	/**
-	 * What the migration is for: the same readings at the same size, in more boxes. Each panel
-	 * gets the height <em>its own</em> rows want at the retired panel's text size, which is not
-	 * the height the retired panel would have given those rows — three of the four draw a units
-	 * heading the retired panel never had, and a height measured without it would quietly cost
-	 * them a fifth of their text size.
+	 * What the migration is for: the same readings at the same size, in more boxes. The retired
+	 * panel's size was a height over its rows and so could be any fraction; a split panel's is a
+	 * whole number, so this is now a carry where the old size was whole and a rounding where it
+	 * was not. Each panel's own height then follows from its own rows, which is not the height
+	 * the retired panel would have given them — three of the four draw a units heading it never
+	 * had.
 	 */
 	@Test void theSplitPanelsAreDrawnAtTheTextSizeTheRetiredPanelWas() {
 		for (String size : new String[] { "132", "198", "90", "330" }) {
-			var values = ConfigStore.decode("{\"statsWidth\":" + size + ",\"statsHeight\":207}");
-			// The retired panel laid out 138 tall with every row on, so 207 is a scale of 1.5.
+			// The retired panel laid out 138 tall with every row on, so 276 is exactly twice.
+			var values = ConfigStore.decode("{\"statsWidth\":" + size + ",\"statsHeight\":276}");
 			for (var panel : LEGACY_PANELS) {
-				int rows = panel.rowKeys().size();
-				int height = Integer.parseInt(values.get(panel.heightKey()));
-				assertEquals(Math.round(panel.layoutHeightFor(rows) * 1.5f), height, panel.name());
+				assertEquals("2", values.get(panel.textSizeKey()), panel.name());
+			}
+			// And 207 is one and a half times, which is not a size a panel can be set to, so it
+			// opens at the nearest that is.
+			var rounded = ConfigStore.decode("{\"statsWidth\":" + size + ",\"statsHeight\":207}");
+			for (var panel : LEGACY_PANELS) {
+				assertEquals("2", rounded.get(panel.textSizeKey()), panel.name());
 			}
 		}
 	}
@@ -137,26 +142,25 @@ class ConfigStoreTest {
 		var values = ConfigStore.decode("{\"chartScale\":37.714286,\"panelScale\":1.25}");
 		assertEquals("132", values.get("chartSize"));
 		// The panel was 132 layout pixels wide and, with every row on, 138 tall, so a scale of
-		// 1.25 drew it 165 by 173 and every new panel is that width and that text size.
+		// 1.25 drew it 165 by 173. The width carries over exactly; 1.25 rounds down to the
+		// font's own size, and the extra width it used to spend on larger text becomes slack.
 		for (var panel : LEGACY_PANELS) assertEquals("165", values.get(panel.widthKey()));
-		assertEquals("35", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("60", values.get(StatsPanel.SPEED.heightKey()));
-		assertEquals("60", values.get(StatsPanel.ACCEL.heightKey()));
-		assertEquals("73", values.get(StatsPanel.ENERGY.heightKey()));
+		for (var panel : LEGACY_PANELS) assertEquals("1", values.get(panel.textSizeKey()));
 		assertFalse(ConfigStore.encode(values).contains("chartScale"));
 		assertFalse(ConfigStore.encode(values).contains("panelScale"));
 	}
 
 	@Test void theRetiredSingleStatsSizeBecomesTheSizeItWasDrawnAt() {
 		var values = ConfigStore.decode("{\"statsSize\":198,\"panelWidth\":132}");
-		// The width it named exactly, and the rows at the text size its scale of 1.5 gave them.
+		// The width it named exactly, and its scale of 1.5 rounded to the nearest whole size.
 		for (var panel : LEGACY_PANELS) assertEquals("198", values.get(panel.widthKey()));
-		assertEquals("42", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("72", values.get(StatsPanel.SPEED.heightKey()));
-		assertEquals("72", values.get(StatsPanel.ACCEL.heightKey()));
-		assertEquals("87", values.get(StatsPanel.ENERGY.heightKey()));
+		for (var panel : LEGACY_PANELS) assertEquals("2", values.get(panel.textSizeKey()));
+		// The stack is laid out from the heights those sizes come to: 56, 96 and 96, each
+		// butted onto the one above it.
 		assertEquals("4", values.get(StatsPanel.OTHER.yKey()));
-		assertEquals("187", values.get(StatsPanel.ENERGY.yKey()));
+		assertEquals("59", values.get(StatsPanel.SPEED.yKey()));
+		assertEquals("154", values.get(StatsPanel.ACCEL.yKey()));
+		assertEquals("249", values.get(StatsPanel.ENERGY.yKey()));
 		assertFalse(ConfigStore.encode(values).contains("statsSize"));
 		assertFalse(ConfigStore.encode(values).contains("panelWidth"));
 	}
@@ -169,32 +173,29 @@ class ConfigStoreTest {
 				+ "\"showHorizontalAcceleration\":\"false\","
 				+ "\"showTotalAcceleration\":\"false\","
 				+ "\"showVerticalAcceleration\":\"false\"}");
-		assertEquals("87", values.get(StatsPanel.ENERGY.heightKey()));
+		assertEquals("2", values.get(StatsPanel.ENERGY.textSizeKey()));
 		// The three panels left with no rows are not stacked, since they are not drawn, but
 		// retain their origin for when a row is switched back on.
 		assertEquals("4", values.get(StatsPanel.ENERGY.yKey()));
 		assertEquals("4", values.get(StatsPanel.OTHER.yKey()));
-		assertEquals("42", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("72", values.get(StatsPanel.SPEED.heightKey()));
+		assertEquals("2", values.get(StatsPanel.OTHER.textSizeKey()));
+		assertEquals("2", values.get(StatsPanel.SPEED.textSizeKey()));
 	}
 
-	@Test void theRetiredContentWidthSetsTheHeightItGaveTheDefaultPanel() {
+	@Test void theRetiredContentWidthSetsTheSizeItGaveTheDefaultPanel() {
 		// Only the layout width was ever changed: the panel stayed 132 pixels wide on screen and
-		// was drawn at two thirds size to fit 198 pixels of layout into them.
+		// was drawn at two thirds size to fit 198 pixels of layout into them. Two thirds is
+		// below every size a panel can be set to, so it opens at the smallest one.
 		var values = ConfigStore.decode("{\"panelWidth\":198}");
 		for (var panel : LEGACY_PANELS) assertEquals("132", values.get(panel.widthKey()));
-		assertEquals("19", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("32", values.get(StatsPanel.SPEED.heightKey()));
-		assertEquals("39", values.get(StatsPanel.ENERGY.heightKey()));
+		for (var panel : LEGACY_PANELS) assertEquals("1", values.get(panel.textSizeKey()));
 	}
 
 	@Test void theNewerRetiredWidthAndHeightWinOverTheOlderSingleSize() {
 		var values = ConfigStore.decode("{\"statsSize\":198,\"statsWidth\":90,"
 				+ "\"statsHeight\":120}");
 		for (var panel : LEGACY_PANELS) assertEquals("90", values.get(panel.widthKey()));
-		assertEquals("24", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("42", values.get(StatsPanel.SPEED.heightKey()));
-		assertEquals("50", values.get(StatsPanel.ENERGY.heightKey()));
+		for (var panel : LEGACY_PANELS) assertEquals("1", values.get(panel.textSizeKey()));
 	}
 
 	@Test void theRetiredPanelChromeReachesAllFourPanels() {
@@ -209,6 +210,31 @@ class ConfigStoreTest {
 		assertFalse(encoded.contains("\"showPanelBorder\""));
 	}
 
+	/**
+	 * A panel that named its own pixel height keeps the size that height was writing at. The two
+	 * settings changed places, so such a file says how tall to be and nothing about how large to
+	 * write; dividing by the rows it was drawing recovers what it meant.
+	 */
+	@Test void aPanelsRetiredHeightBecomesTheTextSizeItWasDrawnAt() {
+		// Speed lays out 48 tall with its three rows and its heading, so 96 was twice over.
+		var values = ConfigStore.decode("{\"statsOtherY\":\"200\",\"statsSpeedHeight\":96,"
+				+ "\"statsEnergyHeight\":58}");
+		assertEquals("2", values.get(StatsPanel.SPEED.textSizeKey()));
+		assertEquals("1", values.get(StatsPanel.ENERGY.textSizeKey()));
+		// A panel the file never sized keeps the default rather than being guessed at.
+		assertEquals(ConfigOptions.defaults().get(StatsPanel.ACCEL.textSizeKey()),
+				values.get(StatsPanel.ACCEL.textSizeKey()));
+		assertFalse(ConfigStore.encode(values).contains("statsSpeedHeight"));
+	}
+
+	/** A panel with every row switched off is read against the rows it could draw. */
+	@Test void aRetiredHeightIsReadAgainstThePossibleRowsWhenNoneAreOn() {
+		var values = ConfigStore.decode("{\"statsOtherY\":\"200\",\"statsSpeedHeight\":96,"
+				+ "\"showVerticalSpeed\":false,\"showHorizontalSpeed\":false,"
+				+ "\"showTotalSpeed\":false}");
+		assertEquals("2", values.get(StatsPanel.SPEED.textSizeKey()));
+	}
+
 	/** A file naming the panels was written after the split and is not second-guessed. */
 	@Test void panelsOfItsOwnAreLeftAlone() {
 		var values = ConfigStore.decode("{\"statsSize\":198,\"panelOpacity\":\"30\","
@@ -217,7 +243,7 @@ class ConfigStoreTest {
 		assertEquals("64", values.get(StatsPanel.SPEED.widthKey()));
 		assertEquals(ConfigOptions.defaults().get(StatsPanel.ACCEL.widthKey()),
 				values.get(StatsPanel.ACCEL.widthKey()));
-		assertEquals("28", values.get(StatsPanel.OTHER.heightKey()));
+		assertEquals("1", values.get(StatsPanel.OTHER.textSizeKey()));
 		assertEquals(ConfigOptions.defaults().get(StatsPanel.OTHER.opacityKey()),
 				values.get(StatsPanel.OTHER.opacityKey()));
 	}
@@ -228,7 +254,7 @@ class ConfigStoreTest {
 		var defaults = ConfigOptions.defaults();
 		for (var panel : StatsPanel.values()) {
 			for (String key : java.util.List.of(panel.xKey(), panel.yKey(),
-					panel.widthKey(), panel.heightKey())) {
+					panel.widthKey(), panel.textSizeKey())) {
 				assertEquals(defaults.get(key), values.get(key), key);
 			}
 		}

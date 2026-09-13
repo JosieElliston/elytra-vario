@@ -153,7 +153,10 @@ public final class ConfigOptions {
 			add(panel.xKey(), 4, group, -4096, 4096, 1, 0, false, false);
 			add(panel.yKey(), 4, group, -4096, 4096, 1, 0, false, false);
 			add(panel.widthKey(), 4, group, 32, 1200, 1, 0, false, false);
-			add(panel.heightKey(), 4, group, 16, 1200, 1, 0, false, false);
+			// The panel's other dimension is its text size rather than its height, so that the
+			// height is always exactly the rows it draws and every size it can be set to is one
+			// the bitmap font is drawn at without interpolation.
+			add(panel.textSizeKey(), 4, group, 1, StatsPanel.MAX_TEXT_SIZE, 1, 0, false, false);
 			add(panel.opacityKey(), 4, group, 0, 100, 100, 0, false, false);
 			add(panel.borderKey(), 4, group, 0, 1, 1, 0, false, false);
 			for (String row : panel.rowKeys()) add(row, 4, group, 0, 1, 1, 0, false, false);

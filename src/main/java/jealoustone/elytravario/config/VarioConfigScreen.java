@@ -541,7 +541,7 @@ public final class VarioConfigScreen extends Screen {
 		int trueHeight = resizeOrigin.height();
 		// A module with two settings takes them one at a time. Each is solved against the same
 		// immutable origin and answers only the axis it grows. Stats panels establish width first;
-		// their height is then limited to the text size that width can contain, preventing the
+		// their text size is then limited to what that width can contain, preventing the
 		// content minimum from pushing the horizontal edge away from the pointer.
 		//
 		// Both of those limits are read from this drag rather than from the panel as it is
@@ -555,10 +555,10 @@ public final class VarioConfigScreen extends Screen {
 			double minimum = size.min() / size.factor();
 			if (module.panel != null && key.equals(module.panel.widthKey())) {
 				minimum = ModulePositionEditor.narrowestWidth(module.panel,
-						shortestHeight(module.panel), minimum, maximum);
+						smallestTextSize(module.panel), minimum, maximum);
 			}
-			if (module.panel != null && key.equals(module.panel.heightKey())) {
-				maximum = ModulePositionEditor.tallestHeight(module.panel, settledWidth,
+			if (module.panel != null && key.equals(module.panel.textSizeKey())) {
+				maximum = ModulePositionEditor.largestTextSize(module.panel, settledWidth,
 						minimum, maximum);
 			}
 			maximum = Math.max(minimum, maximum);
@@ -615,9 +615,9 @@ public final class VarioConfigScreen extends Screen {
 		snapHorizontalGuides = List.copyOf(horizontal);
 	}
 
-	/** The shortest this panel's height setting may be set to, from the setting's own range. */
-	private int shortestHeight(StatsPanel panel) {
-		ConfigOptions.Option size = option(panel.heightKey());
+	/** The smallest this panel's text size may be set to, from the setting's own range. */
+	private int smallestTextSize(StatsPanel panel) {
+		ConfigOptions.Option size = option(panel.textSizeKey());
 		return (int) Math.ceil(size.min() / size.factor());
 	}
 

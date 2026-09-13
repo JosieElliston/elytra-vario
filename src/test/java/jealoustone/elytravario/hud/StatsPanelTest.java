@@ -15,13 +15,68 @@ import jealoustone.elytravario.VarioConfig;
 import org.junit.jupiter.api.Test;
 
 class StatsPanelTest {
+	/**
+	 * The two bounds are exact inverses, which they were not when the height was the setting:
+	 * a width holds exactly the sizes whose floors fit in it, with nothing lost to rounding in
+	 * either direction.
+	 */
 	@Test
-	void heightLimitIsTheInverseOfMinimumWidth() {
-		int layoutHeight = StatsPanel.BOUNCE_DISTANCE.layoutHeight();
+	void theTextSizeLimitIsTheInverseOfMinimumWidth() {
+		assertEquals(1, StatsPanel.BOUNCE_DISTANCE.maxTextSizeForWidth(110));
+		assertEquals(0, StatsPanel.BOUNCE_DISTANCE.maxTextSizeForWidth(109));
+		assertEquals(2, StatsPanel.BOUNCE_DISTANCE.maxTextSizeForWidth(220));
+		assertEquals(2, StatsPanel.BOUNCE_DISTANCE.maxTextSizeForWidth(229));
 
-		assertEquals(layoutHeight, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(110));
-		assertEquals(layoutHeight - 1, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(109));
-		assertEquals(layoutHeight * 2, StatsPanel.BOUNCE_DISTANCE.maxHeightForWidth(220));
+		for (StatsPanel panel : StatsPanel.values()) {
+			for (int size = 1; size <= StatsPanel.MAX_TEXT_SIZE; size++) {
+				int floor = panel.minWidth(size);
+				assertEquals(size, panel.maxTextSizeForWidth(floor), panel.name());
+				assertEquals(size - 1, panel.maxTextSizeForWidth(floor - 1), panel.name());
+			}
+		}
+	}
+
+	/**
+	 * Switching a row off shortens the panel and leaves the letters where they were. When the
+	 * height was the setting this was the other way about: the divisor shrank, the dividend did
+	 * not, and a checkbox reading "show total speed" also enlarged every letter on the panel.
+	 */
+	@Test
+	void switchingARowOffShortensThePanelRatherThanResizingItsText() {
+		boolean total = VarioConfig.showTotalSpeed;
+		int size = VarioConfig.statsSpeedTextSize;
+		try {
+			VarioConfig.statsSpeedTextSize = 2;
+			int before = StatsPanel.SPEED.height();
+			assertEquals(2.0, StatsPanel.SPEED.scale());
+
+			VarioConfig.showTotalSpeed = false;
+
+			assertEquals(2.0, StatsPanel.SPEED.scale());
+			assertEquals(before - StatsPanel.LINE * 2, StatsPanel.SPEED.height());
+			// And the width floor, which follows the text size, has not moved either.
+			assertEquals(StatsPanel.SPEED.minWidth(2), StatsPanel.SPEED.minWidth());
+		} finally {
+			VarioConfig.showTotalSpeed = total;
+			VarioConfig.statsSpeedTextSize = size;
+		}
+	}
+
+	/** Every size the setting admits is a whole multiple, so no panel is ever interpolated. */
+	@Test
+	void everyReachableTextSizeIsOneTheFontIsDrawnAtLosslessly() {
+		int size = VarioConfig.statsEnergyTextSize;
+		try {
+			for (int textSize = 1; textSize <= StatsPanel.MAX_TEXT_SIZE; textSize++) {
+				VarioConfig.statsEnergyTextSize = textSize;
+				assertEquals(textSize, StatsPanel.ENERGY.scale());
+				assertEquals(Math.rint(StatsPanel.ENERGY.scale()), StatsPanel.ENERGY.scale());
+				assertEquals(StatsPanel.ENERGY.layoutHeight() * textSize,
+						StatsPanel.ENERGY.height());
+			}
+		} finally {
+			VarioConfig.statsEnergyTextSize = size;
+		}
 	}
 
 	/**
@@ -60,7 +115,7 @@ class StatsPanelTest {
 	@Test void everyPanelNamesTheSettingsItReads() {
 		for (StatsPanel panel : StatsPanel.values()) {
 			for (String key : List.of(panel.showKey(), panel.xKey(), panel.yKey(),
-					panel.widthKey(), panel.heightKey(), panel.opacityKey(), panel.borderKey())) {
+					panel.widthKey(), panel.textSizeKey(), panel.opacityKey(), panel.borderKey())) {
 				// A key naming no field would reach the settings screen as a missing option
 				// rather than as an error, so check it here where it is cheap.
 				assertDoesNotThrow(() -> VarioConfig.class.getField(key), key);
@@ -75,9 +130,9 @@ class StatsPanelTest {
 		for (StatsPanel panel : StatsPanel.values()) {
 			assertEquals(panel, StatsPanel.byGroup(panel.group()));
 			assertEquals(panel, StatsPanel.byWidthKey(panel.widthKey()));
-			assertEquals(panel, StatsPanel.byHeightKey(panel.heightKey()));
-			assertNull(StatsPanel.byWidthKey(panel.heightKey()));
-			assertNull(StatsPanel.byHeightKey(panel.widthKey()));
+			assertEquals(panel, StatsPanel.byTextSizeKey(panel.textSizeKey()));
+			assertNull(StatsPanel.byWidthKey(panel.textSizeKey()));
+			assertNull(StatsPanel.byTextSizeKey(panel.widthKey()));
 		}
 		assertNull(StatsPanel.byWidthKey("chartSize"));
 	}
@@ -93,8 +148,9 @@ class StatsPanelTest {
 		assertEquals(2, StatsPanel.BOUNCE_TICKS.rows());
 	}
 
-	@Test void theDefaultHeightsAreTheDefaultRowsAtTheirNaturalSize() {
+	@Test void everyPanelShipsAtTheFontsOwnSize() {
 		for (StatsPanel panel : StatsPanel.values()) {
+			assertEquals(1, panel.textSize(), panel.name());
 			assertEquals(panel.layoutHeight(), panel.height(), panel.name());
 			assertEquals(1.0, panel.scale(), panel.name());
 			assertEquals(panel.configuredWidth(), panel.layoutWidth(), panel.name());
@@ -114,36 +170,36 @@ class StatsPanelTest {
 		}
 	}
 
-	@Test void widthAndHeightMoveIndependentlyAndPanelToPanel() {
+	@Test void widthAndTextSizeMoveIndependentlyAndPanelToPanel() {
 		int width = VarioConfig.statsSpeedWidth;
-		int height = VarioConfig.statsSpeedHeight;
+		int size = VarioConfig.statsSpeedTextSize;
 		int otherWidth = VarioConfig.statsOtherWidth;
 		try {
 			VarioConfig.statsSpeedWidth = 120;
 			assertEquals(120, StatsPanel.SPEED.layoutWidth());
 			VarioConfig.statsSpeedWidth = 264;
-			VarioConfig.statsSpeedHeight = 2 * StatsPanel.SPEED.layoutHeight();
+			VarioConfig.statsSpeedTextSize = 2;
 			assertEquals(132, StatsPanel.SPEED.layoutWidth());
 			assertEquals(otherWidth, StatsPanel.OTHER.width());
 		} finally {
 			VarioConfig.statsSpeedWidth = width;
-			VarioConfig.statsSpeedHeight = height;
+			VarioConfig.statsSpeedTextSize = size;
 			VarioConfig.statsOtherWidth = otherWidth;
 		}
 	}
 
 	@Test void aPanelIsNeverDrawnNarrowerThanItsOwnRowsNeed() {
 		int width = VarioConfig.statsOtherWidth;
-		int height = VarioConfig.statsOtherHeight;
+		int size = VarioConfig.statsOtherTextSize;
 		try {
 			VarioConfig.statsOtherWidth = 32;
 			int minimum = StatsPanel.OTHER.minWidth();
 			assertEquals(minimum, StatsPanel.OTHER.width());
-			VarioConfig.statsOtherHeight = 3 * StatsPanel.OTHER.layoutHeight();
+			VarioConfig.statsOtherTextSize = 3;
 			assertEquals(3 * minimum, StatsPanel.OTHER.width());
 		} finally {
 			VarioConfig.statsOtherWidth = width;
-			VarioConfig.statsOtherHeight = height;
+			VarioConfig.statsOtherTextSize = size;
 		}
 	}
 
