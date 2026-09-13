@@ -109,9 +109,28 @@ class ConfigStoreTest {
 		for (var panel : LEGACY_PANELS) assertEquals("12", values.get(panel.xKey()));
 		assertEquals("34", values.get(StatsPanel.OTHER.yKey()));
 		assertEquals("61", values.get(StatsPanel.SPEED.yKey()));
-		assertEquals("98", values.get(StatsPanel.ACCEL.yKey()));
-		assertEquals("135", values.get(StatsPanel.ENERGY.yKey()));
+		assertEquals("108", values.get(StatsPanel.ACCEL.yKey()));
+		assertEquals("155", values.get(StatsPanel.ENERGY.yKey()));
 		assertFalse(ConfigStore.encode(values).contains("originX"));
+	}
+
+	/**
+	 * What the migration is for: the same readings at the same size, in more boxes. Each panel
+	 * gets the height <em>its own</em> rows want at the retired panel's text size, which is not
+	 * the height the retired panel would have given those rows — three of the four draw a units
+	 * heading the retired panel never had, and a height measured without it would quietly cost
+	 * them a fifth of their text size.
+	 */
+	@Test void theSplitPanelsAreDrawnAtTheTextSizeTheRetiredPanelWas() {
+		for (String size : new String[] { "132", "198", "90", "330" }) {
+			var values = ConfigStore.decode("{\"statsWidth\":" + size + ",\"statsHeight\":207}");
+			// The retired panel laid out 138 tall with every row on, so 207 is a scale of 1.5.
+			for (var panel : LEGACY_PANELS) {
+				int rows = panel.rowKeys().size();
+				int height = Integer.parseInt(values.get(panel.heightKey()));
+				assertEquals(Math.round(panel.layoutHeightFor(rows) * 1.5f), height, panel.name());
+			}
+		}
 	}
 
 	@Test void retiredModuleScalesBecomeExactPixelWidths() {
@@ -121,9 +140,9 @@ class ConfigStoreTest {
 		// 1.25 drew it 165 by 173 and every new panel is that width and that text size.
 		for (var panel : LEGACY_PANELS) assertEquals("165", values.get(panel.widthKey()));
 		assertEquals("35", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("48", values.get(StatsPanel.SPEED.heightKey()));
-		assertEquals("48", values.get(StatsPanel.ACCEL.heightKey()));
-		assertEquals("60", values.get(StatsPanel.ENERGY.heightKey()));
+		assertEquals("60", values.get(StatsPanel.SPEED.heightKey()));
+		assertEquals("60", values.get(StatsPanel.ACCEL.heightKey()));
+		assertEquals("73", values.get(StatsPanel.ENERGY.heightKey()));
 		assertFalse(ConfigStore.encode(values).contains("chartScale"));
 		assertFalse(ConfigStore.encode(values).contains("panelScale"));
 	}
@@ -133,11 +152,11 @@ class ConfigStoreTest {
 		// The width it named exactly, and the rows at the text size its scale of 1.5 gave them.
 		for (var panel : LEGACY_PANELS) assertEquals("198", values.get(panel.widthKey()));
 		assertEquals("42", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("57", values.get(StatsPanel.SPEED.heightKey()));
-		assertEquals("57", values.get(StatsPanel.ACCEL.heightKey()));
-		assertEquals("72", values.get(StatsPanel.ENERGY.heightKey()));
+		assertEquals("72", values.get(StatsPanel.SPEED.heightKey()));
+		assertEquals("72", values.get(StatsPanel.ACCEL.heightKey()));
+		assertEquals("87", values.get(StatsPanel.ENERGY.heightKey()));
 		assertEquals("4", values.get(StatsPanel.OTHER.yKey()));
-		assertEquals("157", values.get(StatsPanel.ENERGY.yKey()));
+		assertEquals("187", values.get(StatsPanel.ENERGY.yKey()));
 		assertFalse(ConfigStore.encode(values).contains("statsSize"));
 		assertFalse(ConfigStore.encode(values).contains("panelWidth"));
 	}
@@ -150,13 +169,13 @@ class ConfigStoreTest {
 				+ "\"showHorizontalAcceleration\":\"false\","
 				+ "\"showTotalAcceleration\":\"false\","
 				+ "\"showVerticalAcceleration\":\"false\"}");
-		assertEquals("72", values.get(StatsPanel.ENERGY.heightKey()));
+		assertEquals("87", values.get(StatsPanel.ENERGY.heightKey()));
 		// The three panels left with no rows are not stacked, since they are not drawn, but
 		// retain their origin for when a row is switched back on.
 		assertEquals("4", values.get(StatsPanel.ENERGY.yKey()));
 		assertEquals("4", values.get(StatsPanel.OTHER.yKey()));
 		assertEquals("42", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("57", values.get(StatsPanel.SPEED.heightKey()));
+		assertEquals("72", values.get(StatsPanel.SPEED.heightKey()));
 	}
 
 	@Test void theRetiredContentWidthSetsTheHeightItGaveTheDefaultPanel() {
@@ -165,8 +184,8 @@ class ConfigStoreTest {
 		var values = ConfigStore.decode("{\"panelWidth\":198}");
 		for (var panel : LEGACY_PANELS) assertEquals("132", values.get(panel.widthKey()));
 		assertEquals("19", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("25", values.get(StatsPanel.SPEED.heightKey()));
-		assertEquals("32", values.get(StatsPanel.ENERGY.heightKey()));
+		assertEquals("32", values.get(StatsPanel.SPEED.heightKey()));
+		assertEquals("39", values.get(StatsPanel.ENERGY.heightKey()));
 	}
 
 	@Test void theNewerRetiredWidthAndHeightWinOverTheOlderSingleSize() {
@@ -174,8 +193,8 @@ class ConfigStoreTest {
 				+ "\"statsHeight\":120}");
 		for (var panel : LEGACY_PANELS) assertEquals("90", values.get(panel.widthKey()));
 		assertEquals("24", values.get(StatsPanel.OTHER.heightKey()));
-		assertEquals("33", values.get(StatsPanel.SPEED.heightKey()));
-		assertEquals("42", values.get(StatsPanel.ENERGY.heightKey()));
+		assertEquals("42", values.get(StatsPanel.SPEED.heightKey()));
+		assertEquals("50", values.get(StatsPanel.ENERGY.heightKey()));
 	}
 
 	@Test void theRetiredPanelChromeReachesAllFourPanels() {

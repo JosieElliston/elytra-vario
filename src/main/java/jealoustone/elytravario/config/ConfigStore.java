@@ -154,8 +154,13 @@ public final class ConfigStore {
 				StatsPanel.ACCEL, StatsPanel.ENERGY)) {
 			int rows = rows(values, panel.rowKeys());
 			int drawn = rows > 0 ? rows : panel.rowKeys().size();
+			// The height its rows need at the retired panel's text size, which is the whole
+			// point of the migration: the same reading, the same size, in more boxes. Asked of
+			// the panel rather than worked out here, so that a row the panel draws and this file
+			// never knew about — its units heading — is included rather than quietly costing the
+			// migrated panel a fifth of its text size.
 			long panelHeight = Math.clamp(
-					Math.round((drawn * StatsPanel.LINE + StatsPanel.PAD * 2) * scale), 16, 1200);
+					Math.round(panel.layoutHeightFor(drawn) * scale), 16, 1200);
 			values.put(panel.xKey(), Long.toString(Math.clamp(x, -4096, 4096)));
 			values.put(panel.yKey(), Long.toString(Math.clamp(top, -4096, 4096)));
 			values.put(panel.widthKey(), Long.toString(Math.clamp(width, 32, 1200)));

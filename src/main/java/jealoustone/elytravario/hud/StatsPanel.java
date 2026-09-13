@@ -286,32 +286,46 @@ public enum StatsPanel {
 
 	/** How many of this panel's rows are switched on, which is whether it is drawn at all. */
 	public int rows() {
-		return switch (this) {
+		int shown = switch (this) {
 			case OTHER -> count(VarioConfig.showPitch, VarioConfig.showGlideRatio);
-			case SPEED -> headedRows(VarioConfig.showVerticalSpeed,
+			case SPEED -> count(VarioConfig.showVerticalSpeed,
 					VarioConfig.showHorizontalSpeed, VarioConfig.showTotalSpeed);
-			case ACCEL -> headedRows(VarioConfig.showVerticalAcceleration,
+			case ACCEL -> count(VarioConfig.showVerticalAcceleration,
 					VarioConfig.showHorizontalAcceleration, VarioConfig.showTotalAcceleration);
-			case ENERGY -> headedRows(VarioConfig.showKineticEnergy,
+			case ENERGY -> count(VarioConfig.showKineticEnergy,
 					VarioConfig.showPotentialEnergy, VarioConfig.showTotalEnergy,
 					VarioConfig.showCycleGain);
-			case BOUNCE_VELOCITY -> headedRows(VarioConfig.showBounceVelocityY,
+			case BOUNCE_VELOCITY -> count(VarioConfig.showBounceVelocityY,
 					VarioConfig.showBounceVelocityXz, VarioConfig.showBounceVelocityXyz);
-			case BOUNCE_DISTANCE -> headedRows(VarioConfig.showBounceDistanceY,
+			case BOUNCE_DISTANCE -> count(VarioConfig.showBounceDistanceY,
 					VarioConfig.showBounceDistanceXz, VarioConfig.showBounceDistanceXyz);
-			case BOUNCE_TICKS -> headedRows(VarioConfig.showBounceTicks);
+			case BOUNCE_TICKS -> count(VarioConfig.showBounceTicks);
 		};
+		return shown == 0 ? 0 : shown + (headed() ? 1 : 0);
 	}
 
 	/**
-	 * A panel whose top row says what its figures are measured in, and which columns they stand
-	 * in where it has more than one. The heading is not a row that can be switched off: it is
-	 * what lets the rows under it be labelled {@code Y} rather than {@code SPEED Y}, so a panel
-	 * showing any row at all shows it. A panel showing none is not drawn, heading included.
+	 * Whether this panel's top row says what its figures are measured in, and which columns they
+	 * stand in where it has more than one.
+	 *
+	 * <p>The heading is not a row that can be switched off: it is what lets the rows under it be
+	 * labelled {@code Y} rather than {@code SPEED Y}, so a panel showing any row at all shows it,
+	 * and a panel showing none is not drawn at all, heading included. {@link #OTHER} is the one
+	 * panel without one, because a pitch in degrees and a dimensionless ratio share no unit that
+	 * a heading could state.
 	 */
-	private static int headedRows(boolean... switches) {
-		int content = count(switches);
-		return content == 0 ? 0 : content + 1;
+	public boolean headed() {
+		return this != OTHER;
+	}
+
+	/**
+	 * The height this panel lays itself out in with {@code shown} of its rows switched on, which
+	 * is the height it wants at a text size of one. Asked for by
+	 * {@link jealoustone.elytravario.config.ConfigStore}, which has to give a panel the height
+	 * its rows need at a text size read off a file rather than off the panel.
+	 */
+	public int layoutHeightFor(int shown) {
+		return (shown + (headed() ? 1 : 0)) * LINE + PAD * 2;
 	}
 
 	private static int count(boolean... switches) {
