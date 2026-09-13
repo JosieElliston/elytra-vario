@@ -840,9 +840,10 @@ selectable. Energy rate has been removed; cycle gain and apex differences remain
 
 ## The readout panels
 
-**One panel per kind of reading, not one panel for all of them.** Flight Stats is four boxes —
-*Other* (pitch, glide), *Speed*, *Acceleration*, *Energy* — each placed, sized and switched on
-its own, each a module of the position editor, each a subpage of the Flight Stats page.
+**One panel per kind of reading, not one panel for all of them.** Flight Stats is seven boxes —
+*Other* (pitch, glide), *Speed*, *Acceleration*, *Energy*, and the three e-bounce matrices
+(*velocity*, *position delta*, *elapsed ticks*) — each placed, sized and switched on its own,
+each a module of the position editor, each a subpage of the Flight Stats page.
 
 The reason is the width. A row wants the width its widest label and figure need, and one panel
 had to give every row the same one, so the panel was as wide as its widest row and every
@@ -854,10 +855,12 @@ only-while-gliding companion, and the positive and negative colors, which are a 
 than a layout.
 
 They are still meant to read as one instrument, which is what the editor's one-pixel butt is
-for: stacked with their borders sharing a column, four panels look like one panel ruled into
+for: stacked with their borders sharing a column, the panels look like one panel ruled into
 sections, and that rule is the one the single panel drew between its own halves. The defaults
-are exactly that stack, down the left, in the order the single panel read in and at the width
-it had.
+are exactly that stack: all seven down the left edge, in the order the single panel read in with
+the matrices under it, sharing a left edge and a width so the stack has one right edge too. That
+shared width is 150, the widest of the floors below, which is the narrowest width every panel in
+the stack can be drawn at.
 
 **Width and height are set separately, and the height is the one that sets the text size.** The
 rows are laid out at a fixed line height and the panel is scaled to the height asked for, so it
@@ -869,20 +872,39 @@ row off no longer makes its panel shorter; that panel keeps the height it was gi
 the rows that remain larger.
 
 **A width narrower than the rows need is drawn at the width they need**, and each panel has its
-own floor, where its own widest row has met itself. Every figure below was measured through the
-font rather than guessed at, and each is a representative reading rather than the worst
-imaginable one — a figure that runs longer than its column encroaches on its label, here as
-anywhere else on these panels.
+own floor, where its own widest row has met itself.
 
-| Panel | Floor | Widest row |
+**The floors are computed from the rows, not written down.** A row costs the panel's four pixels
+of padding either side, its label, two pixels of clearance so that at the floor the label and
+the figure beside it are still two separate words, its own leftmost figure, and then a pad and a
+full column for each column to the right of that figure — full, because a column is reserved
+from a template whatever this row happens to put in it. A panel's floor is the widest of its
+rows. `StatsPanel` states each panel's rows as the label and templates it draws, `LayoutWidths`
+does the arithmetic, and the advances it runs on are Minecraft's default font written out,
+pinned by the six strings the panels were originally measured through the font by. So a floor
+is checked by reading the row rather than by trusting the number, and widening a template moves
+the floor with it.
+
+Each template is a representative reading rather than the worst imaginable one — a figure that
+runs longer than its template encroaches on its label, here as anywhere else on these panels.
+A two-digit acceleration is the usual one, six pixels over.
+
+| Panel | Floor | The row that sets it |
 | --- | --- | --- |
-| Other | 86 | `GLIDE` at 28, a ratio like `-12.34 : 1` at 48, eight of padding, two over |
-| Speed | 116 | `SPEED XYZ` at 52, `-78.40 b/s` — straight-down terminal velocity — at 54, eight, two |
-| Acceleration | 116 | `ACCEL XYZ` measures the same 52, and an acceleration much the same as a speed |
-| Energy | 106 | `TE` at 12, then the two columns: 38, a pad, 42, and the panel's padding either side |
+| Other | 86 | `GLIDE` at 28 against `-00.00 : 1` at 48 — the ratio is signed, which is what makes it the wider row |
+| Speed | 116 | `SPEED XYZ` at 52 against `-00.00 b/s` at 54, a straight-down terminal velocity being the widest speed actually read |
+| Acceleration | 115 | `ACCEL XYZ` measures the same 52; `+0.00 b/s²` is 53, a pixel inside a speed because the superscript is narrower than a digit |
+| Energy | 106 | `TE` at 12, then the two columns: 38, a pad, 42 |
+| E-bounce velocity | 150 | `XYZ` at 18 against three 38-pixel columns and the two pads between them |
+| E-bounce delta | 110 | both rows at once: the heading `DELTA b` at 40 against `L-T`, and `XYZ` against two columns |
+| E-bounce ticks | 98 | the heading `TICKS` at 28 against `L-T`; the figures under it carry no label of their own |
 
 Energy's floor is measured in the two-column mode, the widest of the three energy references
 and the default, so that changing the reference never moves the floor under a width already set.
+The velocity matrix is the one panel whose heading row is not what sets its floor: `VEL b/s` is
+its longest label, but the headings it runs at are single letters right-aligned into columns
+reserved for a figure, so the rows of figures beneath need more width than the heading does.
+
 The grips stop at these, and a narrower width typed into the box is drawn at the minimum rather
 than refused, so a reading never turns into an overlap.
 
@@ -896,6 +918,13 @@ than refused, so a reading never turns into an overlap.
 | `KE` | Kinetic energy as a height: the altitude your speed is worth. |
 | `PE` `TE` | Potential and total energy, **measured from the last apex**: how far below the top of the cycle you are, and how much of it is recoverable. Green means you are above the last apex, which for `TE` is a cycle that has already paid for itself. The dimmed figure to the left is the same height against the world's origin, which is what F3 and a map agree with. `--` until an apex has been seen. |
 | `GAIN` | Total energy gained between the last two apexes: what the cycle was worth. |
+
+The three e-bounce matrices read as columns rather than rows. The velocity matrix has one column
+per event — `T` touch, `L` leave, `D` deploy — and `X`, `XZ`, `XYZ` as its rows. The other two
+measure an interval, which is only ever the difference against the event before it, so they have
+no touch column and their headings name the subtraction: `L-T` and `D-L`. At equal widths those
+two columns sit under the velocity matrix's `L` and `D`, since all three right-align onto the
+same edges.
 
 ## The chart
 

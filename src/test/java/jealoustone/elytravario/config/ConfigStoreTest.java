@@ -196,7 +196,8 @@ class ConfigStoreTest {
 				+ "\"statsOtherY\":\"200\",\"statsSpeedWidth\":\"64\"}");
 		assertEquals("200", values.get(StatsPanel.OTHER.yKey()));
 		assertEquals("64", values.get(StatsPanel.SPEED.widthKey()));
-		assertEquals("132", values.get(StatsPanel.ACCEL.widthKey()));
+		assertEquals(ConfigOptions.defaults().get(StatsPanel.ACCEL.widthKey()),
+				values.get(StatsPanel.ACCEL.widthKey()));
 		assertEquals("28", values.get(StatsPanel.OTHER.heightKey()));
 		assertEquals(ConfigOptions.defaults().get(StatsPanel.OTHER.opacityKey()),
 				values.get(StatsPanel.OTHER.opacityKey()));
