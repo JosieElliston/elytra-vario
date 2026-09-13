@@ -65,6 +65,7 @@ public final class ConfigOptions {
 
 	static {
 		add("enabled", 0, 0, 1, 1, 0, false, false);
+		add("hudGlidingOnly", 0, 0, 1, 1, 0, false, false);
 		add("positionMargin", 0, 0, 64, 1, 0, false, false);
 		add("positionSnapDistance", 0, 0, 64, 1, 0, false, false);
 

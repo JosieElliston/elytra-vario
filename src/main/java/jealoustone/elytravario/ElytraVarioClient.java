@@ -63,7 +63,7 @@ public class ElytraVarioClient implements ClientModInitializer {
 
 			while (settingsKey.consumeClick()) {
 				if (client.gui.screen() == null) {
-					client.gui.setScreen(new VarioConfigScreen(null));
+					client.gui.setScreen(VarioConfigScreen.create(null));
 				}
 			}
 
