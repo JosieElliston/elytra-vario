@@ -83,7 +83,13 @@ public enum StatsPanel {
 			"showKineticEnergy", "showPotentialEnergy", "showTotalEnergy", "showCycleGain"),
 
 	/**
-	 * Touch, leave and deploy velocities as columns, with X, XZ and XYZ as rows.
+	 * Touch, leave and deploy velocities as columns, with Y, XZ and XYZ as rows.
+	 *
+	 * <p>The same three quantities the {@link #SPEED} panel carries and in the same order: the
+	 * signed vertical component first, then the two magnitudes. A single world axis is not one
+	 * of them — X alone means nothing about a bounce, since it depends on which way the world
+	 * happens to be oriented rather than on which way the player is flying, and XZ is the
+	 * rotation-independent quantity that replaces it.
 	 *
 	 * <p>The widest panel, at 150, and the one place a heading row costs less than the figures
 	 * under it: {@code VEL b/s} is the longest label here, but the headings it runs at are
@@ -93,7 +99,7 @@ public enum StatsPanel {
 	BOUNCE_VELOCITY("statsBounceVelocity", widest(
 			row("VEL b/s", "T", BOUNCE_COLUMN, BOUNCE_COLUMN),
 			row("XYZ", BOUNCE_COLUMN, BOUNCE_COLUMN, BOUNCE_COLUMN)),
-			"showBounceVelocityX", "showBounceVelocityXz", "showBounceVelocityXyz"),
+			"showBounceVelocityY", "showBounceVelocityXz", "showBounceVelocityXyz"),
 
 	/**
 	 * Leave-touch and deploy-leave position differences as columns.
@@ -102,17 +108,27 @@ public enum StatsPanel {
 	 * for touch: two columns rather than the velocity matrix's three, and a floor of 110 where
 	 * that panel needs 150. The columns are still right-aligned onto the same edges, so at equal
 	 * widths they line up under that panel's {@code L} and {@code D}.
+	 *
+	 * <p>Its rows are the velocity matrix's, for the same reason: height gained or lost over the
+	 * interval, then the ground track and the whole path, both of which are distances and so
+	 * cannot be negative.
 	 */
 	BOUNCE_DISTANCE("statsBounceDistance", widest(
 			row("DELTA b", "L-T", BOUNCE_COLUMN),
 			row("XYZ", BOUNCE_COLUMN, BOUNCE_COLUMN)),
-			"showBounceDistanceX", "showBounceDistanceXz", "showBounceDistanceXyz"),
+			"showBounceDistanceY", "showBounceDistanceXz", "showBounceDistanceXyz"),
 
 	/**
 	 * Leave-touch and deploy-leave elapsed ticks as the same two columns.
 	 *
 	 * <p>Its one row of figures carries no label of its own — the panel's heading says what they
 	 * are — so the heading row is what sets the floor, at 98.
+	 *
+	 * <p>Its columns are the same {@link MatrixLayout#BOUNCE_COLUMN} the two matrices above it
+	 * reserve, even though a tick count needs neither a sign nor a decimal point. The template
+	 * is what fixes where a column's edges fall, so a narrower one here would leave this panel's
+	 * left column standing somewhere the other two have nothing — and three matrices set down at
+	 * one width are meant to read as one grid.
 	 */
 	BOUNCE_TICKS("statsBounceTicks", widest(
 			row("TICKS", "L-T", BOUNCE_COLUMN),
@@ -267,9 +283,9 @@ public enum StatsPanel {
 					VarioConfig.showHorizontalAcceleration, VarioConfig.showTotalAcceleration);
 			case ENERGY -> count(VarioConfig.showKineticEnergy, VarioConfig.showPotentialEnergy,
 					VarioConfig.showTotalEnergy, VarioConfig.showCycleGain);
-			case BOUNCE_VELOCITY -> headedRows(VarioConfig.showBounceVelocityX,
+			case BOUNCE_VELOCITY -> headedRows(VarioConfig.showBounceVelocityY,
 					VarioConfig.showBounceVelocityXz, VarioConfig.showBounceVelocityXyz);
-			case BOUNCE_DISTANCE -> headedRows(VarioConfig.showBounceDistanceX,
+			case BOUNCE_DISTANCE -> headedRows(VarioConfig.showBounceDistanceY,
 					VarioConfig.showBounceDistanceXz, VarioConfig.showBounceDistanceXyz);
 			case BOUNCE_TICKS -> headedRows(VarioConfig.showBounceTicks);
 		};

@@ -36,9 +36,9 @@ import org.joml.Matrix3x2fStack;
  * <p>Which rows each panel carries, how wide and how tall it is, and whether it is drawn at all
  * are {@link StatsPanel}'s; this draws them.
  *
- * <p>On 1.21.11 the HUD still issues draw calls directly through {@link GuiGraphics}, so this
- * is a plain {@code render} method; the 26.2 branch extracts a render state instead. The
- * primitives used here (text, fill, scissor) are the same on both.
+ * <p>In 26.2 the HUD is built by extracting a render state rather than by issuing draw calls
+ * directly, hence {@code extractRenderState} rather than a {@code render} method — but the
+ * available primitives (text, fill, scissor) are the same ones the old context had.
  *
  * <p>Speeds are stored in blocks/tick, the units vanilla physics uses, and converted to
  * blocks/second only for display.
@@ -89,8 +89,8 @@ public final class VarioHudElement implements HudElement {
 
 		Minecraft minecraft = Minecraft.getInstance();
 
-		// No hide-GUI check needed: Gui.render skips the whole Hud pass when the GUI is
-		// hidden, so this element is never reached in that case.
+		// No hide-GUI check needed: Gui.extractRenderState skips the whole Hud pass when the
+		// GUI is hidden, so this element is never reached in that case.
 		if (minecraft.player == null) {
 			return;
 		}
@@ -152,10 +152,14 @@ public final class VarioHudElement implements HudElement {
 		switch (panel) {
 			case OTHER -> {
 				double glide = sample.glideRatio();
+				// Both carry their sign: pitch is nose up or nose down about a level datum, and
+				// a negative glide ratio is a climb rather than a shallower descent. Neither is
+				// colored, because neither is a rate — the sign says which side of level the
+				// reading is, and the figure beside it says how far.
 				if (VarioConfig.showPitch) row = row(graphics, font, panel, x, row,
-						"PITCH", fmt("%.1f°", sample.pitch()), VALUE);
+						"PITCH", fmt("%+.1f°", sample.pitch()), VALUE);
 				if (VarioConfig.showGlideRatio) row = row(graphics, font, panel, x, row, "GLIDE",
-						Double.isFinite(glide) ? fmt("%.2f : 1", glide) : "--", VALUE);
+						Double.isFinite(glide) ? fmt("%+.2f : 1", glide) : "--", VALUE);
 			}
 			case SPEED -> {
 				// Vertical speed is colored on displayed blocks/second, with a small neutral
@@ -199,8 +203,8 @@ public final class VarioHudElement implements HudElement {
 		MatrixLayout matrix = matrixHeading(graphics, font, panel, x, y, "VEL b/s",
 				BOUNCE_EVENTS, BOUNCE_COLUMN);
 		y += LINE;
-		if (VarioConfig.showBounceVelocityX) y = matrixRow(graphics, font, matrix, x, y, "X",
-				events, sample -> sample.vx() * TPS, true, 2);
+		if (VarioConfig.showBounceVelocityY) y = matrixRow(graphics, font, matrix, x, y, "Y",
+				events, sample -> sample.vy() * TPS, true, 2);
 		if (VarioConfig.showBounceVelocityXz) y = matrixRow(graphics, font, matrix, x, y, "XZ",
 				events, sample -> sample.horizontalSpeed() * TPS, false, 2);
 		if (VarioConfig.showBounceVelocityXyz) matrixRow(graphics, font, matrix, x, y, "XYZ",
@@ -216,8 +220,8 @@ public final class VarioHudElement implements HudElement {
 				BOUNCE_SPANS, BOUNCE_COLUMN);
 		y += LINE;
 		BounceTracker.Event[][] spans = { { touch, leave }, { leave, deploy } };
-		if (VarioConfig.showBounceDistanceX) y = distanceRow(graphics, font, matrix, x, y, "X",
-				spans, (a, b) -> b.x() - a.x(), true);
+		if (VarioConfig.showBounceDistanceY) y = distanceRow(graphics, font, matrix, x, y, "Y",
+				spans, (a, b) -> b.y() - a.y(), true);
 		if (VarioConfig.showBounceDistanceXz) y = distanceRow(graphics, font, matrix, x, y, "XZ",
 				spans, (a, b) -> Math.hypot(b.x() - a.x(), b.z() - a.z()), false);
 		if (VarioConfig.showBounceDistanceXyz) distanceRow(graphics, font, matrix, x, y, "XYZ",
@@ -234,9 +238,12 @@ public final class VarioHudElement implements HudElement {
 		if (!VarioConfig.showBounceTicks) return;
 		long[] values = { BounceTracker.ticks(touch, leave), BounceTracker.ticks(leave, deploy) };
 		for (int column = 0; column < values.length; column++) {
+			// Plain, never the sign colors. An elapsed span is counted forwards from the
+			// earlier event, so it is zero or more and the sign colors could only ever say
+			// "positive" — which every one of these is, every frame.
 			String value = values[column] < 0 ? "--" : Long.toString(values[column]);
 			graphics.drawString(font, value, matrix.left(column, font.width(value)), y + LINE,
-					values[column] < 0 ? VALUE : rateColor(values[column]), true);
+					VALUE, true);
 		}
 	}
 
@@ -266,7 +273,7 @@ public final class VarioHudElement implements HudElement {
 			String value = Double.isFinite(measured)
 					? fmt((signed ? "%+." : "%.") + decimals + "f", measured) : "--";
 			graphics.drawString(font, value, matrix.left(column, font.width(value)), y,
-					Double.isFinite(measured) ? rateColor(measured) : VALUE, true);
+					readingColor(signed, measured), true);
 		}
 		return y + LINE;
 	}
@@ -280,10 +287,10 @@ public final class VarioHudElement implements HudElement {
 			BounceTracker.Event to = spans[column][1];
 			double measured = from == null || to == null ? Double.NaN
 					: measure.applyAsDouble(from.sample(), to.sample());
-			String value = from == null || to == null ? "--" : fmt(signed ? "%+.1f" : "%.1f",
-					measured);
+			String value = Double.isFinite(measured)
+					? fmt(signed ? "%+.1f" : "%.1f", measured) : "--";
 			graphics.drawString(font, value, matrix.left(column, font.width(value)), y,
-					Double.isFinite(measured) ? rateColor(measured) : VALUE, true);
+					readingColor(signed, measured), true);
 		}
 		return y + LINE;
 	}
@@ -304,8 +311,10 @@ public final class VarioHudElement implements HudElement {
 			int x, int y, String label, double acceleration) {
 		String value = Double.isFinite(acceleration)
 				? fmt("%+.2f b/s²", acceleration) : "--";
+		// Signed even in XZ and XYZ, unlike the speeds they differentiate: the rate of change of
+		// a magnitude is negative whenever that magnitude is falling.
 		return row(graphics, font, panel, x, y, label, value,
-				Double.isFinite(acceleration) ? rateColor(acceleration) : VALUE);
+				readingColor(true, acceleration));
 	}
 
 	private static double horizontalAcceleration(Sample sample, Sample previous) {
@@ -426,12 +435,15 @@ public final class VarioHudElement implements HudElement {
 	 * <p>Kinetic energy keeps its own row shape because it does not have this problem: speed
 	 * is speed, and its absolute value is already the reading.
 	 *
-	 * <p>The raw figure stays, dimmed, because it is what matches F3 and a map.
+	 * <p>The raw figure stays, dimmed, because it is what matches F3 and a map. Dimmed is all it
+	 * is: it writes its sign like every other row that can go negative — a world has floors below
+	 * zero and a height below zero is not the same reading as a height above it — because muting
+	 * says how loudly a figure asks to be read, not which conventions it is written in.
 	 */
 	private int sinceApexRow(GuiGraphics graphics, Font font, StatsPanel panel,
 			int x, int y, String label, double current, double peak) {
 		if (VarioConfig.energyReference == 0) {
-			return row(graphics, font, panel, x, y, label, fmt("%.1f b", current), VALUE);
+			return row(graphics, font, panel, x, y, label, fmt("%+.1f b", current), VALUE);
 		}
 		if (VarioConfig.energyReference == 1) {
 			return row(graphics, font, panel, x, y, label,
@@ -443,7 +455,7 @@ public final class VarioHudElement implements HudElement {
 		boolean known = Double.isFinite(peak);
 		double change = current - peak;
 		String delta = known ? fmt("%+.1f b", change) : "--";
-		String absolute = fmt("%.1f", current);
+		String absolute = fmt("%+.1f", current);
 
 		MatrixLayout matrix = MatrixLayout.rightAligned(x + panel.layoutWidth() - PAD, PAD,
 				font.width(ABSOLUTE_COLUMN), font.width(DELTA_COLUMN));
@@ -580,6 +592,24 @@ public final class VarioHudElement implements HudElement {
 	private static int chartY(int originY, double vy) {
 		double py = (VarioConfig.chartMaxVy - vy) * chartScale();
 		return originY + (int) Math.round(Mth.clamp(py, 0.0, chartHeight() - 1.0));
+	}
+
+	/**
+	 * How a figure in a matrix is colored: by its sign where it has one, and plainly where it
+	 * does not.
+	 *
+	 * <p>A magnitude has a floor at zero rather than a crossing — a horizontal speed, a
+	 * distance, an elapsed span — so {@link #rateColor} would report every one of them positive
+	 * on every frame, and the color would say nothing except that the row is switched on. The
+	 * signed rows beside them are the ones where the color is a reading, and the contrast is
+	 * what makes it one: green in this panel means the figure is above zero and could have been
+	 * below it.
+	 *
+	 * <p>This is the same rule the speed panel already follows by hand, where vertical speed is
+	 * colored and the two magnitudes under it are not.
+	 */
+	static int readingColor(boolean signed, double value) {
+		return signed && Double.isFinite(value) ? rateColor(value) : VALUE;
 	}
 
 	static int rateColor(double rate) {
