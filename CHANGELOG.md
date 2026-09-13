@@ -90,6 +90,11 @@ build identifier and released feature for feature; see its own changelog.
 
 ### Changed
 
+- Every module's background now defaults to a quarter opacity. The flight stats panels came in
+  at 0.69 and the dial speedometer at 0.45, against the bar speedometer's 0.25; a HUD out of the
+  box therefore showed three different grays over the same world. The bar speedometer's value is
+  the one kept because it is the most transparent of the three, and these panels are worth seeing
+  through. Each module's opacity remains its own setting, and a configured value is untouched.
 - Drag snapping no longer uses module or screen center lines. Moves and corner resizes now snap
   only to edges, removing the competing middle guide when boxes are already edge-aligned.
 - Each Flight Stats panel is sized by a width and a height that move independently, replacing

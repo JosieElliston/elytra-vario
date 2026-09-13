@@ -15,7 +15,11 @@ package jealoustone.elytravario.hud;
  * is opaque for exactly that reason.
  */
 final class HudChrome {
-	/** Panel fill. Its alpha is the default; each panel scales it by its own opacity setting. */
+	/**
+	 * Panel fill. Every configurable panel takes only its RGB and supplies its own alpha from
+	 * its opacity setting; the alpha here is used as written only by the velocity graph's
+	 * backing, which sits under an opaque heatmap and so is never read through.
+	 */
 	static final int PANEL_BG = 0xB0101014;
 
 	/** Panel outlines and the rules drawn between groups of rows. */
