@@ -900,8 +900,10 @@ whatever its height divides out to, which is what keeps it exactly as tall as it
 leaves it a gap at the bottom — snapping the size to a ladder instead would put the dead space
 back, and put it back worst at the height that had none. But it does mean the one thing a drag
 cannot do by itself is land on a round size, and two panels at 1.03× and 0.97× neither match nor
-can be made to match by eye. So a stats panel's height rests at the halves of the font's own
-size, and at whatever size another stats panel on screen is currently drawn at. The second is the
+can be made to match by eye. So a stats panel's height rests at the halves of the size Minecraft
+draws its font at — absolute multiples, fixed points on screen, not multiples of whatever size
+the panel happens to be at now — and at whatever size another stats panel on screen is currently
+drawn at. The second is the
 one that does the work: panels butted into a stack are meant to read as one instrument, and
 matching a four-row panel to a two-row one is arithmetic rather than something the eye can do at
 a drag's speed.

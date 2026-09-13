@@ -531,7 +531,13 @@ final class ModulePositionEditor {
 	}
 
 	/**
-	 * Text sizes a stats panel's height comes to rest on, as multiples of the font's own size.
+	 * Text sizes a stats panel's height comes to rest on, as multiples of the size Minecraft
+	 * draws its font at.
+	 *
+	 * <p><b>Absolute multiples, not multiples of whatever size the panel is at now.</b> One is
+	 * the font as the game draws it and the size every panel ships at; these are fixed points on
+	 * screen, so two panels that both rest on one are the same size as each other, and a drag's
+	 * answer does not depend on the size the drag started from.
 	 *
 	 * <p>Halves, and nothing finer. A panel's text size is whatever its height divides out to,
 	 * which is what keeps a panel exactly as tall as its rows and never leaves it a gap at the
