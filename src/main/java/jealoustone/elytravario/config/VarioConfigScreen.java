@@ -40,6 +40,20 @@ public final class VarioConfigScreen extends Screen {
 	private static final int GLOBAL_PAGE = 0;
 	/** How thick a resize grip's arms are drawn, over the outline they thicken. */
 	private static final int GRIP_THICKNESS = 2;
+	/** Vanilla's button height, which every control in the list is. */
+	private static final int CONTROL_HEIGHT = 20;
+	/** How far below the top of a row's label its control sits. The label is nine tall. */
+	private static final int CONTROL_TOP = 13;
+	/**
+	 * Clear pixels between one row's last drawn pixel and the next row's first.
+	 *
+	 * <p>Twice the four the label leaves above its own control, so that a row groups with its
+	 * label rather than with the row above it — which is the only thing this spacing has to
+	 * say. Rows used to be a flat 46 pixels whatever they held, which left thirteen here and
+	 * twenty-six under the subpage selector, and a list that had to be scrolled past its own
+	 * gaps. Each row now asks for what it draws plus this.
+	 */
+	private static final int ROW_GAP = 8;
 	private final Screen parent;
 	private final Map<String, String> settings = ConfigOptions.snapshot();
 	/** The boxes for the settings the in-world editor also writes: positions and sizes. */
@@ -815,7 +829,8 @@ public final class VarioConfigScreen extends Screen {
 
 	private final class OptionList extends ContainerObjectSelectionList<ConfigRow> {
 		OptionList(int top, int listHeight) {
-			super(VarioConfigScreen.this.minecraft, panelWidth, listHeight, top, 46);
+			super(VarioConfigScreen.this.minecraft, panelWidth, listHeight, top,
+					OptionRow.HEIGHT);
 			setX(panelLeft);
 		}
 		@Override protected void extractListBackground(GuiGraphicsExtractor graphics) {
@@ -824,11 +839,21 @@ public final class VarioConfigScreen extends Screen {
 		@Override protected void extractListSeparators(GuiGraphicsExtractor graphics) {
 			if (minecraft.level == null) super.extractListSeparators(graphics);
 		}
-		void append(ConfigRow row) { addEntry(row); }
+		void append(ConfigRow row) { addEntry(row, row.rowHeight()); }
 		@Override public int getRowWidth() { return panelWidth - 24; }
 	}
 
-	private abstract class ConfigRow extends ContainerObjectSelectionList.Entry<ConfigRow> { }
+	private abstract class ConfigRow extends ContainerObjectSelectionList.Entry<ConfigRow> {
+		/**
+		 * The vertical space this row asks the list for, the gap below it included.
+		 *
+		 * <p>A row's own, rather than one height for every kind of row: the subpage selector is
+		 * a control with no label over it, so a height that fits a labelled row leaves it
+		 * floating in the middle of a hole. The list lays entries out from their own heights
+		 * and scrolls by summing them, so this costs nothing but saying so.
+		 */
+		abstract int rowHeight();
+	}
 
 	private CycleButton<String> subpageSelector(List<String> groups, String group,
 			int x, int y, int width) {
@@ -842,11 +867,16 @@ public final class VarioConfigScreen extends Screen {
 
 	/** The boundary between settings shared by the page and settings for one selected subpage. */
 	private final class SubpageRow extends ConfigRow {
+		/** A bare control: nothing is drawn above it, so nothing is reserved above it. */
+		static final int HEIGHT = CONTROL_HEIGHT + ROW_GAP;
+
 		private final CycleButton<String> control;
 
 		SubpageRow(List<String> groups, String group) {
 			control = subpageSelector(groups, group, 0, 0, 180);
 		}
+
+		@Override int rowHeight() { return HEIGHT; }
 
 		@Override
 		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
@@ -941,8 +971,13 @@ public final class VarioConfigScreen extends Screen {
 	}
 
 	private final class OptionRow extends ConfigRow {
+		/** A label with its control under it, and the gap to the next row. */
+		static final int HEIGHT = CONTROL_TOP + CONTROL_HEIGHT + ROW_GAP;
+
 		private final ConfigOptions.Option option;
 		private final AbstractWidget control;
+
+		@Override int rowHeight() { return HEIGHT; }
 
 		OptionRow(ConfigOptions.Option option) {
 			this.option = option;
@@ -990,7 +1025,7 @@ public final class VarioConfigScreen extends Screen {
 		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
 			graphics.text(font, text(option.key()), getContentX(), getContentY(), 0xFFFFFFFF);
 			control.setX(getContentX());
-			control.setY(getContentY() + 13);
+			control.setY(getContentY() + CONTROL_TOP);
 			control.setWidth(getContentWidth());
 			control.extractRenderState(graphics, mouseX, mouseY, delta);
 		}
