@@ -931,7 +931,7 @@ A two-digit acceleration is the usual one, six pixels over.
 | Other | 86 | `GLIDE` at 28 against `-00.00 : 1` at 48 — the ratio is signed, which is what makes it the wider row |
 | Speed | 66 | `XYZ` at 18 against a 38-pixel column; the heading `SPEED b/s` at 52 is eight short of that |
 | Acceleration | 67 | the heading `ACCEL b/s²` at 57, a pixel past its own figures, because it carries the superscript |
-| Energy | 110 | the heading `ENERGY b` at 46 against `ABS` and then the `REL` column: 18, a pad, 32 |
+| Energy | 116 | the heading `ENERGY b` at 46 against `ABS` and then the `REL` column: 18, a pad, 38 |
 | E-bounce velocity | 150 | `XYZ` at 18 against three 38-pixel columns and the two pads between them |
 | E-bounce delta | 110 | the heading `DELTA b` at 40 against `L-T` and then a column |
 | E-bounce ticks | 118 | `TICKS` at 28 against both columns — the longest label of any matrix, on the row that carries two |
@@ -941,10 +941,18 @@ and the default, so that changing the reference never moves the floor under a wi
 The velocity matrix is the one panel whose heading row is not what sets its floor: `VEL b/s` is
 its longest label, but the headings it runs at are single letters right-aligned into columns
 reserved for a figure, so the rows of figures beneath need more width than the heading does.
-Elapsed ticks reserves the same `-000.00` columns as the other two even though a tick count
-needs neither the sign nor the decimals. The template is what fixes where a column's edges fall,
-so a narrower one would leave that panel's left column standing somewhere the other two have
-nothing, and three matrices set down at one width are meant to read as one grid.
+**Every figure column on every panel reserves the same 38 pixels.** A column is placed by
+measuring back from the panel's right edge, so equal templates and equal widths put every
+panel's columns on the same screen pixels — and a stack butted together at one width is meant to
+read as one instrument, which it does not do if the energy panel's inner column stands two
+pixels off the matrices'. Separate templates had them agreeing on the rightmost column, since
+every panel aligns its last column onto its own right edge whatever the template says, and
+disagreeing on every column left of it. The useful accident that makes one width enough is that
+seven glyphs and one stop measure the same whether they are spent on three digits and two
+decimals or on four and one, so a two-decimal speed and a one-decimal altitude want the same
+column; `RATE_COLUMN` and `HEIGHT_COLUMN` name which a panel is drawing and are the same width.
+Elapsed ticks reserves one too, even though a tick count needs neither the sign nor the
+decimals, because what a column is for here is where its edges fall.
 
 The grips stop at these, and a narrower width typed into the box is drawn at the minimum rather
 than refused, so a reading never turns into an overlap.

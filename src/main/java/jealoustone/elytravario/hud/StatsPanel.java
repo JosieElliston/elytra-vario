@@ -2,9 +2,8 @@ package jealoustone.elytravario.hud;
 
 import static jealoustone.elytravario.hud.LayoutWidths.row;
 import static jealoustone.elytravario.hud.LayoutWidths.widest;
-import static jealoustone.elytravario.hud.MatrixLayout.ABSOLUTE_COLUMN;
-import static jealoustone.elytravario.hud.MatrixLayout.BOUNCE_COLUMN;
-import static jealoustone.elytravario.hud.MatrixLayout.DELTA_COLUMN;
+import static jealoustone.elytravario.hud.MatrixLayout.HEIGHT_COLUMN;
+import static jealoustone.elytravario.hud.MatrixLayout.RATE_COLUMN;
 
 import java.util.List;
 
@@ -58,7 +57,7 @@ public enum StatsPanel {
 	 */
 	SPEED("statsSpeed", widest(
 			row("SPEED b/s", ""),
-			row("XYZ", BOUNCE_COLUMN)),
+			row("XYZ", RATE_COLUMN)),
 			"showVerticalSpeed", "showHorizontalSpeed", "showTotalSpeed"),
 
 	/**
@@ -71,7 +70,7 @@ public enum StatsPanel {
 	 */
 	ACCEL("statsAccel", widest(
 			row("ACCEL b/s²", ""),
-			row("XYZ", BOUNCE_COLUMN)),
+			row("XYZ", RATE_COLUMN)),
 			"showVerticalAcceleration", "showHorizontalAcceleration", "showTotalAcceleration"),
 
 	/**
@@ -79,15 +78,15 @@ public enum StatsPanel {
 	 *
 	 * <p>The only panel with two columns of different kinds, and its heading is what names them:
 	 * {@code ABS} is the height against the world's origin and {@code REL} the height against
-	 * the last apex. Its floor of 110 is that heading row — the longest label of the three
+	 * the last apex. Its floor of 116 is that heading row — the longest label of the three
 	 * headings, and both columns beside it — rather than any row of figures. Declared in the
 	 * two-column mode, the widest of the three energy references and the default, so that
 	 * changing the reference never moves the floor under a width that has already been set.
 	 */
 	ENERGY("statsEnergy", widest(
-			row("ENERGY b", "ABS", DELTA_COLUMN),
-			row("TE", ABSOLUTE_COLUMN, DELTA_COLUMN),
-			row("GAIN", DELTA_COLUMN)),
+			row("ENERGY b", "ABS", HEIGHT_COLUMN),
+			row("TE", HEIGHT_COLUMN, HEIGHT_COLUMN),
+			row("GAIN", HEIGHT_COLUMN)),
 			"showKineticEnergy", "showPotentialEnergy", "showTotalEnergy", "showCycleGain"),
 
 	/**
@@ -105,8 +104,8 @@ public enum StatsPanel {
 	 * three figures that set the floor.
 	 */
 	BOUNCE_VELOCITY("statsBounceVelocity", widest(
-			row("VEL b/s", "T", BOUNCE_COLUMN, BOUNCE_COLUMN),
-			row("XYZ", BOUNCE_COLUMN, BOUNCE_COLUMN, BOUNCE_COLUMN)),
+			row("VEL b/s", "T", RATE_COLUMN, RATE_COLUMN),
+			row("XYZ", RATE_COLUMN, RATE_COLUMN, RATE_COLUMN)),
 			"showBounceVelocityY", "showBounceVelocityXz", "showBounceVelocityXyz"),
 
 	/**
@@ -122,8 +121,8 @@ public enum StatsPanel {
 	 * cannot be negative.
 	 */
 	BOUNCE_DISTANCE("statsBounceDistance", widest(
-			row("DELTA b", "L-T", BOUNCE_COLUMN),
-			row("XYZ", BOUNCE_COLUMN, BOUNCE_COLUMN)),
+			row("DELTA b", "L-T", RATE_COLUMN),
+			row("XYZ", RATE_COLUMN, RATE_COLUMN)),
 			"showBounceDistanceY", "showBounceDistanceXz", "showBounceDistanceXyz"),
 
 	/**
@@ -136,15 +135,15 @@ public enum StatsPanel {
 	 * which is why this panel's floor is 118 and not the 98 it was when {@code TICKS} sat on the
 	 * heading row.
 	 *
-	 * <p>Its columns are the same {@link MatrixLayout#BOUNCE_COLUMN} the two matrices above it
+	 * <p>Its columns are the same {@link MatrixLayout#RATE_COLUMN} the two matrices above it
 	 * reserve, even though a tick count needs neither a sign nor a decimal point. The template
 	 * is what fixes where a column's edges fall, so a narrower one here would leave this panel's
 	 * left column standing somewhere the other two have nothing — and three matrices set down at
 	 * one width are meant to read as one grid.
 	 */
 	BOUNCE_TICKS("statsBounceTicks", widest(
-			row("", "L-T", BOUNCE_COLUMN),
-			row("TICKS", BOUNCE_COLUMN, BOUNCE_COLUMN)),
+			row("", "L-T", RATE_COLUMN),
+			row("TICKS", RATE_COLUMN, RATE_COLUMN)),
 			"showBounceTicks");
 
 	/** The height of one row in the shared unscaled layout. */

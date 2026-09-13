@@ -31,8 +31,7 @@ class LayoutWidthsTest {
 				"ENERGY b", "ABS", "REL", "KE", "PE", "TE", "GAIN", "VEL b/s",
 				"DELTA b", "TICKS", "Y", "XZ", "XYZ", "T", "L", "D", "L-T", "D-L", "--",
 				"-90.0°", "-00.00 : 1",
-				MatrixLayout.ABSOLUTE_COLUMN, MatrixLayout.DELTA_COLUMN,
-				MatrixLayout.BOUNCE_COLUMN }) {
+				MatrixLayout.HEIGHT_COLUMN, MatrixLayout.RATE_COLUMN }) {
 			assertTrue(LayoutWidths.measured(text), text);
 		}
 	}
@@ -40,13 +39,22 @@ class LayoutWidthsTest {
 	/** A row is its padding either side, its label, the clearance, and then its figures. */
 	@Test void aRowIsChargedForEveryColumnToTheRightOfItsOwnFigure() {
 		assertEquals(4 + 12 + 2 + 38 + 4, LayoutWidths.row("TE", "-0000.0"));
-		assertEquals(4 + 12 + 2 + 38 + 4 + 32 + 4,
-				LayoutWidths.row("TE", "-0000.0", "-000.0"));
+		assertEquals(4 + 12 + 2 + 38 + 4 + 38 + 4,
+				LayoutWidths.row("TE", "-0000.0", "-000.00"));
 	}
 
 	/** A row with no label of its own is charged no clearance for one. */
 	@Test void anUnlabelledRowIsChargedNoClearance() {
 		assertEquals(4 + 38 + 4 + 38 + 4, LayoutWidths.row("", "-000.00", "-000.00"));
+	}
+
+	/**
+	 * One column width for every figure on every panel, so that a stack of panels butted
+	 * together at one width has one grid of columns rather than several that nearly agree.
+	 */
+	@Test void everyFigureColumnIsTheSameWidth() {
+		assertEquals(38, LayoutWidths.width(MatrixLayout.RATE_COLUMN));
+		assertEquals(38, LayoutWidths.width(MatrixLayout.HEIGHT_COLUMN));
 	}
 
 	@Test void aPanelIsAsWideAsItsWidestRow() {
