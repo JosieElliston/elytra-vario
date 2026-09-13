@@ -53,7 +53,6 @@ public final class VarioConfigScreen extends YACLScreen {
 
 	static Screen create(Screen parent, int initialPage) {
 		Map<String, String> values = ConfigOptions.snapshot();
-		Map<String, String> committed = new LinkedHashMap<>(values);
 		List<Option<Visibility>> visibilities = new ArrayList<>();
 		for (int page = 0; page < 7; page++) {
 			visibilities.add(visibilityOption(visibility(page), values));
@@ -63,11 +62,9 @@ public final class VarioConfigScreen extends YACLScreen {
 				.save(() -> {
 					mergeGeometry(values, ConfigOptions.snapshot());
 					save(values);
-					committed.clear();
-					committed.putAll(values);
 				});
 		for (int page = 0; page < 7; page++) {
-			yacl.category(category(page, values, committed, visibilities));
+			yacl.category(category(page, values, visibilities));
 		}
 		return new VarioConfigScreen(yacl.build(), parent, initialPage);
 	}
@@ -82,7 +79,7 @@ public final class VarioConfigScreen extends YACLScreen {
 	}
 
 	private static ConfigCategory category(int page, Map<String, String> values,
-			Map<String, String> committed, List<Option<Visibility>> visibilities) {
+			List<Option<Visibility>> visibilities) {
 		ConfigCategory.Builder category = ConfigCategory.createBuilder().name(text("page." + page));
 		Map<String, OptionGroup.Builder> groups = new LinkedHashMap<>();
 		Map<String, Option<?>> dependentOptions = new LinkedHashMap<>();
@@ -92,7 +89,7 @@ public final class VarioConfigScreen extends YACLScreen {
 		addKeyBindings(category, page);
 
 		if (page == 0) {
-			category.option(layoutOption(null, committed));
+			category.option(layoutOption(null));
 			category.option(ButtonOption.createBuilder()
 					.name(text("keyBindings"))
 					.text(text("keyBindings.edit"))
@@ -103,7 +100,7 @@ public final class VarioConfigScreen extends YACLScreen {
 					}).build());
 		}
 		ModulePositionEditor.Module pageModule = pageModule(page);
-		if (pageModule != null) category.option(layoutOption(pageModule, committed));
+		if (pageModule != null) category.option(layoutOption(pageModule));
 
 		for (ConfigOptions.Option spec : ConfigOptions.all()) {
 			if (spec.page() != page || geometry(spec.key()) || visibility.contains(spec.key())) continue;
@@ -116,7 +113,7 @@ public final class VarioConfigScreen extends YACLScreen {
 					OptionGroup.Builder builder = OptionGroup.createBuilder()
 							.name(text("group." + id)).collapsed(false);
 					ModulePositionEditor.Module module = module(page, id);
-					if (module != null) builder.option(layoutOption(module, committed));
+					if (module != null) builder.option(layoutOption(module));
 					return builder;
 				});
 				group.option(option);
@@ -188,15 +185,16 @@ public final class VarioConfigScreen extends YACLScreen {
 		return super.mouseClicked(event, doubled);
 	}
 
-	private static ButtonOption layoutOption(ModulePositionEditor.Module module,
-			Map<String, String> committed) {
+	private static ButtonOption layoutOption(ModulePositionEditor.Module module) {
 		return ButtonOption.createBuilder()
 				.name(text("layout.title"))
 				.text(text("layout.edit"))
 				.description(OptionDescription.of(text("layout.tooltip")))
 				.available(Minecraft.getInstance().level != null)
-				.action((screen, option) -> Minecraft.getInstance().gui
-						.setScreen(new HudLayoutScreen(screen, module, committed)))
+				.action((screen, option) -> {
+					screen.finishOrSave();
+					Minecraft.getInstance().gui.setScreen(new HudLayoutScreen(screen, module));
+				})
 				.build();
 	}
 
