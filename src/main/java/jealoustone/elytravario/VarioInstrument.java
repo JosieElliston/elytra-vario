@@ -44,9 +44,9 @@ public enum VarioInstrument {
 
 	private final String id;
 	/**
-	 * The config keys behind this instrument's combined Off / Always / While gliding control.
+	 * The config keys behind this instrument's enabled and gliding-only controls.
 	 * The first is what the toggle key flips; leaving the second untouched remembers whether
-	 * switching the instrument back on should restore Always or While gliding.
+	 * switching the instrument back on should preserve the gliding-only setting.
 	 */
 	private final String showKey;
 	private final String glidingOnlyKey;

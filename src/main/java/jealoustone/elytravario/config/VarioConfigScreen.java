@@ -19,7 +19,6 @@ import dev.isxander.yacl3.api.controller.ColorControllerBuilder;
 import dev.isxander.yacl3.api.controller.CyclingListControllerBuilder;
 import dev.isxander.yacl3.api.controller.DoubleFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
-import dev.isxander.yacl3.api.controller.EnumDropdownControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import dev.isxander.yacl3.gui.YACLScreen;
@@ -53,10 +52,7 @@ public final class VarioConfigScreen extends YACLScreen {
 
 	static Screen create(Screen parent, int initialPage) {
 		Map<String, String> values = ConfigOptions.snapshot();
-		List<Option<Visibility>> visibilities = new ArrayList<>();
-		for (int page = 0; page < 7; page++) {
-			visibilities.add(visibilityOption(visibility(page), values));
-		}
+		Map<String, Option<?>> options = new LinkedHashMap<>();
 		YetAnotherConfigLib.Builder yacl = YetAnotherConfigLib.createBuilder()
 				.title(text("title"))
 				.save(() -> {
@@ -64,8 +60,9 @@ public final class VarioConfigScreen extends YACLScreen {
 					save(values);
 				});
 		for (int page = 0; page < 7; page++) {
-			yacl.category(category(page, values, visibilities));
+			yacl.category(category(page, values, options));
 		}
+		setAvailability(options);
 		return new VarioConfigScreen(yacl.build(), parent, initialPage);
 	}
 
@@ -79,13 +76,9 @@ public final class VarioConfigScreen extends YACLScreen {
 	}
 
 	private static ConfigCategory category(int page, Map<String, String> values,
-			List<Option<Visibility>> visibilities) {
+			Map<String, Option<?>> options) {
 		ConfigCategory.Builder category = ConfigCategory.createBuilder().name(text("page." + page));
 		Map<String, OptionGroup.Builder> groups = new LinkedHashMap<>();
-		Map<String, Option<?>> dependentOptions = new LinkedHashMap<>();
-		VisibilityPair visibility = visibility(page);
-		Option<Visibility> visibilityOption = visibilities.get(page);
-		category.option(visibilityOption);
 		addKeyBindings(category, page);
 
 		if (page == 0) {
@@ -103,9 +96,9 @@ public final class VarioConfigScreen extends YACLScreen {
 		if (pageModule != null) category.option(layoutOption(pageModule));
 
 		for (ConfigOptions.Option spec : ConfigOptions.all()) {
-			if (spec.page() != page || geometry(spec.key()) || visibility.contains(spec.key())) continue;
+			if (spec.page() != page || geometry(spec.key())) continue;
 			Option<?> option = option(spec, values);
-			dependentOptions.put(spec.key(), option);
+			options.put(spec.key(), option);
 			if (spec.group() == null) {
 				category.option(option);
 			} else {
@@ -120,7 +113,6 @@ public final class VarioConfigScreen extends YACLScreen {
 			}
 		}
 		for (OptionGroup.Builder group : groups.values()) category.group(group.build());
-		setAvailability(page, visibilities, dependentOptions);
 		return category.build();
 	}
 
@@ -212,57 +204,51 @@ public final class VarioConfigScreen extends YACLScreen {
 		return null;
 	}
 
-	private static VisibilityPair visibility(int page) {
-		if (page == 0) return new VisibilityPair("enabled", "hudGlidingOnly");
-		for (VarioInstrument instrument : VarioInstrument.values()) {
-			ConfigOptions.Option show = spec(instrument.showKey());
-			if (show.page() == page) return new VisibilityPair(
-					instrument.showKey(), instrument.glidingOnlyKey());
-		}
-		throw new IllegalArgumentException("No visibility settings for page " + page);
-	}
-
-	private static Option<Visibility> visibilityOption(VisibilityPair pair,
-			Map<String, String> values) {
-		StateManager<VisibilityState> state = StateManager.createInstant(
-				VisibilityState.of(pair, ConfigOptions.defaults()),
-				() -> VisibilityState.of(pair, values),
-				value -> setVisibility(pair, values, value));
-		return Option.<Visibility>createBuilder()
-				.name(text(pair.showKey()))
-				.description(OptionDescription.of(text(pair.showKey() + ".tooltip")))
-				.stateManager(state.xmap(VisibilityState::visibility,
-						mode -> VisibilityState.forMode(mode,
-								VisibilityState.of(pair, values).glidingOnly())))
-				.controller(option -> EnumDropdownControllerBuilder.create(option)
-						.formatValue(value -> text("visibility." + value.name().toLowerCase())))
-				.build();
-	}
-
-	private static void setAvailability(int page, List<Option<Visibility>> visibilities,
-			Map<String, Option<?>> dependents) {
-		Runnable refresh = () -> refreshAvailability(page, visibilities, dependents);
-		for (Option<Visibility> visibility : visibilities) {
-			visibility.addEventListener((option, event) -> refresh.run());
-		}
-		for (Option<?> option : dependents.values()) {
+	private static void setAvailability(Map<String, Option<?>> options) {
+		Runnable refresh = () -> refreshAvailability(options);
+		for (Option<?> option : options.values()) {
 			option.addEventListener((changed, event) -> refresh.run());
 		}
 		refresh.run();
 	}
 
-	private static void refreshAvailability(int page, List<Option<Visibility>> visibilities,
-			Map<String, Option<?>> options) {
-		boolean global = visibilities.get(0).pendingValue() != Visibility.OFF;
-		boolean instrument = page == 0 || visibilities.get(page).pendingValue() != Visibility.OFF;
-		boolean markers = visibilities.get(2).pendingValue() != Visibility.OFF;
-		for (Map.Entry<String, Option<?>> entry : options.entrySet()) {
-			String key = entry.getKey();
-			boolean available = page == 0 || global && instrument;
-			if (page == 1 && sharedLadderSetting(key)) available = global && (instrument || markers);
-			available &= localAvailable(key, options);
-			setAvailablePreservingValue(entry.getValue(), available);
+	private static void refreshAvailability(Map<String, Option<?>> options) {
+		boolean global = pendingBoolean(options, "enabled");
+		boolean ladder = pendingBoolean(options, "showLadder");
+		boolean markers = pendingBoolean(options, "showLadderMarkers");
+		for (ConfigOptions.Option spec : ConfigOptions.all()) {
+			Option<?> option = options.get(spec.key());
+			if (option == null) continue;
+			boolean available;
+			if (spec.key().equals("enabled") || spec.key().equals("positionMargin")
+					|| spec.key().equals("positionSnapDistance")) {
+				available = true;
+			} else if (spec.page() == 0) {
+				available = global;
+			} else if (isInstrumentShowKey(spec.key())) {
+				available = global;
+			} else if (spec.page() == 1 && sharedLadderSetting(spec.key())) {
+				available = global && (ladder || markers);
+			} else {
+				available = global && pendingBoolean(options, instrumentShowKey(spec.page()));
+			}
+			available &= localAvailable(spec.key(), options);
+			setAvailablePreservingValue(option, available);
 		}
+	}
+
+	private static boolean isInstrumentShowKey(String key) {
+		for (VarioInstrument instrument : VarioInstrument.values()) {
+			if (key.equals(instrument.showKey())) return true;
+		}
+		return false;
+	}
+
+	private static String instrumentShowKey(int page) {
+		for (VarioInstrument instrument : VarioInstrument.values()) {
+			if (spec(instrument.showKey()).page() == page) return instrument.showKey();
+		}
+		throw new IllegalArgumentException("No instrument for page " + page);
 	}
 
 	private static <T> void setAvailablePreservingValue(Option<T> option, boolean available) {
@@ -348,46 +334,11 @@ public final class VarioConfigScreen extends YACLScreen {
 		return option == null || Boolean.TRUE.equals(option.pendingValue());
 	}
 
-	private static void setVisibility(VisibilityPair pair, Map<String, String> values,
-			VisibilityState visibility) {
-		values.put(pair.showKey(), Boolean.toString(visibility.shown()));
-		values.put(pair.glidingOnlyKey(), Boolean.toString(visibility.glidingOnly()));
-		ConfigOptions.applyIfValid(values);
-	}
-
 	private static ConfigOptions.Option spec(String key) {
 		for (ConfigOptions.Option option : ConfigOptions.all()) {
 			if (key.equals(option.key())) return option;
 		}
 		throw new IllegalArgumentException(key);
-	}
-
-	private enum Visibility { OFF, ALWAYS, GLIDING }
-
-	private record VisibilityState(boolean shown, boolean glidingOnly) {
-		static VisibilityState of(VisibilityPair pair, Map<String, String> values) {
-			return new VisibilityState(Boolean.parseBoolean(values.get(pair.showKey())),
-					Boolean.parseBoolean(values.get(pair.glidingOnlyKey())));
-		}
-
-		static VisibilityState forMode(Visibility mode, boolean rememberedGlidingOnly) {
-			return switch (mode) {
-				case OFF -> new VisibilityState(false, rememberedGlidingOnly);
-				case ALWAYS -> new VisibilityState(true, false);
-				case GLIDING -> new VisibilityState(true, true);
-			};
-		}
-
-		Visibility visibility() {
-			if (!shown) return Visibility.OFF;
-			return glidingOnly ? Visibility.GLIDING : Visibility.ALWAYS;
-		}
-	}
-
-	private record VisibilityPair(String showKey, String glidingOnlyKey) {
-		boolean contains(String key) {
-			return showKey.equals(key) || glidingOnlyKey.equals(key);
-		}
 	}
 
 	private static Option<?> option(ConfigOptions.Option spec, Map<String, String> values) {
