@@ -169,8 +169,17 @@ public final class ConfigStore {
 			double textSize = Math.clamp(scale, 1.0 / 16, StatsPanel.MAX_TEXT_SIZE);
 			// The height it will actually be drawn at, for stacking the next panel under it.
 			// Asked of the panel rather than worked out here, so that a row the panel draws and
-			// this file never knew about — its units heading — is counted.
-			long panelHeight = Math.round(panel.layoutHeightFor(drawn) * textSize);
+			// this file never knew about — its units heading — is counted. Rounded up for the
+			// same reason StatsPanel#height rounds up, and so that the stack agrees with it:
+			// rounding to nearest put a panel whose rows fall short of a whole pixel a pixel
+			// above where it is drawn, and the one under it a pixel into it.
+			//
+			// The two agree wherever this size is one the font is drawn at. Where it is not —
+			// three quarters at a GUI scale of two — the panel is drawn at the nearest size
+			// that is, and stands a little taller or shorter than the stack expects. No stored
+			// stack can help that: only a whole size has a height that is the same at every GUI
+			// scale, and this migration is not willing to round the size to one.
+			long panelHeight = (long) Math.ceil(panel.layoutHeightFor(drawn) * textSize);
 			values.put(panel.xKey(), Long.toString(Math.clamp(x, -4096, 4096)));
 			values.put(panel.yKey(), Long.toString(Math.clamp(top, -4096, 4096)));
 			values.put(panel.widthKey(), Long.toString(Math.clamp(width, 32, 1200)));
