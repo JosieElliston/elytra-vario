@@ -32,6 +32,26 @@ final class LivePreviewStateManager<T> implements StateManager<T> {
 
 	@Override public T get() { return pendingValue; }
 
+	/**
+	 * Adopts a value changed outside the screen as both the pending and the saved state.
+	 *
+	 * <p>An instrument toggled by its key while the settings are open has already been written
+	 * to disk, so the switch has to move without the screen reading it as an edit it is holding.
+	 * Both values are in place before the listener runs, since what the listener recomputes is
+	 * whether anything is unsaved.
+	 */
+	void adopt(T value) {
+		if (Objects.equals(pendingValue, value)) {
+			savedValue = value;
+			return;
+		}
+		T previous = pendingValue;
+		pendingValue = value;
+		savedValue = value;
+		preview.accept(value);
+		listener.onStateChange(previous, value);
+	}
+
 	@Override
 	public void apply() {
 		savedValue = pendingValue;

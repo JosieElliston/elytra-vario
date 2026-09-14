@@ -5,81 +5,40 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.mojang.blaze3d.platform.InputConstants;
 import jealoustone.elytravario.ElytraVario;
 import jealoustone.elytravario.ElytraVarioClient;
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.hud.VarioHudElement;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.ContainerObjectSelectionList;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.ARGB;
-import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
 /** Full-screen, in-world editor for moving and resizing HUD modules. */
 public final class HudLayoutScreen extends Screen {
-	private static final int PAGE_COUNT = 7;
-	/** The page whose switch and key are the whole mod's rather than one instrument's. */
-	private static final int GLOBAL_PAGE = 0;
 	/** How thick a resize grip's arms are drawn, over the outline they thicken. */
 	private static final int GRIP_THICKNESS = 2;
-	/** Vanilla's button height, which every control in the list is. */
-	private static final int CONTROL_HEIGHT = 20;
-	/** How far below the top of a row's label its control sits. The label is nine tall. */
-	private static final int CONTROL_TOP = 13;
-	/**
-	 * Clear pixels between one row's last drawn pixel and the next row's first.
-	 *
-	 * <p>Twice the four the label leaves above its own control, so that a row groups with its
-	 * label rather than with the row above it — which is the only thing this spacing has to
-	 * say. Rows used to be a flat 46 pixels whatever they held, which left thirteen here and
-	 * twenty-six under the subpage selector, and a list that had to be scrolled past its own
-	 * gaps. Each row now asks for what it draws plus this.
-	 */
-	private static final int ROW_GAP = 8;
 	private final Screen parent;
 	private final Map<String, String> settings = ConfigOptions.snapshot();
-	/** The boxes for the settings the in-world editor also writes: positions and sizes. */
-	private final Map<String, EditBox> editorBoxes = new HashMap<>();
-	// Where you were reading is not a setting, but losing it is felt like one: the screen is
-	// opened and closed repeatedly while flying, to try one number and watch the HUD. Page,
-	// subpage, scroll and the Advanced switch therefore outlive the screen, and are remembered
-	// for the session rather than written to disk, since they say nothing about how the mod
-	// should behave.
-	/** Remembers which subpage each divided page was last showing. */
+	// Which module you were placing is not a setting, but losing it is felt like one: the screen
+	// is opened and closed repeatedly while flying, to move one module and watch the HUD. The
+	// selection therefore outlives the screen, and is remembered for the session rather than
+	// written to disk, since it says nothing about how the mod should behave.
+	/** Remembers which group each divided page had selected. */
 	private static final Map<Integer, Integer> subpages = new HashMap<>();
-	/** Remembers how far down each page's list was scrolled. */
-	private static final Map<Integer, Double> scrolls = new HashMap<>();
 	private static int page;
-	private static boolean advanced;
-	/** The page the current list was built for, which is not {@link #page} once a tab has been
-	 * clicked and before the rebuild that answers it. */
-	private int listPage;
-	/** The bind waiting for the next key or mouse press, if any. */
-	private KeyMapping capturing;
-	private final List<KeyControl> keyControls = new ArrayList<>();
 	/** An edit the next write will persist. */
 	private boolean dirty;
 	private String saveError;
-	private OptionList optionList;
-	private int panelLeft;
-	private int panelWidth;
 	private int panelCenter;
 	private int toolbarBottom;
 	private ModulePositionEditor.Module draggingModule;
@@ -97,12 +56,7 @@ public final class HudLayoutScreen extends Screen {
 	private double dragY;
 	private List<ModulePositionEditor.Guide> snapVerticalGuides = List.of();
 	private List<ModulePositionEditor.Guide> snapHorizontalGuides = List.of();
-	private boolean updatingEditorBoxes;
 	private final List<Button> contextButtons = new ArrayList<>();
-
-	public HudLayoutScreen(Screen parent) {
-		this(parent, null);
-	}
 
 	public HudLayoutScreen(Screen parent, ModulePositionEditor.Module module) {
 		super(text("layout.title"));
@@ -127,37 +81,30 @@ public final class HudLayoutScreen extends Screen {
 		panelCenter = width / 2;
 		int buttonWidth = Math.min(180, Math.max(100, width / 4));
 		addRenderableWidget(Button.builder(text("layout.settings"), button -> {
-			flush();
 			ModulePositionEditor.Module selected = selectedModule();
-			minecraft.gui.setScreen(VarioConfigScreen.create(this,
-					selected == null ? 0 : selected.page));
+			openSettings(selected == null ? 0 : selected.page);
 		}).bounds(8, 8, buttonWidth, 20).build());
 		addRenderableWidget(Button.builder(text("close"), button -> onClose())
 				.bounds(width - buttonWidth - 8, 8, buttonWidth, 20).build());
 		toolbarBottom = 32;
 	}
 
-	/** The list is discarded by a rebuild, by a resize and by leaving the screen alike, so each
-	 * of the three records where it had got to before letting go of it. */
-	private void rememberScroll() {
-		if (optionList != null) scrolls.put(listPage, optionList.scrollAmount());
-	}
-
-	@Override
-	protected void rebuildWidgets() {
-		rememberScroll();
-		super.rebuildWidgets();
-	}
-
-	@Override
-	public void resize(int width, int height) {
-		rememberScroll();
-		super.resize(width, height);
+	/**
+	 * Opens the settings on a module's page.
+	 *
+	 * <p>Reached from the settings, this replaces them rather than stacking a second copy behind
+	 * this editor: the two screens are crossed back and forth while a module is being placed, and
+	 * a fresh pair each way would pile up without limit. The new copy therefore takes the old
+	 * one's place in the chain, so backing out of it leads where backing out of the old one did.
+	 */
+	private void openSettings(int settingsPage) {
+		flush();
+		Screen behind = parent instanceof VarioConfigScreen settings ? settings.parentScreen() : this;
+		minecraft.gui.setScreen(VarioConfigScreen.create(behind, settingsPage));
 	}
 
 	@Override
 	public void removed() {
-		rememberScroll();
 		flush();
 		// A screen closed mid-drag never sees the mouse come up.
 		VarioHudElement.stretchEnergyField = false;
@@ -171,25 +118,9 @@ public final class HudLayoutScreen extends Screen {
 		throw new IllegalStateException(key);
 	}
 
-	/** The instrument this page governs as a whole, found through its visibility settings. */
-	private static VarioInstrument instrument(int page) {
-		for (var option : ConfigOptions.all()) {
-			if (option.page() != page) continue;
-			VarioInstrument found = VarioInstrument.byOptionKey(option.key());
-			if (found != null) return found;
-		}
-		return null;
-	}
-
-	private void addKeyControl(KeyMapping mapping, String labelKey, int left, int top, int span) {
-		KeyControl control = new KeyControl(mapping, labelKey);
-		keyControls.add(control);
-		addRenderableWidget(control.button(left + 4, top, span - 8));
-	}
-
 	/**
-	 * Pulls externally toggled visibility values into the screen without replacing unrelated
-	 * edits, including a half-typed value that is not yet valid enough to apply.
+	 * Pulls externally toggled visibility values into the screen without disturbing the geometry
+	 * a drag may be part-way through writing.
 	 */
 	private void syncVisibilitySettings() {
 		Map<String, String> live = ConfigOptions.snapshot();
@@ -199,78 +130,33 @@ public final class HudLayoutScreen extends Screen {
 		}
 	}
 
-	/**
-	 * Binds the armed toggle, or unbinds it when the press was Escape.
-	 *
-	 * <p>Key binds are vanilla options rather than this mod's, so this writes straight through to
-	 * options.txt instead of into this screen's values. That is the only way the two menus can
-	 * agree — the vanilla Controls screen edits the same mapping, and a bind held here until
-	 * later would be silently reverted by a Cancel there. The cost is that Reset does not undo
-	 * it, which the control's tooltip says.
-	 */
-	private void bind(InputConstants.Key key) {
-		capturing.setKey(key);
-		KeyMapping.resetMapping();
-		minecraft.options.save();
-		capturing = null;
-		for (KeyControl control : keyControls) control.refresh();
-	}
-
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		if (capturing != null) {
-			bind(event.key() == GLFW.GLFW_KEY_ESCAPE ? InputConstants.UNKNOWN : InputConstants.getKey(event));
+		// The arrows belong to the module whose settings page is selected, so page selection and
+		// module selection cannot disagree. Nothing on this screen types, so nothing wants them.
+		int dx = event.isLeft() ? -1 : event.isRight() ? 1 : 0;
+		int dy = event.isUp() ? -1 : event.isDown() ? 1 : 0;
+		ModulePositionEditor.Module selected = selectedModule();
+		if (selected != null && (dx != 0 || dy != 0)) {
+			move(selected, dx, dy);
 			return true;
 		}
-		// A text box keeps the arrows for moving its caret. Everywhere else they belong to the
-		// module whose settings page is selected, so page selection and module selection cannot
-		// disagree.
-		if (!typing(getFocused())) {
-			int dx = event.isLeft() ? -1 : event.isRight() ? 1 : 0;
-			int dy = event.isUp() ? -1 : event.isDown() ? 1 : 0;
-			ModulePositionEditor.Module selected = selectedModule();
-			if (selected != null && (dx != 0 || dy != 0)) {
-				move(selected, dx, dy);
-				return true;
-			}
-		}
 		if (super.keyPressed(event)) return true;
-		// The key that opened the settings closes them again, the way Escape does — a bind you
-		// press to look at the HUD settings is one you press again to get back to flying.
-		//
-		// Unlike Escape, it yields to a field being typed into. The bind is a plain letter by
-		// default, and a letter meant for a number or color box must reach the box; Escape needs
-		// no such care because nothing on this screen wants it. Offering the event to the widgets
-		// first is not enough on its own, since a text box takes its ordinary characters through
-		// charTyped and so refuses this event, hence the explicit check.
-		if (!typing(getFocused())) {
-			boolean handled = ElytraVarioClient.toggleVisibilityIfMatches(event);
-			handled |= VarioInstrument.toggleMatching(event);
-			KeyMapping settingsKey = ElytraVarioClient.settingsKey();
-			if (handled) syncVisibilitySettings();
-			if (settingsKey != null && settingsKey.matches(event)) {
-				onClose();
-				return true;
-			}
-			if (handled) rebuildWidgets();
-			return handled;
+		// The key that opened the editor closes it again, the way Escape does — a bind you press
+		// to look at the HUD layout is one you press again to get back to flying.
+		boolean handled = ElytraVarioClient.toggleVisibilityIfMatches(event);
+		handled |= VarioInstrument.toggleMatching(event);
+		if (handled) syncVisibilitySettings();
+		KeyMapping settingsKey = ElytraVarioClient.settingsKey();
+		if (settingsKey != null && settingsKey.matches(event)) {
+			onClose();
+			return true;
 		}
-		return false;
-	}
-
-	/** Whether the focus path ends in a text box that is taking input. */
-	private static boolean typing(GuiEventListener focused) {
-		if (focused instanceof EditBox box) return box.canConsumeInput();
-		if (focused instanceof ContainerEventHandler container) return typing(container.getFocused());
-		return false;
+		return handled;
 	}
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (capturing != null) {
-			bind(InputConstants.Type.MOUSE.getOrCreate(event.button()));
-			return true;
-		}
 		// Containers may consume their empty background, so use the leaf hit test directly:
 		// real controls own their pixels, while modules get first claim everywhere else.
 		if (overControl(event.x(), event.y())) return super.mouseClicked(event, doubled);
@@ -328,10 +214,8 @@ public final class HudLayoutScreen extends Screen {
 		int menuWidth = 150;
 		int left = Math.clamp(mouseX, 4, Math.max(4, width - menuWidth - 4));
 		int top = Math.clamp(mouseY, toolbarBottom, Math.max(toolbarBottom, height - 68));
-		contextButtons.add(addRenderableWidget(Button.builder(text("layout.moduleSettings"), button -> {
-			flush();
-			minecraft.gui.setScreen(VarioConfigScreen.create(this, module.page));
-		}).bounds(left, top, menuWidth, 20).build()));
+		contextButtons.add(addRenderableWidget(Button.builder(text("layout.moduleSettings"),
+				button -> openSettings(module.page)).bounds(left, top, menuWidth, 20).build()));
 		contextButtons.add(addRenderableWidget(Button.builder(text("layout.exactGeometry"), button -> {
 			flush();
 			minecraft.gui.setScreen(new ExactGeometryScreen(module));
@@ -378,8 +262,7 @@ public final class HudLayoutScreen extends Screen {
 	}
 
 	private List<ModulePositionEditor.Bounds> moduleBounds() {
-		boolean gliding = minecraft.player != null && minecraft.player.isFallFlying();
-		return ModulePositionEditor.bounds(font, width, height, gliding, true);
+		return ModulePositionEditor.bounds(font, width, height);
 	}
 
 	private ModulePositionEditor.Bounds moduleAt(double x, double y,
@@ -387,7 +270,7 @@ public final class HudLayoutScreen extends Screen {
 		return ModulePositionEditor.at(moduleBounds(), x, y, preferred);
 	}
 
-	/** The subpage this page is showing, or null where the page is not divided. */
+	/** The group this page has selected, or null where the page is not divided into groups. */
 	private static String selectedGroup(int page) {
 		List<String> groups = ConfigOptions.groups(page);
 		return groups.isEmpty() ? null
@@ -397,10 +280,10 @@ public final class HudLayoutScreen extends Screen {
 	/**
 	 * The module the arrow keys move, which is the one whose settings are on screen.
 	 *
-	 * <p>A page carrying several modules — Flight Stats, one per panel — names each of them on
-	 * its own subpage, so the selection follows the dropdown. A page carrying one leaves its
-	 * module's group null, and it stays selected whichever subpage is showing; the
-	 * speedometers, whose subpages are one bar or needle each, are that case.
+	 * <p>A page carrying several modules — Flight Stats, one per panel — gives each of them a
+	 * group of its own, so the selection follows the group the settings screen last opened. A
+	 * page carrying one leaves its module's group null, and it stays selected whichever group is
+	 * showing; the speedometers, whose groups are one bar or needle each, are that case.
 	 */
 	private ModulePositionEditor.Module selectedModule() {
 		String group = selectedGroup(page);
@@ -411,7 +294,7 @@ public final class HudLayoutScreen extends Screen {
 		return null;
 	}
 
-	/** Opens this module's settings: its page, and its subpage where it has one. */
+	/** Selects this module, so that the arrow keys and the settings button both follow it. */
 	private void select(ModulePositionEditor.Module module) {
 		boolean wrongPage = page != module.page;
 		boolean wrongSubpage = module.group != null
@@ -424,7 +307,7 @@ public final class HudLayoutScreen extends Screen {
 		rebuildWidgets();
 	}
 
-	/** A module's name for a tooltip: its page, and its subpage where it has one. */
+	/** A module's name for a tooltip: its page, and its group where it has one. */
 	private static Component moduleName(ModulePositionEditor.Module module) {
 		Component name = text("page." + module.page);
 		return module.group == null ? name
@@ -436,7 +319,7 @@ public final class HudLayoutScreen extends Screen {
 				width, height)) {
 			return;
 		}
-		editorWrote(module.xKey, module.yKey);
+		changed();
 	}
 
 	/** The module as it is currently drawn, or null while it is hidden. */
@@ -474,7 +357,7 @@ public final class HudLayoutScreen extends Screen {
 		if (nextX.equals(settings.get(module.xKey)) && nextY.equals(settings.get(module.yKey))) return;
 		settings.put(module.xKey, nextX);
 		settings.put(module.yKey, nextY);
-		editorWrote(module.xKey, module.yKey);
+		changed();
 	}
 
 	/**
@@ -512,7 +395,7 @@ public final class HudLayoutScreen extends Screen {
 			String next = size.format(resize.value());
 			if (!next.equals(settings.get(key))) {
 				settings.put(key, next);
-				editorWrote(key);
+				changed();
 			}
 		}
 		ModulePositionEditor.Position truePosition = ModulePositionEditor.anchored(corner,
@@ -533,7 +416,7 @@ public final class HudLayoutScreen extends Screen {
 				|| !nextY.equals(settings.get(module.yKey))) {
 			settings.put(module.xKey, nextX);
 			settings.put(module.yKey, nextY);
-			editorWrote(module.xKey, module.yKey);
+			changed();
 		}
 		// Asked of the module as it ended up, so a guide is drawn only where an edge is
 		// genuinely on it. The others have not moved, so the rests they offer are unchanged.
@@ -551,79 +434,6 @@ public final class HudLayoutScreen extends Screen {
 		snapHorizontalGuides = List.copyOf(horizontal);
 	}
 
-	/** Shows what the in-world editor wrote in the boxes that show the same settings. */
-	private void editorWrote(String... keys) {
-		updatingEditorBoxes = true;
-		for (String key : keys) {
-			EditBox box = editorBoxes.get(key);
-			if (box != null) box.setValue(settings.get(key));
-		}
-		updatingEditorBoxes = false;
-		changed();
-	}
-
-	/** A choice or toggle as a standalone dropdown, for options shown outside the list. */
-	private CycleButton<String> valueSelector(ConfigOptions.Option option, int x, int y, int listWidth) {
-		List<String> values = new ArrayList<>();
-		if (option.toggle()) {
-			values.add("false");
-			values.add("true");
-		} else {
-			for (int i = 0; i < option.choices(); i++) values.add(Integer.toString(i));
-		}
-		CycleButton<String> button = CycleButton.<String>builder(value -> valueLabel(option, value),
-				settings.get(option.key())).withValues(values)
-				.create(x, y, listWidth, 20, text(option.key()), (widget, value) -> {
-					settings.put(option.key(), value);
-					changed();
-				});
-		button.setTooltip(Tooltip.create(tooltip(option)));
-		return button;
-	}
-
-	private Component valueLabel(ConfigOptions.Option option, String value) {
-		return option.toggle() ? text(Boolean.parseBoolean(value) ? "on" : "off")
-				: text(option.key() + "." + value);
-	}
-
-	private Component tooltip(ConfigOptions.Option option) {
-		Component body = text(option.key() + ".tooltip");
-		if (!option.toggle() && option.choices() == 0 && !option.color()) {
-			body = body.copy().append("\n" + option.min() + " \u2013 " + option.max());
-		}
-		if (isCoordinate(option.key())) {
-			body = body.copy().append("\n").append(text("positionEditor.controls"));
-		} else {
-			ModulePositionEditor.Module sized = sizedModule(option.key());
-			if (sized != null) {
-				body = body.copy().append("\n").append(text(sized.sizeKeys.size() > 1
-						? "positionEditor.sizeControlsBothAxes" : "positionEditor.sizeControls"));
-			}
-		}
-		return text(option.key()).copy().append("\n").append(body);
-	}
-
-	private static boolean isCoordinate(String key) {
-		for (ModulePositionEditor.Module module : ModulePositionEditor.Module.values()) {
-			if (key.equals(module.xKey) || key.equals(module.yKey)) return true;
-		}
-		return false;
-	}
-
-	/** The module whose resize grips write this setting, if any. */
-	private static ModulePositionEditor.Module sizedModule(String key) {
-		for (ModulePositionEditor.Module module : ModulePositionEditor.Module.values()) {
-			if (module.sizeKeys.contains(key)) return module;
-		}
-		return null;
-	}
-
-	/** Advanced rows hide; rows belonging to another subpage are not part of this page's view. */
-	private boolean shown(ConfigOptions.Option option, String group) {
-		if (option.advanced() && !advanced) return false;
-		return option.group() == null || option.group().equals(group);
-	}
-
 	private void changed() {
 		saveError = null;
 		dirty = true;
@@ -637,13 +447,13 @@ public final class HudLayoutScreen extends Screen {
 	}
 
 	/**
-	 * Writes the edits made since the last write, if the screen holds nothing half-typed.
+	 * Writes the edits made since the last write, if the values agree with each other.
 	 *
-	 * <p>Once per tick rather than once per edit, because a dragged slider or a held arrow key
-	 * changes a value far faster than a file wants replacing; and again as the screen closes, so
-	 * that the last edit is on disk before the settings are out of sight. A set of values with a
-	 * half-typed number in it is simply not written yet — the error under Close says why —
-	 * and it becomes writable again as soon as the offending box does.
+	 * <p>Once per tick rather than once per edit, because a drag or a held arrow key changes a
+	 * value far faster than a file wants replacing; and again as the screen closes, so that the
+	 * last edit is on disk before the layout is out of sight. A set of values that do not agree
+	 * with each other is simply not written yet — the error under Close says why — and it
+	 * becomes writable again as soon as they do.
 	 *
 	 * <p>A failed write is reported and the edit kept: it still applies for this session, and
 	 * retrying every tick would only fill the log.
@@ -772,219 +582,6 @@ public final class HudLayoutScreen extends Screen {
 		}
 	}
 
-	private final class OptionList extends ContainerObjectSelectionList<ConfigRow> {
-		OptionList(int top, int listHeight) {
-			super(HudLayoutScreen.this.minecraft, panelWidth, listHeight, top,
-					OptionRow.HEIGHT);
-			setX(panelLeft);
-		}
-		@Override protected void extractListBackground(GuiGraphicsExtractor graphics) {
-			if (minecraft.level == null) super.extractListBackground(graphics);
-		}
-		@Override protected void extractListSeparators(GuiGraphicsExtractor graphics) {
-			if (minecraft.level == null) super.extractListSeparators(graphics);
-		}
-		void append(ConfigRow row) { addEntry(row, row.rowHeight()); }
-		@Override public int getRowWidth() { return panelWidth - 24; }
-	}
-
-	private abstract class ConfigRow extends ContainerObjectSelectionList.Entry<ConfigRow> {
-		/**
-		 * The vertical space this row asks the list for, the gap below it included.
-		 *
-		 * <p>A row's own, rather than one height for every kind of row: the subpage selector is
-		 * a control with no label over it, so a height that fits a labelled row leaves it
-		 * floating in the middle of a hole. The list lays entries out from their own heights
-		 * and scrolls by summing them, so this costs nothing but saying so.
-		 */
-		abstract int rowHeight();
-	}
-
-	private CycleButton<String> subpageSelector(List<String> groups, String group,
-			int x, int y, int width) {
-		return CycleButton.<String>builder(id -> text("group." + id), group)
-				.withValues(groups)
-				.create(x, y, width, 20, text("page." + page + ".group"), (button, value) -> {
-					subpages.put(page, groups.indexOf(value));
-					rebuildWidgets();
-				});
-	}
-
-	/** The boundary between settings shared by the page and settings for one selected subpage. */
-	private final class SubpageRow extends ConfigRow {
-		/** A bare control: nothing is drawn above it, so nothing is reserved above it. */
-		static final int HEIGHT = CONTROL_HEIGHT + ROW_GAP;
-
-		private final CycleButton<String> control;
-
-		SubpageRow(List<String> groups, String group) {
-			control = subpageSelector(groups, group, 0, 0, 180);
-		}
-
-		@Override int rowHeight() { return HEIGHT; }
-
-		@Override
-		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
-				boolean hovered, float delta) {
-			control.setX(getContentX());
-			control.setY(getContentY());
-			control.setWidth(getContentWidth());
-			control.extractRenderState(graphics, mouseX, mouseY, delta);
-		}
-
-		@Override public List<? extends GuiEventListener> children() { return List.of(control); }
-		@Override public List<? extends NarratableEntry> narratables() { return List.of(control); }
-	}
-
-	/**
-	 * The page's own keys — an instrument's toggle, or on Global the visibility and settings
-	 * keys — rebindable here so that the whole of a page's behavior is in one place rather than split
-	 * between this screen and the vanilla Controls list. Every one of these mappings is
-	 * registered with the game, so they are all in that list too, and either screen sets them.
-	 *
-	 * <p>It reads as one more switch beside those above it, and is labeled the way they are,
-	 * because that is what it is — but <b>it is not one of this mod's settings</b>, unlike
-	 * everything else on this screen: see {@link #bind}. It is written to options.txt rather
-	 * than to elytra-vario.json, and Reset leaves it alone.
-	 *
-	 * <p>A key already spoken for elsewhere is shown in red with the offending binds named,
-	 * rather than refused. Vanilla allows the clash and so does this; what a conflicting key
-	 * does is fire both actions, which is occasionally even what was wanted.
-	 */
-	private final class KeyControl {
-		/** Null only if the screen is somehow open before client init registered the keys. */
-		private final KeyMapping mapping;
-		private final String labelKey;
-		private final Button button;
-
-		KeyControl(KeyMapping mapping, String labelKey) {
-			this.mapping = mapping;
-			this.labelKey = labelKey;
-			this.button = Button.builder(Component.empty(), widget -> {
-				capturing = mapping;
-				refresh();
-			}).build();
-		}
-
-		Button button(int x, int y, int buttonWidth) {
-			button.setX(x);
-			button.setY(y);
-			button.setWidth(buttonWidth);
-			refresh();
-			return button;
-		}
-
-		void refresh() {
-			button.active = mapping != null;
-			if (mapping == null) {
-				button.setMessage(text(labelKey));
-				return;
-			}
-			// "Name: value", the shape CycleButton gives the switches above this one.
-			Component name = mapping.getTranslatedKeyMessage();
-			if (capturing == mapping) {
-				button.setMessage(labeled(Component.literal("> ")
-						.append(name.copy().withStyle(ChatFormatting.YELLOW))
-						.append(" <").withStyle(ChatFormatting.YELLOW)));
-				button.setTooltip(Tooltip.create(text("keyBind.capturing")));
-				return;
-			}
-			Component conflicts = conflicts(mapping);
-			button.setMessage(labeled(conflicts == null ? name : name.copy().withStyle(ChatFormatting.RED)));
-			Component tooltip = text(labelKey).copy().append("\n").append(text(labelKey + ".tooltip"));
-			if (conflicts != null) {
-				tooltip = tooltip.copy().append("\n").append(text("keyBind.conflict", conflicts));
-			}
-			button.setTooltip(Tooltip.create(tooltip));
-		}
-
-		private Component labeled(Component value) {
-			return text(labelKey).copy().append(": ").append(value);
-		}
-
-		/** The names of every other bind on the same key, or null when there are none. */
-		private Component conflicts(KeyMapping mapping) {
-			if (mapping.isUnbound()) return null;
-			Component names = null;
-			for (KeyMapping other : minecraft.options.keyMappings) {
-				if (other == mapping || !other.same(mapping)) continue;
-				Component name = Component.translatable(other.getName());
-				names = names == null ? name : names.copy().append(", ").append(name);
-			}
-			return names;
-		}
-	}
-
-	private final class OptionRow extends ConfigRow {
-		/** A label with its control under it, and the gap to the next row. */
-		static final int HEIGHT = CONTROL_TOP + CONTROL_HEIGHT + ROW_GAP;
-
-		private final ConfigOptions.Option option;
-		private final AbstractWidget control;
-
-		@Override int rowHeight() { return HEIGHT; }
-
-		OptionRow(ConfigOptions.Option option) {
-			this.option = option;
-			Component label = text(option.key());
-			if (option.color()) {
-				control = Button.builder(colorLabel(option, settings.get(option.key())), button ->
-						minecraft.gui.setScreen(new ColorPickerScreen(option)))
-						.bounds(0, 0, 180, 20).build();
-			} else if (option.toggle() || option.choices() > 0) {
-				control = Button.builder(valueLabel(), button -> {
-					String value = settings.get(option.key());
-					settings.put(option.key(), option.toggle() ? Boolean.toString(!Boolean.parseBoolean(value))
-							: Integer.toString((Integer.parseInt(value) + 1) % option.choices()));
-					button.setMessage(valueLabel());
-					changed();
-				}).bounds(0, 0, 180, 20).build();
-			} else {
-				EditBox box = new EditBox(font, 0, 0, 180, 20, label);
-				box.setMaxLength(32);
-				box.setValue(settings.get(option.key()));
-				box.setResponder(value -> {
-					settings.put(option.key(), value);
-					box.setTextColor(valid(value) ? 0xFFE0E0E0 : 0xFFFF7777);
-					if (!updatingEditorBoxes) changed();
-				});
-				box.setTextColor(valid(box.getValue()) ? 0xFFE0E0E0 : 0xFFFF7777);
-				if (isCoordinate(option.key()) || sizedModule(option.key()) != null) {
-					editorBoxes.put(option.key(), box);
-				}
-				control = box;
-			}
-			control.setTooltip(Tooltip.create(tooltip(option)));
-		}
-
-		private boolean valid(String value) {
-			try { option.parse(value); return true; }
-			catch (RuntimeException e) { return false; }
-		}
-
-		private Component valueLabel() {
-			return HudLayoutScreen.this.valueLabel(option, settings.get(option.key()));
-		}
-
-		@Override
-		public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
-			graphics.text(font, text(option.key()), getContentX(), getContentY(), 0xFFFFFFFF);
-			control.setX(getContentX());
-			control.setY(getContentY() + CONTROL_TOP);
-			control.setWidth(getContentWidth());
-			control.extractRenderState(graphics, mouseX, mouseY, delta);
-		}
-
-		@Override public List<? extends GuiEventListener> children() { return List.of(control); }
-		@Override public List<? extends NarratableEntry> narratables() { return List.of(control); }
-	}
-
-	/** A compact swatch and the exact persisted value, so colors remain easy to compare. */
-	private static Component colorLabel(ConfigOptions.Option option, String value) {
-		int color = (int) option.parse(value);
-		return Component.literal("\u25a0 ").withColor(color & 0xFFFFFF).append(value);
-	}
-
 	/** Exact position and size values, kept out of the ordinary settings screen. */
 	private final class ExactGeometryScreen extends Screen {
 		private final ModulePositionEditor.Module module;
@@ -1060,132 +657,4 @@ public final class HudLayoutScreen extends Screen {
 		}
 	}
 
-	/**
-	 * Channel-based color picker used by every color option. Changes are previewed in the HUD as
-	 * the sliders move. Done keeps them; Cancel and Escape restore the value from when the picker
-	 * opened. Heatmap colors omit opacity because their schema deliberately requires opaque RGB.
-	 */
-	private final class ColorPickerScreen extends Screen {
-		private static final int PICKER_WIDTH = 280;
-		private static final int PREVIEW_HEIGHT = 44;
-		private final ConfigOptions.Option option;
-		private final String initialValue;
-		private int color;
-		private int previewLeft;
-		private int previewTop;
-		private int previewWidth;
-
-		ColorPickerScreen(ConfigOptions.Option option) {
-			super(text("colorPicker.title", text(option.key())));
-			this.option = option;
-			initialValue = settings.get(option.key());
-			color = (int) option.parse(initialValue);
-		}
-
-		@Override
-		protected void init() {
-			int pickerWidth = Math.min(PICKER_WIDTH, width - 24);
-			int left = (width - pickerWidth) / 2;
-			int channels = option.opaque() ? 3 : 4;
-			int contentHeight = PREVIEW_HEIGHT + 12 + channels * 24 + 28;
-			previewLeft = left;
-			previewTop = Math.max(34, (height - contentHeight) / 2);
-			previewWidth = pickerWidth;
-
-			int y = previewTop + PREVIEW_HEIGHT + 12;
-			addRenderableWidget(new ColorSlider(left, y, pickerWidth, 1));
-			addRenderableWidget(new ColorSlider(left, y + 24, pickerWidth, 2));
-			addRenderableWidget(new ColorSlider(left, y + 48, pickerWidth, 3));
-			if (!option.opaque()) addRenderableWidget(new ColorSlider(left, y + 72, pickerWidth, 0));
-
-			int buttonsY = y + channels * 24 + 4;
-			addRenderableWidget(Button.builder(text("colorPicker.done"), button -> finish())
-					.bounds(left, buttonsY, pickerWidth / 2 - 2, 20).build());
-			addRenderableWidget(Button.builder(text("colorPicker.cancel"), button -> cancel())
-					.bounds(left + pickerWidth / 2 + 2, buttonsY, pickerWidth / 2 - 2, 20).build());
-		}
-
-		private void setChannel(int channel, int value) {
-			int shift = switch (channel) {
-				case 0 -> 24;
-				case 1 -> 16;
-				case 2 -> 8;
-				default -> 0;
-			};
-			color = color & ~(0xFF << shift) | value << shift;
-			if (option.opaque()) color |= 0xFF000000;
-			settings.put(option.key(), option.format(color));
-			changed();
-		}
-
-		private void finish() {
-			minecraft.gui.setScreen(HudLayoutScreen.this);
-		}
-
-		private void cancel() {
-			settings.put(option.key(), initialValue);
-			changed();
-			minecraft.gui.setScreen(HudLayoutScreen.this);
-		}
-
-		@Override public void onClose() { cancel(); }
-
-		@Override
-		public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
-				float delta) {
-			super.extractRenderState(graphics, mouseX, mouseY, delta);
-			graphics.centeredText(font, title, width / 2, previewTop - 18, 0xFFFFFFFF);
-			// A checkerboard makes partial opacity visible rather than merely making the swatch dim.
-			for (int y = 0; y < PREVIEW_HEIGHT; y += 8) {
-				for (int x = 0; x < previewWidth; x += 8) {
-					int checker = ((x / 8 + y / 8) & 1) == 0 ? 0xFFB8B8B8 : 0xFF686868;
-					graphics.fill(previewLeft + x, previewTop + y,
-							previewLeft + Math.min(x + 8, previewWidth),
-							previewTop + Math.min(y + 8, PREVIEW_HEIGHT), checker);
-				}
-			}
-			int previewRight = previewLeft + previewWidth;
-			graphics.fill(previewLeft, previewTop, previewRight, previewTop + PREVIEW_HEIGHT, color);
-			graphics.outline(previewLeft, previewTop, previewRight - previewLeft, PREVIEW_HEIGHT,
-					0xFFFFFFFF);
-			graphics.centeredText(font, Component.literal(option.format(color)), width / 2,
-					previewTop + (PREVIEW_HEIGHT - font.lineHeight) / 2, ARGB.opaque(contrast(color)));
-		}
-
-		/** Black or white text, based on the opaque RGB luminance of the selected color. */
-		private int contrast(int color) {
-			return ARGB.red(color) * 299 + ARGB.green(color) * 587 + ARGB.blue(color) * 114
-					>= 128_000 ? 0x000000 : 0xFFFFFF;
-		}
-
-		private final class ColorSlider extends AbstractSliderButton {
-			private final int channel;
-
-			ColorSlider(int x, int y, int width, int channel) {
-				super(x, y, width, 20, Component.empty(), channel(color, channel) / 255.0);
-				this.channel = channel;
-				updateMessage();
-			}
-
-			@Override
-			protected void updateMessage() {
-				int amount = Mth.clamp((int) Math.round(value * 255.0), 0, 255);
-				setMessage(text("colorPicker.channel." + channel, amount));
-			}
-
-			@Override
-			protected void applyValue() {
-				setChannel(channel, Mth.clamp((int) Math.round(value * 255.0), 0, 255));
-			}
-		}
-
-		private int channel(int color, int channel) {
-			return switch (channel) {
-				case 0 -> ARGB.alpha(color);
-				case 1 -> ARGB.red(color);
-				case 2 -> ARGB.green(color);
-				default -> ARGB.blue(color);
-			};
-		}
-	}
 }
