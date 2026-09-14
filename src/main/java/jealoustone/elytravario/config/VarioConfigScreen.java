@@ -22,12 +22,18 @@ import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import dev.isxander.yacl3.gui.YACLScreen;
+import dev.isxander.yacl3.gui.controllers.string.StringControllerElement;
 import jealoustone.elytravario.ElytraVario;
 import jealoustone.elytravario.ElytraVarioClient;
 import jealoustone.elytravario.VarioInstrument;
+import jealoustone.elytravario.hud.StatsPanel;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
 import net.minecraft.client.input.KeyEvent;
@@ -37,13 +43,22 @@ import org.lwjgl.glfw.GLFW;
 
 /** YACL-backed settings. All controls preview immediately; Cancel restores the opening values. */
 public final class VarioConfigScreen extends YACLScreen {
+	/** What this screen goes back to. {@link YACLScreen}'s own copy of it is private. */
+	private final Screen parentScreen;
+	/** Every setting as this screen has it, which is what Save writes. */
+	private final Map<String, String> values;
+	private final Map<String, Option<?>> options;
 	private final int initialPage;
 	private boolean selectedInitialPage;
 	private KeyBindController.Element capturingKey;
 
-	private VarioConfigScreen(YetAnotherConfigLib yacl, Screen parent, int initialPage) {
+	private VarioConfigScreen(YetAnotherConfigLib yacl, Screen parent, int initialPage,
+			Map<String, String> values, Map<String, Option<?>> options) {
 		super(yacl, parent);
+		this.parentScreen = parent;
 		this.initialPage = initialPage;
+		this.values = values;
+		this.options = options;
 	}
 
 	public static Screen create(Screen parent) {
@@ -55,16 +70,16 @@ public final class VarioConfigScreen extends YACLScreen {
 		Map<String, Option<?>> options = new LinkedHashMap<>();
 		YetAnotherConfigLib.Builder yacl = YetAnotherConfigLib.createBuilder()
 				.title(text("title"))
-				.save(() -> {
-					mergeGeometry(values, ConfigOptions.snapshot());
-					save(values);
-				});
+				.save(() -> save(values));
 		for (int page = 0; page < 7; page++) {
 			yacl.category(category(page, values, options));
 		}
 		setAvailability(options);
-		return new VarioConfigScreen(yacl.build(), parent, initialPage);
+		return new VarioConfigScreen(yacl.build(), parent, initialPage, values, options);
 	}
+
+	/** The screen this one returns to, which the layout editor reopens these settings behind. */
+	Screen parentScreen() { return parentScreen; }
 
 	@Override
 	protected void init() {
@@ -133,24 +148,69 @@ public final class VarioConfigScreen extends YACLScreen {
 	}
 
 	private static Option<InputConstants.Key> keyBinding(String label, KeyMapping mapping) {
-		InputConstants.Key current = mapping == null
-				? InputConstants.UNKNOWN : InputConstants.getKey(mapping.saveString());
-		InputConstants.Key defaultKey = mapping == null ? InputConstants.UNKNOWN : mapping.getDefaultKey();
 		return Option.<InputConstants.Key>createBuilder()
 				.name(text(label))
 				.description(OptionDescription.of(text(label + ".tooltip")))
 				.available(mapping != null)
-				.stateManager(StateManager.createInstant(defaultKey, () -> current,
-						key -> bind(mapping, key)))
+				.stateManager(new KeyBindState(mapping))
 				.customController(KeyBindController::new)
 				.build();
 	}
 
-	private static void bind(KeyMapping mapping, InputConstants.Key key) {
-		if (mapping == null) return;
-		mapping.setKey(key);
-		KeyMapping.resetMapping();
-		Minecraft.getInstance().options.save();
+	/**
+	 * A key bind's state, which is the game's rather than this screen's.
+	 *
+	 * <p>A bind is written to options.txt the moment it is set, because the vanilla Controls
+	 * screen edits the same mapping: a bind held back until Save would be silently reverted by a
+	 * Cancel there. It follows that it is never an unsaved change. Reporting one would leave the
+	 * screen dirty over an edit that is already on disk — which disables Edit layout and Escape
+	 * — and Cancel would then undo a bind the game has already taken. The value is read back
+	 * from the mapping for the same reason: the Controls screen may have moved it since.
+	 */
+	private static final class KeyBindState implements StateManager<InputConstants.Key> {
+		/** Null only if the screen is somehow open before client init registered the keys. */
+		private final KeyMapping mapping;
+		private StateListener<InputConstants.Key> listener = StateListener.noop();
+
+		KeyBindState(KeyMapping mapping) {
+			this.mapping = mapping;
+		}
+
+		@Override
+		public InputConstants.Key get() {
+			return mapping == null ? InputConstants.UNKNOWN
+					: InputConstants.getKey(mapping.saveString());
+		}
+
+		@Override
+		public void set(InputConstants.Key key) {
+			if (mapping == null) return;
+			InputConstants.Key previous = get();
+			if (previous.equals(key)) return;
+			mapping.setKey(key);
+			KeyMapping.resetMapping();
+			Minecraft.getInstance().options.save();
+			listener.onStateChange(previous, key);
+		}
+
+		@Override public void apply() { }
+		@Override public void sync() { }
+		@Override public boolean isSynced() { return true; }
+
+		@Override
+		public boolean isDefault() {
+			return mapping == null || get().equals(mapping.getDefaultKey());
+		}
+
+		@Override
+		public void resetToDefault(ResetAction action) {
+			if (mapping != null) set(mapping.getDefaultKey());
+		}
+
+		@Override
+		public void addListener(StateListener<InputConstants.Key> listener) {
+			this.listener = this.listener.andThen(listener);
+		}
 	}
 
 	void capture(KeyBindController.Element element) {
@@ -166,7 +226,60 @@ public final class VarioConfigScreen extends YACLScreen {
 			capturingKey = null;
 			return true;
 		}
-		return super.keyPressed(event);
+		if (super.keyPressed(event)) return true;
+		// An instrument's key and this screen's switch for it are the same setting, so the keys
+		// keep working while the settings are open and the switch moves to match. The key that
+		// opened the settings closes them again, the way Escape does — a bind you press to look
+		// at the HUD settings is one you press again to get back to flying.
+		//
+		// Unlike Escape, they all yield to a field being typed into. A bind is a plain letter by
+		// default, and a letter meant for a number field must reach the field; offering the event
+		// to the widgets first is not enough on its own, since a field takes its ordinary
+		// characters through charTyped and so refuses this event, hence the explicit check.
+		if (typing(getFocused())) return false;
+		boolean handled = ElytraVarioClient.toggleVisibilityIfMatches(event);
+		handled |= VarioInstrument.toggleMatching(event);
+		if (handled) adoptVisibility();
+		KeyMapping settingsKey = ElytraVarioClient.settingsKey();
+		if (settingsKey != null && settingsKey.matches(event)) {
+			onClose();
+			return true;
+		}
+		return handled;
+	}
+
+	/** Whether the focus path ends in a field that is taking typed input. */
+	private static boolean typing(GuiEventListener focused) {
+		if (focused instanceof EditBox box) return box.canConsumeInput();
+		// YACL's own number and text controls are not EditBoxes, and take their characters
+		// through charTyped just the same.
+		if (focused instanceof StringControllerElement) return true;
+		if (focused instanceof ContainerEventHandler container) return typing(container.getFocused());
+		return false;
+	}
+
+	/**
+	 * Pulls a visibility flipped by its key into the switches that show it.
+	 *
+	 * <p>The key has already written the file, so none of this is an edit the screen is holding:
+	 * the switches move and the screen stays clean.
+	 */
+	private void adoptVisibility() {
+		Map<String, String> live = ConfigOptions.snapshot();
+		adopt("enabled", live);
+		for (VarioInstrument instrument : VarioInstrument.values()) {
+			adopt(instrument.showKey(), live);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void adopt(String key, Map<String, String> live) {
+		Option<?> option = options.get(key);
+		// Every visibility setting is a switch, so its state is the boolean one.
+		if (option != null) {
+			((LivePreviewStateManager<Boolean>) option.stateManager())
+					.adopt(Boolean.parseBoolean(live.get(key)));
+		}
 	}
 
 	@Override
@@ -187,16 +300,26 @@ public final class VarioConfigScreen extends YACLScreen {
 				.available(Minecraft.getInstance().level != null)
 				.action((screen, option) -> {
 					if (!screen.shouldCloseOnEsc()) return;
-					Minecraft.getInstance().gui.setScreen(new HudLayoutScreen(screen, module));
+					Minecraft.getInstance().setScreen(new HudLayoutScreen(screen, module));
 				})
 				.build();
 	}
 
+	/**
+	 * The module a page's own layout button opens: the one the whole page is, or — where the
+	 * page is divided into a module per group, as Flight Stats is — the first of them.
+	 *
+	 * <p>Null for the pages that have no module at all, whose button opens the editor on
+	 * whatever it was last showing, there being nothing here to point it at.
+	 */
 	private static ModulePositionEditor.Module pageModule(int page) {
+		ModulePositionEditor.Module first = null;
 		for (ModulePositionEditor.Module module : ModulePositionEditor.Module.values()) {
-			if (module.page == page && module.group == null) return module;
+			if (module.page != page) continue;
+			if (module.group == null) return module;
+			if (first == null) first = module;
 		}
-		return null;
+		return first;
 	}
 
 	private static ModulePositionEditor.Module module(int page, String group) {
@@ -206,8 +329,38 @@ public final class VarioConfigScreen extends YACLScreen {
 		return null;
 	}
 
+	/**
+	 * Keeps every option available only while the settings it depends on are switched on.
+	 *
+	 * <p>The pass is guarded against itself. Making an option unavailable is an event YACL
+	 * delivers even from inside another one, and every option this pass reaches would otherwise
+	 * start a pass of its own: unticking the master switch nested some hundred and forty deep,
+	 * each level rescanning all of them. One pass answers for the lot, since it reads pending
+	 * values and restores any the library reverted, so a nested request is recorded and served
+	 * by a single repeat once the running pass is done.
+	 */
 	private static void setAvailability(Map<String, Option<?>> options) {
-		Runnable refresh = () -> refreshAvailability(options);
+		Runnable refresh = new Runnable() {
+			private boolean running;
+			private boolean requested;
+
+			@Override
+			public void run() {
+				if (running) {
+					requested = true;
+					return;
+				}
+				running = true;
+				try {
+					do {
+						requested = false;
+						refreshAvailability(options);
+					} while (requested);
+				} finally {
+					running = false;
+				}
+			}
+		};
 		for (Option<?> option : options.values()) {
 			option.addEventListener((changed, event) -> refresh.run());
 		}
@@ -234,7 +387,7 @@ public final class VarioConfigScreen extends YACLScreen {
 			} else {
 				available = global && pendingBoolean(options, instrumentShowKey(spec.page()));
 			}
-			available &= localAvailable(spec.key(), options);
+			available &= localAvailable(spec, options);
 			setAvailablePreservingValue(option, available);
 		}
 	}
@@ -265,7 +418,8 @@ public final class VarioConfigScreen extends YACLScreen {
 				|| key.equals("ladderBandFractionDown") || key.equals("ladderFadeFraction");
 	}
 
-	private static boolean localAvailable(String key, Map<String, Option<?>> options) {
+	private static boolean localAvailable(ConfigOptions.Option spec, Map<String, Option<?>> options) {
+		String key = spec.key();
 		String parent = switch (key) {
 			case "ladderFineLength", "ladderFineStepDegrees", "ladderFineRangeDegrees" -> "showFineTicks";
 			case "lookaheadPitchColor", "lookaheadTicks" -> "showLookaheadPitch";
@@ -290,22 +444,20 @@ public final class VarioConfigScreen extends YACLScreen {
 			default -> null;
 		};
 		if (parent != null && !pendingBoolean(options, parent)) return false;
-		for (jealoustone.elytravario.hud.StatsPanel panel
-				: jealoustone.elytravario.hud.StatsPanel.values()) {
-			if (!key.equals(panel.showKey()) && !geometry(key)
-					&& ConfigOptions.all().stream().anyMatch(spec -> spec.key().equals(key)
-							&& panel.group().equals(spec.group()))) {
-				if (!pendingBoolean(options, panel.showKey())) return false;
-				boolean hasRows = panel.rowKeys().stream()
-						.anyMatch(row -> pendingBoolean(options, row));
-				if ((key.equals(panel.opacityKey()) || key.equals(panel.borderKey())) && !hasRows) {
-					return false;
-				}
-				if (key.equals("energyReference")
-						&& !pendingBoolean(options, "showPotentialEnergy")
-						&& !pendingBoolean(options, "showTotalEnergy")) return false;
-				return true;
+		// A panel's own group names it, which is cheaper and plainer than searching the schema
+		// for the options that share it.
+		StatsPanel panel = spec.group() == null ? null : StatsPanel.byGroup(spec.group());
+		if (panel != null && !key.equals(panel.showKey())) {
+			if (!pendingBoolean(options, panel.showKey())) return false;
+			boolean hasRows = panel.rowKeys().stream()
+					.anyMatch(row -> pendingBoolean(options, row));
+			if ((key.equals(panel.opacityKey()) || key.equals(panel.borderKey())) && !hasRows) {
+				return false;
 			}
+			if (key.equals("energyReference")
+					&& !pendingBoolean(options, "showPotentialEnergy")
+					&& !pendingBoolean(options, "showTotalEnergy")) return false;
+			return true;
 		}
 		if (speedometerCommonEffect(key, "barSpeedo")) {
 			return pendingBoolean(options, "showBarSpeedoTotal")
@@ -411,13 +563,37 @@ public final class VarioConfigScreen extends YACLScreen {
 		set(spec, values, spec.parse(Double.toString(displayed)));
 	}
 
+	/**
+	 * Records what a control now says, and previews it where the whole set is consistent.
+	 *
+	 * <p>The value is kept whether or not it can be applied, so that what is on screen is what
+	 * Save will write. A pair of values can disagree — an axis maximum typed below its minimum —
+	 * without either control being wrong on its own, and dropping the number just typed would
+	 * leave the screen showing one value and saving another. The HUD keeps the last consistent
+	 * settings until the disagreement is resolved, and {@link #finishOrSave} says so.
+	 */
 	private static void set(ConfigOptions.Option spec, Map<String, String> values, Object value) {
-		String previous = values.put(spec.key(), spec.format(value));
-		if (ConfigOptions.error(values) == null) {
-			ConfigOptions.apply(values);
-		} else {
-			values.put(spec.key(), previous);
+		values.put(spec.key(), spec.format(value));
+		ConfigOptions.applyIfValid(values);
+	}
+
+	/**
+	 * Refuses to save a set of values no config file may hold, naming the reason on the button.
+	 *
+	 * <p>Geometry is merged first because the layout editor owns it, and because the checks
+	 * span both: the graph's pixel size is the editor's and the speeds it covers are this
+	 * screen's.
+	 */
+	@Override
+	public void finishOrSave() {
+		mergeGeometry(values, ConfigOptions.snapshot());
+		String error = ConfigOptions.error(values);
+		if (error != null) {
+			setSaveButtonMessage(text("saveBlocked").copy().withStyle(ChatFormatting.RED),
+					text(error));
+			return;
 		}
+		super.finishOrSave();
 	}
 
 	private static double step(ConfigOptions.Option spec) {
