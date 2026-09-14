@@ -685,7 +685,7 @@ public final class HudLayoutScreen extends Screen {
 			graphics.centeredText(font, text(error != null ? error : saveError), panelCenter, height - 18, 0xFFFF7777);
 		}
 		if (minecraft.level != null && draggingModule == null && !overControl(mouseX, mouseY)) {
-			ModulePositionEditor.Bounds hovered = moduleAt(mouseX, mouseY, draggingModule);
+			ModulePositionEditor.Bounds hovered = moduleAt(mouseX, mouseY, selectedModule());
 			if (hovered == null) return;
 			int tooltipWidth = Math.max(40, Math.min(240, width - 24));
 			graphics.setTooltipForNextFrame(font,
@@ -696,7 +696,8 @@ public final class HudLayoutScreen extends Screen {
 
 	private void drawPositionEditor(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		ModulePositionEditor.Bounds hovered = overControl(mouseX, mouseY)
-				? null : moduleAt(mouseX, mouseY, draggingModule);
+				? null : moduleAt(mouseX, mouseY,
+						draggingModule == null ? selectedModule() : draggingModule);
 		ModulePositionEditor.Corner grip = hovered == null ? null
 				: ModulePositionEditor.grip(hovered, mouseX, mouseY);
 		for (ModulePositionEditor.Bounds bounds : moduleBounds()) {
