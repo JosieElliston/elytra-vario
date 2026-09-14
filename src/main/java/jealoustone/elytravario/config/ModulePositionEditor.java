@@ -462,10 +462,10 @@ final class ModulePositionEditor {
 	 * the setting cannot actually reach, because it is out of range or because the module lays
 	 * itself out in whole pixels, is passed over for one it can.
 	 *
-	 * <p>A stats panel's text size needs no rests of its own, and once had them. It is now a
-	 * whole number of font sizes, so every value the drag can reach is already one the font is
-	 * drawn at, and two panels set to the same number are already set to the same size — there
-	 * is nothing between to be pulled off of. See {@link StatsPanel#textSize()}.
+	 * <p>A stats panel's text size needs no rests of its own, and once had them. It now counts in
+	 * whole screen pixels per font pixel, so every value the drag can reach is already one the
+	 * font is drawn at, and two panels set to the same number are already drawn at the same size —
+	 * there is nothing between to be pulled off of. See {@link StatsPanel#textSize()}.
 	 */
 	static double resize(Corner corner, Bounds rendered, double value, Sizing sizing,
 			double pointerX, double pointerY, List<Bounds> bounds,

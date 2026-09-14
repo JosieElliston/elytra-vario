@@ -634,7 +634,7 @@ not.
 
 ## Placing the modules
 
-Seven modules carry a position: the velocity graph, the four flight stats panels, and the two
+Ten modules carry a position: the velocity graph, the seven flight stats panels, and the two
 speedometers. Each is an absolute top-left in scaled GUI pixels, clamped so that it stays on
 screen, and each can be set from its own page — or, for the stats panels, its own subpage — as a
 pair of numbers, or moved in the world with the settings screen open. Clicking a module opens
@@ -651,9 +651,10 @@ subpages are one bar or needle each, not one module each.
 **Corners resize, edges do not.** Three of these modules are a single size setting — the
 graph's width, the bar speedometer's plot height, the dial's radius — so there is no such thing
 as a nonuniform resize to offer, and an edge would have nothing to drag that a corner does not
-already drag. The stats panels are the exception, each with a width and a height of its own, and
-a corner drags them separately: pull it sideways and only the width moves. That is what a pair
-of edges would do one at a time, so it still does not need them.
+already drag. The stats panels are the exception, each with a width and a text size of its own;
+height follows from the text size and the rows shown. A corner solves width and text size
+separately: pull it sideways and only the width moves. That is what a pair of edges would do one
+at a time, so it still does not need them.
 
 **One setting, a pointer with two dimensions, so the answer is least squares.** The size chosen
 is the one whose box comes closest to the box the pointer is asking for. Where both axes follow
@@ -736,7 +737,7 @@ where it ends — which is what the shared line now says for both.
 
 The butt and the margin are five pixels apart, so at the default snap distance of four there is
 no position between them from which neither is reachable; the drag lands on whichever it is
-nearer. This is what the four stats panels are stacked with by default, and it is offered
+nearer. This is what the seven stats panels are stacked with by default, and it is offered
 between any two modules and on either axis, not only between panels.
 
 Only one answer can win, because one setting may place both moving edges. Every reachable rest
@@ -842,16 +843,17 @@ right-side settings panel leaves the HUD visible without blur. Each page has a r
 common controls are under Advanced. The screen reopens on the page, subpage and scroll position
 you left, with the Advanced switch as you left it, for the rest of the session.
 
-Position is an absolute top-left in scaled GUI pixels for each of the seven placed modules,
+Position is an absolute top-left in scaled GUI pixels for each of the ten placed modules,
 clamped to the screen; the anchors and the graph-to-stats attachment this paragraph used to
 describe are gone. With the settings screen open the modules are editable in the world: click
 one to open its settings, drag its middle to move it, drag a corner to resize it, or use the
 arrow keys for a pixel at a time. Moves and resizes both snap to the other modules and to the
 screen, and the coordinate and size fields stay in step with whatever the drag does. See
 *Placing the modules* above. Both horizontal and vertical chart bounds are editable, and each
-Flight Stats panel carries a width and a height of its own. Visibility is independent for all
-four instruments, each stats panel switches on and off on its own, and stats rows are
-selectable. Energy rate has been removed; cycle gain and apex differences remain.
+Flight Stats panel carries a width and a text size of its own, with height derived from its rows.
+Visibility is independent for all six instruments, each stats panel switches on and off on its
+own, and stats rows are selectable. Energy rate has been removed; cycle gain and apex differences
+remain.
 
 ## The readout panels
 
@@ -1067,12 +1069,13 @@ that could not have been anything else is noise. The muted absolute figure besid
 follows the rule too, and is muted all the same: muting says how loudly a figure asks to be
 read, not which conventions it is written in.
 
-**The positive and negative colors follow exactly the same line.** Only a reading that can cross
-zero is colored by which side of it it is on; a magnitude has a floor at zero rather than a
-crossing, so coloring it would report it positive on every frame and the color would stop being
-a reading at all. The contrast is what makes it one: green on these panels means the figure is
-above zero *and could have been below it*. The deadband is `rateColor`'s, so a reading sitting
-on zero is white rather than flickering between the two.
+**The positive and negative colors belong to signed rates and deltas.** `SPEED Y`, all three
+accelerations, `GAIN`, the apex-relative `PE` and `TE`, and the `Y` row of both matrices use color
+to say which side of zero they are on. Pitch and glide ratio still write their signs, but remain
+neutral: there the sign names an orientation rather than a gain or loss. A magnitude has a floor
+at zero rather than a crossing, so coloring it would report it positive on every frame and the
+color would stop being a reading at all. The deadband is `rateColor`'s, so a colored reading
+sitting on zero is white rather than flickering between the two.
 
 ## The chart
 

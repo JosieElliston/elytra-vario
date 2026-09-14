@@ -318,7 +318,7 @@ class ModulePositionEditorTest {
 
 	@Test
 	void twoOrthogonalSettingsEachFollowTheirOwnAxisOfTheSameCorner() {
-		// The stats panel carries a width and a height, solved one at a time from one pointer.
+		// The stats panel carries a width and a text size, solved one at a time from one pointer.
 		var bounds = new ModulePositionEditor.Bounds(
 				ModulePositionEditor.Module.STATS_SPEED, 100, 100, 60, 40);
 		var width = new ModulePositionEditor.Sizing(
@@ -653,7 +653,7 @@ class ModulePositionEditorTest {
 		assertEquals(new ModulePositionEditor.Position(81, 200), left.position());
 		assertEquals(List.of(new ModulePositionEditor.Guide(100, 70, 100)), left.verticalGuides());
 
-		// Stacked, which is how the four stats panels sit by default.
+		// Stacked, which is how the seven stats panels sit by default.
 		var below = ModulePositionEditor.snap(ModulePositionEditor.Module.STATS_ACCEL,
 				200, 98, 20, 10, bounds, 320, 240, 4, 4);
 		assertEquals(new ModulePositionEditor.Position(200, 99), below.position());
