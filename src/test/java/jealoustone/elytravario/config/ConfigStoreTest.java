@@ -33,6 +33,7 @@ class ConfigStoreTest {
 		assertEquals("240", values.get("dialSpeedoX"));
 		assertEquals("4", values.get("positionMargin"));
 		assertEquals("4", values.get("positionSnapDistance"));
+		assertEquals("false", values.get("hudGlidingOnly"));
 		assertFalse(values.containsKey("speedoAnchor"));
 		assertFalse(values.containsKey("futureOption"));
 		assertFalse(values.containsKey("showAngleOfAttack"));

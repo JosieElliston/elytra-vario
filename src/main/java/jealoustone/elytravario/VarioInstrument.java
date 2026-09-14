@@ -18,7 +18,7 @@ import net.minecraft.client.input.KeyEvent;
  * The instruments that can be shown or hidden as a whole, each with a key that toggles it.
  *
  * <p>The ladder markers are one instrument here rather than seven, matching the settings
- * screen: the Ladder Markers page has a single switch above its per-marker subpages, and a key
+ * screen: the Ladder Markers page has a single switch above its per-marker groups, and a key
  * per individual marker would be seven binds for a set that is read as one overlay.
  *
  * <p>The key flips exactly the setting the screen's own switch flips, and saves. That it writes
@@ -44,10 +44,11 @@ public enum VarioInstrument {
 
 	private final String id;
 	/**
-	 * The config keys of this instrument's two visibility settings. The first is what the key
-	 * toggles and what the settings screen puts above the rest of the page; the second is where
-	 * the screen anchors the rebinding row. Each names the field the matching supplier reads,
-	 * which nothing checks, so the pairs are declared a line apart.
+	 * The config keys of this instrument's two visibility settings, each a switch of its own on
+	 * the instrument's settings page. The first is what the toggle key flips; leaving the second
+	 * untouched is what makes switching the instrument back on restore the gliding-only setting
+	 * it had. Each names the field the matching supplier reads, which nothing checks, so the
+	 * pairs are declared a line apart.
 	 */
 	private final String showKey;
 	private final String glidingOnlyKey;
@@ -114,7 +115,7 @@ public enum VarioInstrument {
 		return null;
 	}
 
-	/** The two settings the config screen shows above the rest of this instrument's page. */
+	/** The switch this instrument's toggle key flips, which the settings screen also shows. */
 	public String showKey() { return showKey; }
 
 	public String glidingOnlyKey() { return glidingOnlyKey; }

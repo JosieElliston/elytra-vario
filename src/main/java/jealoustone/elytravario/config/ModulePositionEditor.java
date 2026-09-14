@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import jealoustone.elytravario.VarioConfig;
-import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.hud.HudPosition;
 import jealoustone.elytravario.hud.BarSpeedometerChart;
 import jealoustone.elytravario.hud.DialSpeedometer;
@@ -128,15 +127,26 @@ final class ModulePositionEditor {
 	private record Marker(boolean vertical, int rest, Guide guide) { }
 	private record ResizeCandidate(double value, double error, Marker marker) { }
 
-	/** Bounds in paint order; callers search backwards so the topmost overlapping module wins. */
-	static List<Bounds> bounds(Font font, int screenWidth, int screenHeight, boolean gliding) {
+	/**
+	 * Every module's box, in paint order; callers search backwards so the topmost overlapping
+	 * module wins.
+	 *
+	 * <p>This is the layout editor's view rather than the HUD's, so a module that is switched
+	 * off — or switched on but only while gliding, while the player is standing still — still
+	 * has a box. Placing a module and switching it on are separate things, and a module you
+	 * cannot see is exactly the one you may need to go and find.
+	 *
+	 * <p>A stats panel with every row switched off is the one exception. Its rows are what it is
+	 * laid out from, so with none of them on it has no text size: {@link StatsPanel#minWidth()}
+	 * divides by a layout height that is nothing but padding and answers with a box several
+	 * times wider than the panel will ever be drawn. There is no honest ghost to draw, so it has
+	 * none until a row is switched back on. Arrow-key nudges still reach it, since those move
+	 * the stored coordinates rather than a box.
+	 */
+	static List<Bounds> bounds(Font font, int screenWidth, int screenHeight) {
 		List<Bounds> result = new ArrayList<>();
-		if (!VarioConfig.enabled) return result;
-
-		// The same test the HUD makes: a panel with every row switched off is not drawn, and
-		// so is not there to be dragged either.
 		for (StatsPanel panel : StatsPanel.values()) {
-			if (!panel.visible(gliding)) continue;
+			if (panel.rows() == 0) continue;
 			int width = panel.width();
 			int height = panel.height();
 			HudPosition position = HudPosition.clamp(panel.x(), panel.y(),
@@ -147,26 +157,21 @@ final class ModulePositionEditor {
 		int chartHeight = VarioHudElement.chartHeight();
 		HudPosition chartPosition = HudPosition.clamp(VarioConfig.chartX, VarioConfig.chartY,
 				chartWidth, chartHeight, screenWidth, screenHeight);
-		if (VarioInstrument.CHART.visible(gliding)) {
-			result.add(new Bounds(Module.CHART, chartPosition.x(), chartPosition.y(),
-					chartWidth, chartHeight));
-		}
+		result.add(new Bounds(Module.CHART, chartPosition.x(), chartPosition.y(),
+				chartWidth, chartHeight));
 
-		if (VarioInstrument.BAR_SPEEDOMETER.visible(gliding)) {
-			BarSpeedometerChart speedometerChart = BarSpeedometerChart.of(font);
-			HudPosition position = HudPosition.clamp(VarioConfig.barSpeedoX, VarioConfig.barSpeedoY,
-					speedometerChart.width(), speedometerChart.height(), screenWidth, screenHeight);
-			result.add(new Bounds(Module.BAR_SPEEDOMETER, position.x(), position.y(),
-					speedometerChart.width(), speedometerChart.height()));
-		}
-		if (VarioInstrument.DIAL_SPEEDOMETER.visible(gliding)) {
-			DialSpeedometer dial = new DialSpeedometer(VarioConfig.dialSpeedoRadius,
-					VarioConfig.dialSpeedoMaxSpeed);
-			HudPosition position = HudPosition.clamp(VarioConfig.dialSpeedoX, VarioConfig.dialSpeedoY,
-					dial.width(), dial.height(), screenWidth, screenHeight);
-			result.add(new Bounds(Module.DIAL_SPEEDOMETER, position.x(), position.y(),
-					dial.width(), dial.height()));
-		}
+		BarSpeedometerChart speedometerChart = BarSpeedometerChart.of(font);
+		HudPosition barPosition = HudPosition.clamp(VarioConfig.barSpeedoX, VarioConfig.barSpeedoY,
+				speedometerChart.width(), speedometerChart.height(), screenWidth, screenHeight);
+		result.add(new Bounds(Module.BAR_SPEEDOMETER, barPosition.x(), barPosition.y(),
+				speedometerChart.width(), speedometerChart.height()));
+
+		DialSpeedometer dial = new DialSpeedometer(VarioConfig.dialSpeedoRadius,
+				VarioConfig.dialSpeedoMaxSpeed);
+		HudPosition dialPosition = HudPosition.clamp(VarioConfig.dialSpeedoX,
+				VarioConfig.dialSpeedoY, dial.width(), dial.height(), screenWidth, screenHeight);
+		result.add(new Bounds(Module.DIAL_SPEEDOMETER, dialPosition.x(), dialPosition.y(),
+				dial.width(), dial.height()));
 		return result;
 	}
 
