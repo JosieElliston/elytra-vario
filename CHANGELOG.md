@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is the Minecraft 1.21.11 backport branch. Versions carry a `+mc1.21.11` build
 identifier and track the 26.2 branch feature for feature; the differences are rendering
-and key-registration APIs, not behavior.
+and key-registration APIs, and the release lines its dependencies have for this game
+version -- ModMenu 17.0.0 and YACL 3.8.1 rather than 20.0.1 and 3.9.6. Behavior matches,
+with one exception: YACL 3.8.1 predates the cursor API the 26.2 branch asks a pointing
+hand from over the inline key binds, so they are left with the arrow the rest of the
+screen uses.
 
 ## [Unreleased]
 
