@@ -133,6 +133,12 @@ public final class HudLayoutScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		// The context menu is a transient layer over the editor. Consume Escape here before the
+		// base screen can close the editor (and return to settings), just like a normal menu does.
+		if (!contextButtons.isEmpty() && event.key() == GLFW.GLFW_KEY_ESCAPE) {
+			clearContextMenu();
+			return true;
+		}
 		if (draggingModule != null && isShift(event)) {
 			applyDrag(false);
 			return true;
