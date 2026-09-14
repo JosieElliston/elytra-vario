@@ -20,14 +20,14 @@ and key-registration APIs, not behavior.
 
   Corners and not edges. Three of these modules are a function of a single setting — the velocity
   graph's width, the bar speedometer's plot height, the dial's radius — so an edge would have
-  nothing to drag that a corner does not. The flight stats panel's width and height are settings
-  of their own, and its corner drags them separately: pulled sideways, only the width moves, which
-  is what a pair of edges would do one at a time. Where both axes follow one setting the corner
-  tracks the pointer down the box's diagonal, which is what dragging a locked-aspect corner looks
-  like anywhere else. The bar speedometer is the exception worth knowing about: its width is its
-  bars and its scale labels rather than a setting, so its corners follow the pointer vertically
-  and ignore the rest. A drag cannot push a module off the screen past its pinned corner, and
-  stops at each setting's own range.
+  nothing to drag that a corner does not. Each flight stats panel's width and text size are
+  settings of their own, and its corner solves them separately: pulled sideways, only the width
+  moves, which is what a pair of edges would do one at a time. Where both axes follow one setting
+  the corner tracks the pointer down the box's diagonal, which is what dragging a locked-aspect
+  corner looks like anywhere else. The bar speedometer is the exception worth knowing about: its
+  width is its bars and its scale labels rather than a setting, so its corners follow the pointer
+  vertically and ignore the rest. A drag cannot push a module off the screen past its pinned
+  corner, and stops at each setting's own range.
 
   A resize snaps to the rests a move snaps to and to no others, with the same guides drawn: a
   module should come to rest in the same places whether it was carried there or grown there. A
@@ -63,13 +63,13 @@ and key-registration APIs, not behavior.
   actual post-layout size, so a secondary dimension rounded from the module's aspect ratio
   cannot walk that corner sideways over a long drag.
 
-- Flight Stats is now four panels — **Other** (pitch, glide), **Speed**, **Acceleration** and
-  **Energy** — each placed, sized, and switched on or off on its own, in place of the single
-  panel that carried all twelve rows. Each has its own subpage under a selector on the Flight
-  Stats page; the instrument's switch, its only-while-gliding companion, its toggle key, and the
-  positive and negative colors stay shared above that selector, since the switch is what the key
-  binds to and the colors are a palette rather than a layout. Every row means exactly what it
-  meant and is still switched on or off individually; it has only moved subpage.
+- Flight Stats' original twelve rows are now four panels — **Other** (pitch, glide), **Speed**,
+  **Acceleration** and **Energy** — each placed, sized, and switched on or off on its own, in
+  place of the single panel that carried them. Each has its own subpage under a selector on the
+  Flight Stats page; the instrument's switch, its only-while-gliding companion, its toggle key,
+  and the positive and negative colors stay shared above that selector, since the switch is what
+  the key binds to and the colors are a palette rather than a layout. Every row means exactly what
+  it meant and is still switched on or off individually; it has only moved subpage.
 
   **The widths are independent, which is the point.** A row wants the width its widest label and
   figure need, so one shared width had to satisfy the widest row on the panel: `SPEED XYZ`

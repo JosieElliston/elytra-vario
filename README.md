@@ -34,7 +34,7 @@ The heatmap shows the maximum one-tick total-energy gain for each velocity.
 
 Seven panels, each placed, sized and switched on its own. Some metrics are shown relative to the previous cycle's apex. Energy assumes unit mass and is divided by gravity, giving units of blocks of height.
 
-Each panel's top row is its heading: what its figures are measured in, and — where it has more than one column — what those columns are. So a unit is written once per panel rather than once per row, and the rows are labelled by what actually tells them apart.
+Every panel except Other starts with a heading: what its figures are measured in, and — where it has more than one column — what those columns are. So a unit is written once per panel rather than once per row, and the rows are labelled by what actually tells them apart. Other keeps full row labels because pitch and glide ratio have no unit in common.
 
 | Panel             | Heading      | Row     | Meaning                                          |
 | ----------------- | ------------ | ------- | ------------------------------------------------ |
@@ -62,7 +62,7 @@ The three e-bounce panels read as columns rather than rows. The velocity matrix 
 
 The Energy panel names its two columns as well, since they are different kinds of thing: `ABS` is the height against the world's origin and `REL` the height against the last apex. Kinetic energy sits under `ABS`, the cycle gain under `REL`, and potential and total energy fill both.
 
-A row that can go negative always shows its sign and is colored by it; a magnitude does neither.
+A reading that can go negative always shows its sign. Signed rates and deltas are colored by sign; pitch and glide ratio remain neutral. A magnitude does neither.
 
 Each panel has its own width, so the two-row Other panel need not be as wide as the speed rows. By default they are stacked flush down the left, each overlapping the one above it by a pixel so that their borders share a column and the seven read as one panel ruled into sections.
 
