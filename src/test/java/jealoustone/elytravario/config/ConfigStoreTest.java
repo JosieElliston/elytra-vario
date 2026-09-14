@@ -102,6 +102,23 @@ class ConfigStoreTest {
 				.get("showLadderMarkers"));
 	}
 
+	@Test void retiredBounceAxisNamesBecomeVerticalAxisNames() {
+		var values = ConfigStore.decode(
+				"{\"showBounceVelocityX\":false,\"showBounceDistanceX\":false}");
+		assertEquals("false", values.get("showBounceVelocityY"));
+		assertEquals("false", values.get("showBounceDistanceY"));
+		String encoded = ConfigStore.encode(values);
+		assertFalse(encoded.contains("\"showBounceVelocityX\""));
+		assertFalse(encoded.contains("\"showBounceDistanceX\""));
+
+		// A file holding both names was written by the newer build, so the new name wins.
+		values = ConfigStore.decode(
+				"{\"showBounceVelocityX\":false,\"showBounceVelocityY\":true,"
+				+ "\"showBounceDistanceX\":false,\"showBounceDistanceY\":true}");
+		assertEquals("true", values.get("showBounceVelocityY"));
+		assertEquals("true", values.get("showBounceDistanceY"));
+	}
+
 	@Test void retiredStatsOriginBecomesTheFourPanelsAbsolutePositions() {
 		var values = ConfigStore.decode("{\"originX\":\"12\",\"originY\":\"34\"}");
 		// Every panel keeps the old left edge, and they stack from the old top edge down with
