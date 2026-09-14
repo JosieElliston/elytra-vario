@@ -80,9 +80,15 @@ public final class VarioConfigScreen extends YACLScreen {
 		ConfigCategory.Builder category = ConfigCategory.createBuilder().name(text("page." + page));
 		Map<String, OptionGroup.Builder> groups = new LinkedHashMap<>();
 		category.option(layoutOption(pageModule(page)));
-		addKeyBindings(category, page);
 
 		if (page == 0) {
+			category.option(keyBinding("visibilityKey", ElytraVarioClient.visibilityKey()));
+			for (String key : new String[] {"enabled", "hudGlidingOnly"}) {
+				Option<?> option = option(spec(key), values);
+				options.put(key, option);
+				category.option(option);
+			}
+			category.option(keyBinding("settingsKey", ElytraVarioClient.settingsKey()));
 			category.option(ButtonOption.createBuilder()
 					.name(text("keyBindings"))
 					.text(text("keyBindings.edit"))
@@ -91,9 +97,13 @@ public final class VarioConfigScreen extends YACLScreen {
 						Minecraft minecraft = Minecraft.getInstance();
 						minecraft.setScreen(new KeyBindsScreen(screen, minecraft.options));
 					}).build());
+		} else {
+			addInstrumentKeyBinding(category, page);
 		}
 		for (ConfigOptions.Option spec : ConfigOptions.all()) {
-			if (spec.page() != page || geometry(spec.key())) continue;
+			if (spec.page() != page || geometry(spec.key())
+					|| page == 0 && (spec.key().equals("enabled")
+							|| spec.key().equals("hudGlidingOnly"))) continue;
 			Option<?> option = option(spec, values);
 			options.put(spec.key(), option);
 			if (spec.group() == null) {
@@ -113,12 +123,7 @@ public final class VarioConfigScreen extends YACLScreen {
 		return category.build();
 	}
 
-	private static void addKeyBindings(ConfigCategory.Builder category, int page) {
-		if (page == 0) {
-			category.option(keyBinding("visibilityKey", ElytraVarioClient.visibilityKey()));
-			category.option(keyBinding("settingsKey", ElytraVarioClient.settingsKey()));
-			return;
-		}
+	private static void addInstrumentKeyBinding(ConfigCategory.Builder category, int page) {
 		for (VarioInstrument instrument : VarioInstrument.values()) {
 			if (spec(instrument.showKey()).page() == page) {
 				category.option(keyBinding("toggleKey", instrument.key()));
