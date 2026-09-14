@@ -407,8 +407,7 @@ public final class VarioConfig {
 	public static int statsOtherX = 4;
 	public static int statsOtherY = 4;
 	public static int statsOtherWidth = 150;
-	/** The pitch and glide rows at their natural size. */
-	public static int statsOtherHeight = 28;
+	public static double statsOtherTextSize = 1.0;
 	public static double statsOtherOpacity = 0.25;
 	public static boolean showStatsOtherBorder = true;
 
@@ -416,50 +415,47 @@ public final class VarioConfig {
 	public static int statsSpeedX = 4;
 	public static int statsSpeedY = 31;
 	public static int statsSpeedWidth = 150;
-	/** The three speed rows at their natural size. */
-	public static int statsSpeedHeight = 38;
+	public static double statsSpeedTextSize = 1.0;
 	public static double statsSpeedOpacity = 0.25;
 	public static boolean showStatsSpeedBorder = true;
 
 	public static boolean showStatsAccel = true;
 	public static int statsAccelX = 4;
-	public static int statsAccelY = 68;
+	public static int statsAccelY = 78;
 	public static int statsAccelWidth = 150;
-	/** The three acceleration rows at their natural size. */
-	public static int statsAccelHeight = 38;
+	public static double statsAccelTextSize = 1.0;
 	public static double statsAccelOpacity = 0.25;
 	public static boolean showStatsAccelBorder = true;
 
 	public static boolean showStatsEnergy = true;
 	public static int statsEnergyX = 4;
-	public static int statsEnergyY = 105;
+	public static int statsEnergyY = 125;
 	public static int statsEnergyWidth = 150;
-	/** The four energy rows at their natural size. */
-	public static int statsEnergyHeight = 48;
+	public static double statsEnergyTextSize = 1.0;
 	public static double statsEnergyOpacity = 0.25;
 	public static boolean showStatsEnergyBorder = true;
 
 	public static boolean showStatsBounceVelocity = true;
 	public static int statsBounceVelocityX = 4;
-	public static int statsBounceVelocityY = 152;
+	public static int statsBounceVelocityY = 182;
 	public static int statsBounceVelocityWidth = 150;
-	public static int statsBounceVelocityHeight = 48;
+	public static double statsBounceVelocityTextSize = 1.0;
 	public static double statsBounceVelocityOpacity = 0.25;
 	public static boolean showStatsBounceVelocityBorder = true;
 
 	public static boolean showStatsBounceDistance = true;
 	public static int statsBounceDistanceX = 4;
-	public static int statsBounceDistanceY = 199;
+	public static int statsBounceDistanceY = 229;
 	public static int statsBounceDistanceWidth = 150;
-	public static int statsBounceDistanceHeight = 48;
+	public static double statsBounceDistanceTextSize = 1.0;
 	public static double statsBounceDistanceOpacity = 0.25;
 	public static boolean showStatsBounceDistanceBorder = true;
 
 	public static boolean showStatsBounceTicks = true;
 	public static int statsBounceTicksX = 4;
-	public static int statsBounceTicksY = 246;
+	public static int statsBounceTicksY = 276;
 	public static int statsBounceTicksWidth = 150;
-	public static int statsBounceTicksHeight = 28;
+	public static double statsBounceTicksTextSize = 1.0;
 	public static double statsBounceTicksOpacity = 0.25;
 	public static boolean showStatsBounceTicksBorder = true;
 
@@ -478,10 +474,10 @@ public final class VarioConfig {
 	public static boolean showPotentialEnergy = true;
 	public static boolean showTotalEnergy = true;
 	public static boolean showCycleGain = true;
-	public static boolean showBounceVelocityX = true;
+	public static boolean showBounceVelocityY = true;
 	public static boolean showBounceVelocityXz = true;
 	public static boolean showBounceVelocityXyz = true;
-	public static boolean showBounceDistanceX = true;
+	public static boolean showBounceDistanceY = true;
 	public static boolean showBounceDistanceXz = true;
 	public static boolean showBounceDistanceXyz = true;
 	public static boolean showBounceTicks = true;

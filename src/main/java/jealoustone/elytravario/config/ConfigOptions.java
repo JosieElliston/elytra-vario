@@ -154,7 +154,14 @@ public final class ConfigOptions {
 			add(panel.xKey(), 4, group, -4096, 4096, 1, 0, false, false);
 			add(panel.yKey(), 4, group, -4096, 4096, 1, 0, false, false);
 			add(panel.widthKey(), 4, group, 32, 1200, 1, 0, false, false);
-			add(panel.heightKey(), 4, group, 16, 1200, 1, 0, false, false);
+			// The panel's other dimension is its text size rather than its height, so that the
+			// height is always exactly the rows it draws. The range runs down to a sixteenth
+			// rather than to one: the drawable sizes are the multiples of one over the GUI
+			// scale, so how far below one a panel can go is the player's GUI scale to decide and
+			// not this. Whatever is set here is quantized to a drawable size when it is used —
+			// see StatsPanel#fontPixels — so a hand-edited file cannot ask for a blurred one.
+			add(panel.textSizeKey(), 4, group, 1.0 / 16, StatsPanel.MAX_TEXT_SIZE, 1, 0,
+					false, false);
 			add(panel.opacityKey(), 4, group, 0, 100, 100, 0, false, false);
 			add(panel.borderKey(), 4, group, 0, 1, 1, 0, false, false);
 			for (String row : panel.rowKeys()) add(row, 4, group, 0, 1, 1, 0, false, false);

@@ -31,10 +31,12 @@ public final class ConfigStore {
 			"markerVisibility", new Split("showLadderMarkers", "ladderMarkersGlidingOnly"),
 			"chartVisibility", new Split("showChart", "chartGlidingOnly"),
 			"statsVisibility", new Split("showStats", "statsGlidingOnly"));
-	/** Ladder Markers used to be named just Markers, before the speedometers also had markers. */
-	private static final Map<String, String> RETIRED_MARKER_KEYS = Map.of(
+	/** Retired settings whose value belongs to one direct replacement. */
+	private static final Map<String, String> RETIRED_KEYS = Map.of(
 			"showMarkers", "showLadderMarkers",
-			"markersGlidingOnly", "ladderMarkersGlidingOnly");
+			"markersGlidingOnly", "ladderMarkersGlidingOnly",
+			"showBounceVelocityX", "showBounceVelocityY",
+			"showBounceDistanceX", "showBounceDistanceY");
 	/** Rows from the retired single Flight Stats panel, used to recover its text scale. */
 	private static final List<String> SPEED_ROWS = List.of("showPitch", "showGlideRatio",
 			"showHorizontalSpeed", "showTotalSpeed", "showVerticalSpeed",
@@ -84,7 +86,7 @@ public final class ConfigStore {
 				values.put(speedometer.glidingOnly(), Boolean.toString(mode.equals("1")));
 			}
 		}
-		for (var entry : RETIRED_MARKER_KEYS.entrySet()) {
+		for (var entry : RETIRED_KEYS.entrySet()) {
 			if (root.has(entry.getKey()) && !root.has(entry.getValue())) {
 				values.put(entry.getValue(), root.get(entry.getKey()).getAsString());
 			}
@@ -104,6 +106,7 @@ public final class ConfigStore {
 					horizontalRange * root.get("chartScale").getAsDouble())));
 		}
 		splitStatsPanel(root, values);
+		statsHeightToTextSize(root, values);
 		if (ConfigOptions.error(values) != null) throw new IllegalArgumentException("Invalid config values");
 		return values;
 	}
@@ -143,9 +146,13 @@ public final class ConfigStore {
 			width = RETIRED_PANEL_WIDTH;
 		}
 		int retiredLayoutHeight = retiredLayoutHeight(values);
-		long height = root.has("statsHeight") ? root.get("statsHeight").getAsLong()
-				: Math.ceilDiv(width * retiredLayoutHeight, layoutWidth);
-		double scale = (double) height / retiredLayoutHeight;
+		// The retired panel was scaled by one factor on both axes, so either dimension recovers
+		// it. Taken from whichever the file actually stated: deriving the height from the width
+		// first, as this did while the answer was a whole number anyway, rounded a panel up to
+		// the next whole pixel and then divided that rounding back into the text size.
+		double scale = root.has("statsHeight")
+				? (double) root.get("statsHeight").getAsLong() / retiredLayoutHeight
+				: (double) width / layoutWidth;
 		long x = number(root, "statsX", "originX", RETIRED_PANEL_X);
 		long top = number(root, "statsY", "originY", RETIRED_PANEL_Y);
 		// Only the four panels split out of the retired instrument belong in this migration.
@@ -154,12 +161,29 @@ public final class ConfigStore {
 				StatsPanel.ACCEL, StatsPanel.ENERGY)) {
 			int rows = rows(values, panel.rowKeys());
 			int drawn = rows > 0 ? rows : panel.rowKeys().size();
-			long panelHeight = Math.clamp(
-					Math.round((drawn * StatsPanel.LINE + StatsPanel.PAD * 2) * scale), 16, 1200);
+			// The retired panel's text size, carried across as it stood. That is the whole point
+			// of the migration: the same reading, the same size, in more boxes. It is quantized
+			// to a size the font is drawn at when it is used rather than here, because that
+			// depends on the GUI scale, which this file does not record and the player can
+			// change afterwards.
+			double textSize = Math.clamp(scale, 1.0 / 16, StatsPanel.MAX_TEXT_SIZE);
+			// The height it will actually be drawn at, for stacking the next panel under it.
+			// Asked of the panel rather than worked out here, so that a row the panel draws and
+			// this file never knew about — its units heading — is counted. Rounded up for the
+			// same reason StatsPanel#height rounds up, and so that the stack agrees with it:
+			// rounding to nearest put a panel whose rows fall short of a whole pixel a pixel
+			// above where it is drawn, and the one under it a pixel into it.
+			//
+			// The two agree wherever this size is one the font is drawn at. Where it is not —
+			// three quarters at a GUI scale of two — the panel is drawn at the nearest size
+			// that is, and stands a little taller or shorter than the stack expects. No stored
+			// stack can help that: only a whole size has a height that is the same at every GUI
+			// scale, and this migration is not willing to round the size to one.
+			long panelHeight = (long) Math.ceil(panel.layoutHeightFor(drawn) * textSize);
 			values.put(panel.xKey(), Long.toString(Math.clamp(x, -4096, 4096)));
 			values.put(panel.yKey(), Long.toString(Math.clamp(top, -4096, 4096)));
 			values.put(panel.widthKey(), Long.toString(Math.clamp(width, 32, 1200)));
-			values.put(panel.heightKey(), Long.toString(panelHeight));
+			values.put(panel.textSizeKey(), format(panel.textSizeKey(), textSize));
 			if (root.has("panelOpacity")) {
 				values.put(panel.opacityKey(), root.get("panelOpacity").getAsString());
 			}
@@ -168,6 +192,44 @@ public final class ConfigStore {
 			}
 			if (rows > 0) top += panelHeight - ModulePositionEditor.OVERLAP;
 		}
+	}
+
+	/**
+	 * Turns a panel's retired pixel height into the text size that height was drawing it at.
+	 *
+	 * <p>The height was the setting and the text size the quotient; they have changed places, so
+	 * a file from before that swap says how tall to be and nothing about how large to write.
+	 * Dividing by the rows it was drawing recovers exactly what it meant.
+	 *
+	 * <p>A panel with every row switched off is measured against the rows it could draw, since
+	 * that is what its height was set against. This can go once no config file predates the
+	 * swap; the heights it reads were never released.
+	 */
+	private static void statsHeightToTextSize(JsonObject root, Map<String, String> values) {
+		for (StatsPanel panel : StatsPanel.values()) {
+			String retired = panel.group() + "Height";
+			// Against the file, not against values: values is seeded with every default, so a
+			// text size is always present there and would veto every migration.
+			if (!root.has(retired) || root.has(panel.textSizeKey())) continue;
+			int rows = rows(values, panel.rowKeys());
+			int drawn = rows > 0 ? rows : panel.rowKeys().size();
+			double size = (double) root.get(retired).getAsLong() / panel.layoutHeightFor(drawn);
+			values.put(panel.textSizeKey(), format(panel.textSizeKey(),
+					Math.clamp(size, 1.0 / 16, StatsPanel.MAX_TEXT_SIZE)));
+		}
+	}
+
+	/**
+	 * Writes a value the way the settings screen would, so it parses back to the same number.
+	 *
+	 * <p>Through the option rather than formatted here, so that a migration and a hand edit of
+	 * the same setting are held to one notation and one precision.
+	 */
+	private static String format(String key, double value) {
+		for (var option : ConfigOptions.all()) {
+			if (option.key().equals(key)) return option.format(value);
+		}
+		throw new IllegalArgumentException(key);
 	}
 
 	/** How tall the retired panel laid itself out, including its optional separator row. */
