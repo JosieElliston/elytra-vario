@@ -133,6 +133,10 @@ public final class HudLayoutScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		if (draggingModule != null && isShift(event)) {
+			applyDrag(false);
+			return true;
+		}
 		// The arrows belong to the module whose settings page is selected, so page selection and
 		// module selection cannot disagree. Nothing on this screen types, so nothing wants them.
 		int dx = event.isLeft() ? -1 : event.isRight() ? 1 : 0;
@@ -154,6 +158,19 @@ public final class HudLayoutScreen extends Screen {
 			return true;
 		}
 		return handled;
+	}
+
+	@Override
+	public boolean keyReleased(KeyEvent event) {
+		if (draggingModule != null && isShift(event)) {
+			applyDrag(true);
+			return true;
+		}
+		return super.keyReleased(event);
+	}
+
+	private static boolean isShift(KeyEvent event) {
+		return event.key() == GLFW.GLFW_KEY_LEFT_SHIFT || event.key() == GLFW.GLFW_KEY_RIGHT_SHIFT;
 	}
 
 	@Override
@@ -241,12 +258,18 @@ public final class HudLayoutScreen extends Screen {
 		if (draggingModule == null) return super.mouseDragged(event, deltaX, deltaY);
 		dragX += deltaX;
 		dragY += deltaY;
-		if (draggingCorner == null) {
-			drag(draggingModule, (int) Math.round(dragX), (int) Math.round(dragY));
-		} else {
-			resize(draggingModule, draggingCorner, dragX, dragY);
-		}
+		applyDrag(!minecraft.hasShiftDown());
 		return true;
+	}
+
+	/** Re-solves the drag from its original pointer position, never its snapped result. */
+	private void applyDrag(boolean snapping) {
+		int snapDistance = snapping ? VarioConfig.positionSnapDistance : -1;
+		if (draggingCorner == null) {
+			drag(draggingModule, (int) Math.round(dragX), (int) Math.round(dragY), snapDistance);
+		} else {
+			resize(draggingModule, draggingCorner, dragX, dragY, snapDistance);
+		}
 	}
 
 	@Override
@@ -341,7 +364,7 @@ public final class HudLayoutScreen extends Screen {
 		return null;
 	}
 
-	private void drag(ModulePositionEditor.Module module, int x, int y) {
+	private void drag(ModulePositionEditor.Module module, int x, int y, int snapDistance) {
 		ModulePositionEditor.Bounds moving = null;
 		List<ModulePositionEditor.Bounds> bounds = moduleBounds();
 		for (ModulePositionEditor.Bounds candidate : bounds) {
@@ -354,7 +377,7 @@ public final class HudLayoutScreen extends Screen {
 				moving.width(), moving.height());
 		ModulePositionEditor.Snap snap = ModulePositionEditor.snap(module, x, y,
 				moving.width(), moving.height(), bounds, width, height,
-				VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
+				VarioConfig.positionMargin, snapDistance);
 		snapVerticalGuides = snap.verticalGuides();
 		snapHorizontalGuides = snap.horizontalGuides();
 		ModulePositionEditor.Position snapped = snap.position();
@@ -375,7 +398,7 @@ public final class HudLayoutScreen extends Screen {
 	 * letting one frame's rounded result perturb the next frame's snap decision.
 	 */
 	private void resize(ModulePositionEditor.Module module, ModulePositionEditor.Corner corner,
-			double pointerX, double pointerY) {
+			double pointerX, double pointerY, int snapDistance) {
 		if (resizeOrigin == null) return;
 		List<ModulePositionEditor.Bounds> bounds = moduleBounds();
 		List<ModulePositionEditor.Resize> resizes = new ArrayList<>();
@@ -412,7 +435,7 @@ public final class HudLayoutScreen extends Screen {
 					corner, resizeOrigin, resizeOriginValues.get(key),
 					new ModulePositionEditor.Sizing(growth, minimum, maximum, step),
 					pointerX, pointerY, bounds, width, height,
-					VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
+					VarioConfig.positionMargin, snapDistance);
 			resizes.add(resize);
 			if (module.panel != null && key.equals(module.panel.widthKey())) {
 				settledWidth = (int) Math.round(resize.value());
