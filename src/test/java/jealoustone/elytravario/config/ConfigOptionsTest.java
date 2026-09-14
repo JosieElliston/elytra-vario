@@ -36,16 +36,16 @@ class ConfigOptionsTest {
 				.collect(Collectors.toSet());
 		assertEquals(Set.of(
 				"chartX", "chartY", "chartSize",
-				"statsOtherX", "statsOtherY", "statsOtherWidth", "statsOtherHeight",
-				"statsSpeedX", "statsSpeedY", "statsSpeedWidth", "statsSpeedHeight",
-				"statsAccelX", "statsAccelY", "statsAccelWidth", "statsAccelHeight",
-				"statsEnergyX", "statsEnergyY", "statsEnergyWidth", "statsEnergyHeight",
+				"statsOtherX", "statsOtherY", "statsOtherWidth", "statsOtherTextSize",
+				"statsSpeedX", "statsSpeedY", "statsSpeedWidth", "statsSpeedTextSize",
+				"statsAccelX", "statsAccelY", "statsAccelWidth", "statsAccelTextSize",
+				"statsEnergyX", "statsEnergyY", "statsEnergyWidth", "statsEnergyTextSize",
 				"statsBounceVelocityX", "statsBounceVelocityY",
-				"statsBounceVelocityWidth", "statsBounceVelocityHeight",
+				"statsBounceVelocityWidth", "statsBounceVelocityTextSize",
 				"statsBounceDistanceX", "statsBounceDistanceY",
-				"statsBounceDistanceWidth", "statsBounceDistanceHeight",
+				"statsBounceDistanceWidth", "statsBounceDistanceTextSize",
 				"statsBounceTicksX", "statsBounceTicksY",
-				"statsBounceTicksWidth", "statsBounceTicksHeight",
+				"statsBounceTicksWidth", "statsBounceTicksTextSize",
 				"barSpeedoX", "barSpeedoY", "barSpeedoHeight",
 				"dialSpeedoX", "dialSpeedoY", "dialSpeedoRadius"), geometry);
 	}

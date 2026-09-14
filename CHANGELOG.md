@@ -19,14 +19,14 @@ build identifier and released feature for feature; see its own changelog.
 
   Corners and not edges. Three of these modules are a function of a single setting — the velocity
   graph's width, the bar speedometer's plot height, the dial's radius — so an edge would have
-  nothing to drag that a corner does not. The flight stats panel's width and height are settings
-  of their own, and its corner drags them separately: pulled sideways, only the width moves, which
-  is what a pair of edges would do one at a time. Where both axes follow one setting the corner
-  tracks the pointer down the box's diagonal, which is what dragging a locked-aspect corner looks
-  like anywhere else. The bar speedometer is the exception worth knowing about: its width is its
-  bars and its scale labels rather than a setting, so its corners follow the pointer vertically
-  and ignore the rest. A drag cannot push a module off the screen past its pinned corner, and
-  stops at each setting's own range.
+  nothing to drag that a corner does not. Each flight stats panel's width and text size are
+  settings of their own, and its corner solves them separately: pulled sideways, only the width
+  moves, which is what a pair of edges would do one at a time. Where both axes follow one setting
+  the corner tracks the pointer down the box's diagonal, which is what dragging a locked-aspect
+  corner looks like anywhere else. The bar speedometer is the exception worth knowing about: its
+  width is its bars and its scale labels rather than a setting, so its corners follow the pointer
+  vertically and ignore the rest. A drag cannot push a module off the screen past its pinned
+  corner, and stops at each setting's own range.
 
   A resize snaps to the rests a move snaps to and to no others, with the same guides drawn: a
   module should come to rest in the same places whether it was carried there or grown there. A
@@ -62,13 +62,13 @@ build identifier and released feature for feature; see its own changelog.
   actual post-layout size, so a secondary dimension rounded from the module's aspect ratio
   cannot walk that corner sideways over a long drag.
 
-- Flight Stats is now four panels — **Other** (pitch, glide), **Speed**, **Acceleration** and
-  **Energy** — each placed, sized, and switched on or off on its own, in place of the single
-  panel that carried all twelve rows. Each has its own subpage under a selector on the Flight
-  Stats page; the instrument's switch, its only-while-gliding companion, its toggle key, and the
-  positive and negative colors stay shared above that selector, since the switch is what the key
-  binds to and the colors are a palette rather than a layout. Every row means exactly what it
-  meant and is still switched on or off individually; it has only moved subpage.
+- Flight Stats' original twelve rows are now four panels — **Other** (pitch, glide), **Speed**,
+  **Acceleration** and **Energy** — each placed, sized, and switched on or off on its own, in
+  place of the single panel that carried them. Each has its own subpage under a selector on the
+  Flight Stats page; the instrument's switch, its only-while-gliding companion, its toggle key,
+  and the positive and negative colors stay shared above that selector, since the switch is what
+  the key binds to and the colors are a palette rather than a layout. Every row means exactly what
+  it meant and is still switched on or off individually; it has only moved subpage.
 
   **The widths are independent, which is the point.** A row wants the width its widest label and
   figure need, so one shared width had to satisfy the widest row on the panel: `SPEED XYZ`
@@ -85,11 +85,24 @@ build identifier and released feature for feature; see its own changelog.
   stacked with by default, and it is available between any two modules and on either axis.
 
 - Three e-bounce panels read the last bounce as a matrix: **velocity** with a column per event —
-  `T` touch, `L` leave, `D` deploy — over `X`, `XZ` and `XYZ` rows, and **position delta** and
+  `T` touch, `L` leave, `D` deploy — over `Y`, `XZ` and `XYZ` rows, and **position delta** and
   **elapsed ticks** over the intervals between those events. An interval is only ever the
   difference against the event before it, so those two have no touch column and their headings
   name the subtraction, `L-T` and `D-L`. All three right-align onto the same column edges, so at
   equal widths the two interval columns sit under the velocity matrix's `L` and `D`.
+
+  The two three-row matrices carry the same three quantities the Speed panel does and in the
+  same order: the signed vertical component, then the two magnitudes. A single world axis is not
+  among them — `X` alone says which way the world happens to be oriented rather than which way
+  the bounce went, and `XZ` is the rotation-independent quantity that replaces it. So the top row
+  of the velocity matrix is vertical speed at each event, and the top row of the position matrix
+  is the height gained or lost over each interval.
+
+  Only that top row is colored by its sign. The two under it are a speed and a distance, and the
+  elapsed ticks are a count forwards from the earlier event, so none of the three can be
+  negative and coloring them would report them positive on every frame — the same rule the Speed
+  panel already followed, where vertical speed is colored and the two magnitudes beside it are
+  not.
 
   **A panel's width floor is now computed from the rows it draws** rather than typed in beside
   it. A row costs the panel's padding either side, its label, two pixels so that at the floor the
@@ -117,19 +130,98 @@ build identifier and released feature for feature; see its own changelog.
   through. Each module's opacity remains its own setting, and a configured value is untouched.
 - Drag snapping no longer uses module or screen center lines. Moves and corner resizes now snap
   only to edges, removing the competing middle guide when boxes are already edge-aligned.
-- Each Flight Stats panel is sized by a width and a height that move independently, replacing
-  the single panel's one size setting and the advanced content width behind it. The height sets
-  the text size: its rows are laid out at a fixed line height and scaled to fill exactly the
-  height asked for,
-  so the panel is never left with a gap at the bottom. The width then buys one thing only, the
-  distance between a label and the value right-aligned against the far edge — the panel's only
-  dead space, and something the single setting could not close without shrinking the reading
-  along with it. A width narrower than the rows need at the current text size is drawn at that
-  minimum rather than refused, so a panel never becomes an overlap. An existing panel migrates
-  to four panels drawn at the text size it was drawn at, stacked from where it sat with their
-  borders sharing a column, so a migrated HUD reads at the size and in the order it read in. The
-  cost of the split is that switching a row off no longer shortens the panel it is on: that
-  panel keeps the height it was given and draws the rows that remain larger.
+- Each Flight Stats panel is sized by a width in pixels and a text size that move independently,
+  replacing the single panel's one size setting and the advanced content width behind it. The
+  height is neither: the rows are laid out at a fixed line height and drawn at the size asked
+  for, so the panel is exactly as tall as its rows need and cannot be left with a gap at the
+  bottom. The width then buys one thing only, the distance between a label and the value
+  right-aligned against the far edge — the panel's only dead space, and something the single
+  setting could not close without shrinking the reading along with it. A width narrower than the
+  rows need at the current text size is drawn at that minimum rather than refused, so a panel
+  never becomes an overlap.
+- **A Flight Stats panel's text size snaps to the sizes its font is actually drawn at, and
+  sizes that would be interpolated cannot be drawn at all.** Minecraft's font is a bitmap and
+  its atlas is sampled `NEAREST`, so nothing is ever blended — what goes wrong at a size like
+  1.3× is rounding, not blurring: each glyph pixel claims whichever screen pixels are nearest,
+  so some strokes come out two pixels wide and their neighbours one, and the same letter is a
+  different shape in different words.
+
+  A glyph pixel covers the text size times your GUI scale, and it is that *product* that has to
+  be whole. Your GUI scale is already a whole number, so the sizes that survive are the
+  multiples of one over it — quarters at GUI scale 4, thirds at 3, halves at 2, and only whole
+  numbers at 1. **The smallest text there is is one screen pixel per font pixel**, which is a
+  quarter of the font's nominal size at GUI scale 4.
+
+  The setting itself is a plain multiplier that knows nothing about your GUI scale, because you
+  can change that under a config that is already saved. It is snapped to a drawable size where
+  the panel is drawn instead, so the same file stays sharp at every GUI scale and a hand-edited
+  one cannot ask for blurred text.
+
+  Sizes run from a sixteenth to 8. Eight is where the width setting runs out — the widest
+  panel's rows need 150 pixels at size one, and the width may be set to 1200.
+
+  This is also what makes two panels agree. Butted into a stack they are meant to read as one
+  instrument, and nothing says otherwise like two sections of it set in different sizes; two
+  panels showing the same number are set to the same size exactly, whatever their row counts.
+
+- Switching a Flight Stats row off now shortens its panel instead of enlarging its text. The
+  height used to be the setting and the text size the quotient, so turning off a row shrank the
+  divisor and left the dividend where it was — a checkbox reading *show total speed* also made
+  every letter on the panel bigger. It now does the one thing it says.
+- A Flight Stats panel from before the split migrates to four panels at the text size it was
+  drawn at, stacked from where it sat with their borders sharing a column, so a migrated HUD
+  reads at the size and in the order it read in. Each takes the size *its own* rows want, which
+  is not the height the retired panel would have given them: three of the four draw a units
+  heading it never had, and measuring without it cost them a fifth of their text size on the way
+  across. The size carries over exactly, fraction and all, and is read back off whichever
+  dimension the old file actually stated rather than off one derived from the other — deriving
+  it rounded a panel up to the next whole pixel and then divided that rounding into its text
+  size.
+- Every figure column on every Flight Stats panel now reserves the same width, so a stack of
+  panels butted together at one width has one grid of columns rather than several that nearly
+  agree. A column is placed by measuring back from the panel's right edge, so the three separate
+  templates agreed on the rightmost column — every panel aligns its last column onto its own
+  right edge whatever the template says — and disagreed on every column left of it, which put
+  the Energy panel's `ABS` column two pixels off the e-bounce matrices' left column. The
+  accident that makes one width enough is that seven glyphs and one stop measure the same
+  whether they are spent on three digits and two decimals or on four and one, so a two-decimal
+  speed and a one-decimal altitude want the same column.
+- A stats panel's rows are now scaled by one factor on both axes, and its background is filled on
+  the exact box instead. The width setting buys unscaled space to the right of the figures, as it
+  always did, but it no longer stretches the glyphs sideways to reach the box's corner: the two
+  axes were scaled separately, by a fraction of a pixel that differed with every width, so a
+  panel's text was a slightly different shape at every width it was given.
+- Every Flight Stats panel now has a heading row saying what its figures are measured in, and
+  its rows are labelled by what tells them apart rather than by the panel they are on. `SPEED Y`,
+  `SPEED XZ` and `SPEED XYZ` against figures each carrying their own `b/s` are now `SPEED b/s`
+  over `Y`, `XZ` and `XYZ`; Acceleration and Energy likewise, under `ACCEL b/s²` and `ENERGY b`.
+  This is what the e-bounce matrices have done since they arrived, under `VEL b/s` and
+  `DELTA b`, and it was the only place a unit was written once rather than once a row.
+
+  A unit is a fact about a panel rather than about any row of it, and writing it per row cost
+  twice over: the suffix on every figure, and a label repeating `SPEED` three times to introduce
+  the one letter that actually differed. The heading costs a row and gives back three labels'
+  worth of width — Speed's minimum width falls from 116 to 66 — so the three panels are a row
+  taller by default and can be placed in half the width. *Other* keeps its per-row labels,
+  because a pitch in degrees and a dimensionless ratio have no unit in common for a heading to
+  state.
+
+  Energy's heading also names its two columns, `ABS` for the height against the world's origin
+  and `REL` for the height against the last apex, since they are the one pair of columns on any
+  panel that are different kinds of thing. Kinetic energy now sits under `ABS` and the cycle's
+  gain under `REL`, each under the heading that describes it, where both used to be drawn
+  against the panel's right edge whatever the column there meant. The names appear only in the
+  mode that draws both columns.
+
+  On the elapsed-ticks matrix, `TICKS` moves down a row. It names the figures, not the `L-T` and
+  `D-L` above them, and every other label on every panel is drawn beside the figures it names.
+- Every Flight Stats row that can go negative now writes its sign explicitly, and every row that
+  cannot writes none. `PITCH`, `GLIDE` and the muted absolute figure beside `PE` and `TE` were
+  the three that did not: all can go either way about a datum — nose up or nose down about
+  level, a negative glide ratio is a climb rather than a shallower descent, and a world has
+  floors below zero — and a leading minus that only appears half the time is easy to read past.
+  The absolute figure stays muted, since muting says how loudly a figure asks to be read rather
+  than which conventions it is written in.
 - Velocity Graph and Flight Stats now expose their exact integer pixel widths instead of
   floating-point scale factors, matching the speedometers' pixel size settings. Existing scale
   settings migrate to the widths they rendered at, and resizing now changes a whole-pixel size.
@@ -156,6 +248,22 @@ build identifier and released feature for feature; see its own changelog.
   height, and the heatmap behind it now covers about a fifth more area to build.
 
 ### Fixed
+
+- A Flight Stats panel's corner resize is now a function of where the pointer is rather than of
+  how it got there. Both bounds on its two size settings were read off the panel as it stood:
+  the width could not be dragged below the rows' width at the panel's *current* text size, and
+  the text size could not be dragged past what the panel's *current* width holds. That closed a
+  loop — this event's width depended on the last event's size, and this event's size on this
+  event's width — and the loop has fixed points a drag cannot leave. A panel sitting exactly on
+  its content floor could not get narrower, because the size it had demanded that width, and
+  could not get larger, because the width it had forbade that size, so it stood still under a
+  pointer asking for something else and then unwound in a rush once the pointer crossed into
+  something the loop admitted.
+
+  The width's floor is now the panel's rows at the smallest text size its setting allows, which
+  is a constant, and the size's cap is taken from the width the same event just settled on.
+  Nothing is given up: the size is still capped so the settled width holds the rows, so the
+  panel is still never drawn wider than the drag placed it.
 
 - Resizing a Flight Stats panel vertically no longer makes its horizontal edge run away from
   the pointer. A stats resize now establishes its width first and limits text growth to the

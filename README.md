@@ -32,24 +32,39 @@ The heatmap shows the maximum one-tick total-energy gain for each velocity.
 
 ## Flight Stats
 
-Four panels, each placed, sized and switched on its own. Some metrics are shown relative to the previous cycle's apex. Energy assumes unit mass and is divided by gravity, giving units of blocks of height.
+Seven panels, each placed, sized and switched on its own. Some metrics are shown relative to the previous cycle's apex. Energy assumes unit mass and is divided by gravity, giving units of blocks of height.
 
-| Panel          | Row         | Meaning                                         |
-| -------------- | ----------- | ----------------------------------------------- |
-| Other          | `PITCH`     | pitch; negative is up                           |
-| Other          | `GLIDE`     | blocks forward per block down                   |
-| Speed          | `SPEED Y`   | vertical speed                                  |
-| Speed          | `SPEED XZ`  | horizontal speed                                |
-| Speed          | `SPEED XYZ` | total speed                                     |
-| Acceleration   | `ACCEL Y`   | rate of change of vertical speed                |
-| Acceleration   | `ACCEL XZ`  | rate of change of horizontal speed              |
-| Acceleration   | `ACCEL XYZ` | rate of change of total speed                   |
-| Energy         | `KE`        | kinetic energy                                  |
-| Energy         | `PE`        | potential energy                                |
-| Energy         | `TE`        | total energy                                    |
-| Energy         | `GAIN`      | total energy gained between the last two apexes |
+Every panel except Other starts with a heading: what its figures are measured in, and — where it has more than one column — what those columns are. So a unit is written once per panel rather than once per row, and the rows are labelled by what actually tells them apart. Other keeps full row labels because pitch and glide ratio have no unit in common.
 
-Each panel has its own width, so the two-row Other panel need not be as wide as the speed rows. By default they are stacked flush down the left, each overlapping the one above it by a pixel so that their borders share a column and the four read as one panel ruled into sections.
+| Panel             | Heading      | Row     | Meaning                                          |
+| ----------------- | ------------ | ------- | ------------------------------------------------ |
+| Other             | —            | `PITCH` | pitch; negative is up                            |
+| Other             | —            | `GLIDE` | blocks forward per block down; negative climbing |
+| Speed             | `SPEED b/s`  | `Y`     | vertical speed                                   |
+| Speed             | `SPEED b/s`  | `XZ`    | horizontal speed                                 |
+| Speed             | `SPEED b/s`  | `XYZ`   | total speed                                      |
+| Acceleration      | `ACCEL b/s²` | `Y`     | rate of change of vertical speed                 |
+| Acceleration      | `ACCEL b/s²` | `XZ`    | rate of change of horizontal speed               |
+| Acceleration      | `ACCEL b/s²` | `XYZ`   | rate of change of total speed                    |
+| Energy            | `ENERGY b`   | `KE`    | kinetic energy                                   |
+| Energy            | `ENERGY b`   | `PE`    | potential energy                                 |
+| Energy            | `ENERGY b`   | `TE`    | total energy                                     |
+| Energy            | `ENERGY b`   | `GAIN`  | total energy gained between the last two apexes  |
+| E-bounce velocity | `VEL b/s`    | `Y`     | vertical speed at touch, leave and deploy        |
+| E-bounce velocity | `VEL b/s`    | `XZ`    | horizontal speed at each of those                |
+| E-bounce velocity | `VEL b/s`    | `XYZ`   | total speed at each of those                     |
+| E-bounce delta    | `DELTA b`    | `Y`     | height gained or lost over each interval         |
+| E-bounce delta    | `DELTA b`    | `XZ`    | ground track distance over each interval         |
+| E-bounce delta    | `DELTA b`    | `XYZ`   | straight-line distance over each interval        |
+| E-bounce ticks    | —            | `TICKS` | elapsed ticks over each interval                 |
+
+The three e-bounce panels read as columns rather than rows. The velocity matrix has one column per event — `T` touch, `L` leave, `D` deploy. The other two measure an interval against the event before it, so they have no touch column and their headings name the subtraction: `L-T` and `D-L`.
+
+The Energy panel names its two columns as well, since they are different kinds of thing: `ABS` is the height against the world's origin and `REL` the height against the last apex. Kinetic energy sits under `ABS`, the cycle gain under `REL`, and potential and total energy fill both.
+
+A reading that can go negative always shows its sign. Signed rates and deltas are colored by sign; pitch and glide ratio remain neutral. A magnitude does neither.
+
+Each panel has its own width, so the two-row Other panel need not be as wide as the speed rows. By default they are stacked flush down the left, each overlapping the one above it by a pixel so that their borders share a column and the seven read as one panel ruled into sections.
 
 ## Bar Speedometer
 

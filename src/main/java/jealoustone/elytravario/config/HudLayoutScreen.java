@@ -9,6 +9,7 @@ import jealoustone.elytravario.ElytraVario;
 import jealoustone.elytravario.ElytraVarioClient;
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
+import jealoustone.elytravario.hud.StatsPanel;
 import jealoustone.elytravario.hud.VarioHudElement;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -262,6 +263,11 @@ public final class HudLayoutScreen extends Screen {
 	}
 
 	private List<ModulePositionEditor.Bounds> moduleBounds() {
+		// Every path that measures or drags a panel comes through here, so this is where the
+		// editor tells the panels the GUI scale their text sizes are quantized against. It is
+		// read afresh rather than cached: a resize must see the same scale the HUD is drawing
+		// at, and the video settings can change it while this screen is closed.
+		StatsPanel.guiScale(minecraft.getWindow().getGuiScale());
 		return ModulePositionEditor.bounds(font, width, height);
 	}
 
@@ -376,20 +382,41 @@ public final class HudLayoutScreen extends Screen {
 		int trueWidth = resizeOrigin.width();
 		int trueHeight = resizeOrigin.height();
 		// A module with two settings takes them one at a time. Each is solved against the same
-		// immutable origin and answers only the axis it grows, so neither can move what the
-		// other decides; the module lists them in the order a drag wants them applied.
+		// immutable origin and answers only the axis it grows. Stats panels establish width first;
+		// their text size is then limited to what that width can contain, preventing the
+		// content minimum from pushing the horizontal edge away from the pointer.
+		//
+		// Both of those limits are read from this drag rather than from the panel as it is
+		// currently drawn. That is the whole of what keeps the answer a function of where the
+		// pointer is: see ModulePositionEditor#narrowestWidth.
+		int settledWidth = resizeOrigin.width();
 		for (String key : module.sizeKeys) {
 			ConfigOptions.Option size = option(key);
 			ModulePositionEditor.Growth growth = ModulePositionEditor.growth(key);
+			double maximum = size.max() / size.factor();
+			double minimum = size.min() / size.factor();
+			double step = size.integral() ? 1 : 0;
+			if (module.panel != null && key.equals(module.panel.widthKey())) {
+				minimum = ModulePositionEditor.narrowestWidth(module.panel, minimum, maximum);
+			}
+			if (module.panel != null && key.equals(module.panel.textSizeKey())) {
+				// The text size counts in the sizes the font is drawn at, so the drag lands on
+				// one of those and never between two.
+				step = ModulePositionEditor.textSizeStep();
+				minimum = Math.max(minimum, ModulePositionEditor.smallestTextSize());
+				maximum = ModulePositionEditor.largestTextSize(module.panel, settledWidth,
+						minimum, maximum);
+			}
+			maximum = Math.max(minimum, maximum);
 			ModulePositionEditor.Resize resize = ModulePositionEditor.resizeWithMarkers(
 					corner, resizeOrigin, resizeOriginValues.get(key),
-					new ModulePositionEditor.Sizing(growth,
-							ModulePositionEditor.smallest(key, size.min() / size.factor(),
-									size.max() / size.factor()),
-							size.max() / size.factor(), size.integral()),
+					new ModulePositionEditor.Sizing(growth, minimum, maximum, step),
 					pointerX, pointerY, bounds, width, height,
 					VarioConfig.positionMargin, VarioConfig.positionSnapDistance);
 			resizes.add(resize);
+			if (module.panel != null && key.equals(module.panel.widthKey())) {
+				settledWidth = (int) Math.round(resize.value());
+			}
 			if (growth.width() > 0) trueWidth = resize.trueBounds().width();
 			if (growth.height() > 0) trueHeight = resize.trueBounds().height();
 			String next = size.format(resize.value());

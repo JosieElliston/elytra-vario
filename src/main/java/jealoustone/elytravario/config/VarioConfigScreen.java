@@ -551,7 +551,7 @@ public final class VarioConfigScreen extends YACLScreen {
 						() -> Double.parseDouble(values.get(spec.key())),
 						value -> setDisplayed(spec, values, value)))
 				.controller(option -> DoubleSliderControllerBuilder.create(option)
-						.range(spec.min(), spec.max()).step(step(spec))).build();
+						.range(sliderMinimum(spec), spec.max()).step(step(spec))).build();
 	}
 
 	private static OptionDescription description(ConfigOptions.Option spec) {
@@ -597,10 +597,17 @@ public final class VarioConfigScreen extends YACLScreen {
 	}
 
 	private static double step(ConfigOptions.Option spec) {
+		if (StatsPanel.byTextSizeKey(spec.key()) != null) {
+			return 1.0 / Math.max(1, Minecraft.getInstance().getWindow().getGuiScale());
+		}
 		if (spec.factor() == 0.05) return 0.05;
 		if (spec.max() <= 1) return 0.01;
 		if (spec.key().equals("ladderFineRangeDegrees")) return 0.5;
 		return 1;
+	}
+
+	private static double sliderMinimum(ConfigOptions.Option spec) {
+		return StatsPanel.byTextSizeKey(spec.key()) == null ? spec.min() : step(spec);
 	}
 
 	private static boolean exactField(String key) {

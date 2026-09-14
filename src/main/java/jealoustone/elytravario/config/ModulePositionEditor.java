@@ -50,11 +50,11 @@ final class ModulePositionEditor {
 			this(page, null, null, xKey, yKey, sizeKeys);
 		}
 
-		// Width before height: the height is capped by the text size that the dragged width can
-		// contain, so increasing the height cannot make the far edge run away from the pointer.
+		// Width before text size: the size is capped by what the dragged width can contain, so
+		// growing the text cannot make the far edge run away from the pointer.
 		Module(StatsPanel panel) {
 			this(STATS_PAGE, panel.group(), panel, panel.xKey(), panel.yKey(),
-					new String[] { panel.widthKey(), panel.heightKey() });
+					new String[] { panel.widthKey(), panel.textSizeKey() });
 		}
 
 		Module(int page, String group, StatsPanel panel, String xKey, String yKey,
@@ -341,8 +341,24 @@ final class ModulePositionEditor {
 	/** How many pixels of width and of height one unit of a module's size setting buys. */
 	record Growth(double width, double height) { }
 
-	/** A module's one size setting: how its box grows with it, and the range it may take. */
-	record Sizing(Growth growth, double min, double max, boolean integral) { }
+	/**
+	 * A module's one size setting: how its box grows with it, the range it may take, and the
+	 * increment it counts in.
+	 *
+	 * <p>The step is one for a setting held as a whole number of pixels, zero for one free to
+	 * take any value, and a fraction for a stats panel's text size, which counts in the sizes
+	 * the font is actually drawn at — one over the GUI scale. See
+	 * {@link jealoustone.elytravario.hud.StatsPanel#fontPixels()}.
+	 */
+	record Sizing(Growth growth, double min, double max, double step) {
+		/** Whether this setting counts in increments at all, rather than taking any value. */
+		boolean stepped() { return step > 0; }
+
+		/** The nearest value this setting can actually hold to the one asked for. */
+		double round(double value) {
+			return stepped() ? Math.rint(value / step) * step : value;
+		}
+	}
 
 	/**
 	 * How the module's box grows with one of its size settings.
@@ -356,9 +372,11 @@ final class ModulePositionEditor {
 	 * each of them be solved on its own axis by the same arithmetic that solves a single one.
 	 */
 	static Growth growth(String sizeKey) {
-		// A stats panel's two settings are its two dimensions, each on its own.
+		// A stats panel's two settings are its two dimensions, each on its own. Its width is
+		// pixels; its height is its rows, so one whole text size buys a whole layout of them.
 		if (StatsPanel.byWidthKey(sizeKey) != null) return new Growth(1, 0);
-		if (StatsPanel.byHeightKey(sizeKey) != null) return new Growth(0, 1);
+		StatsPanel sized = StatsPanel.byTextSizeKey(sizeKey);
+		if (sized != null) return new Growth(0, sized.layoutHeight());
 		return switch (sizeKey) {
 			// Size is the exact width; height follows the chart's aspect ratio.
 			case "chartSize" -> new Growth(1, (VarioConfig.chartMaxVy - VarioConfig.chartMinVy)
@@ -373,19 +391,55 @@ final class ModulePositionEditor {
 	}
 
 	/**
-	 * The smallest a grip may drag this setting to: the setting's own range, or what the module
-	 * will actually draw where that is larger.
+	 * The narrowest a grip may drag a stats panel's width to: its rows at the smallest text size
+	 * there is — one screen pixel per font pixel — which is the narrowest it is ever drawn.
 	 *
-	 * <p>The stats panel is drawn no narrower than its rows need at the text size its height is
-	 * asking for, so the grip stops where the panel stops rather than writing widths that would
-	 * leave the box sitting still while the number under it kept falling. A text size extreme
-	 * enough to need more than the setting can hold leaves the drag at the top of its range
-	 * rather than out of it.
+	 * <p><b>At the smallest text size, and not at the size the panel happens to have.</b> A
+	 * panel's width floor rises with its text size, so reading the floor off the panel as it
+	 * stands makes this event's width depend on the last event's text size — and
+	 * {@link #largestTextSize} makes this event's text size depend on this event's width.
+	 * Together those two close a loop with fixed points a drag cannot leave: a panel sitting
+	 * exactly on its content floor cannot get narrower, because the size it has demands that
+	 * width, and cannot get larger, because the width it has forbids that size, so it stands
+	 * still under a pointer asking for something else entirely until the pointer happens to ask
+	 * for something the loop admits.
+	 *
+	 * <p>Both bounds are therefore read from this drag rather than from the panel: the width
+	 * against a constant, and the text size against the width this same event just settled. The
+	 * pair that comes out is a function of where the pointer is and of nothing else, which is
+	 * the only way a drag can be undone by dragging back.
+	 *
+	 * <p>Nothing is given up by it. The text size is capped so that the width the drag settled
+	 * on still holds the rows, so the panel is never drawn wider than the drag placed it.
 	 */
-	static double smallest(String sizeKey, double min, double max) {
-		StatsPanel panel = StatsPanel.byWidthKey(sizeKey);
-		if (panel == null) return min;
-		return Math.clamp(panel.minWidth(), min, max);
+	static double narrowestWidth(StatsPanel panel, double min, double max) {
+		return Math.clamp(panel.minWidth(1), min, max);
+	}
+
+	/**
+	 * The largest text size a grip may drag a stats panel to once its width is settled: the
+	 * largest that width still holds the rows at. Without it a mostly-vertical drag would grow
+	 * the text and shove the panel's far horizontal edge away from a pointer that is not
+	 * dragging it.
+	 */
+	static double largestTextSize(StatsPanel panel, int settledWidth, double min, double max) {
+		return Math.clamp(
+				(double) panel.maxFontPixelsForWidth(settledWidth) / StatsPanel.guiScale(),
+				min, max);
+	}
+
+	/**
+	 * The increment a stats panel's text size counts in: one screen pixel per font pixel, which
+	 * is one over the GUI scale. Every value a drag can reach is therefore a size the bitmap
+	 * font is drawn at exactly. See {@link jealoustone.elytravario.hud.StatsPanel#fontPixels()}.
+	 */
+	static double textSizeStep() {
+		return 1.0 / StatsPanel.guiScale();
+	}
+
+	/** The smallest text size there is: the font at one screen pixel per font pixel. */
+	static double smallestTextSize() {
+		return textSizeStep();
 	}
 
 	/**
@@ -412,6 +466,11 @@ final class ModulePositionEditor {
 	 * scored by how near its resulting corner is to the pointer, and the nearest takes it. A rest
 	 * the setting cannot actually reach, because it is out of range or because the module lays
 	 * itself out in whole pixels, is passed over for one it can.
+	 *
+	 * <p>A stats panel's text size needs no rests of its own, and once had them. It now counts in
+	 * whole screen pixels per font pixel, so every value the drag can reach is already one the
+	 * font is drawn at, and two panels set to the same number are already drawn at the same size —
+	 * there is nothing between to be pulled off of. See {@link StatsPanel#textSize()}.
 	 */
 	static double resize(Corner corner, Bounds rendered, double value, Sizing sizing,
 			double pointerX, double pointerY, List<Bounds> bounds,
@@ -440,7 +499,9 @@ final class ModulePositionEditor {
 		double limit = Math.max(sizing.min(), Math.min(sizing.max(), Math.min(
 				fits(corner.left ? anchorX : screenWidth - anchorX, width, widthOffset),
 				fits(corner.top ? anchorY : screenHeight - anchorY, height, heightOffset))));
-		if (sizing.integral()) limit = Math.max(sizing.min(), Math.floor(limit));
+		if (sizing.stepped()) {
+			limit = Math.max(sizing.min(), Math.floor(limit / sizing.step()) * sizing.step());
+		}
 		double free = settled(solved, sizing, limit);
 		int freeWidth = (int) Math.round(width * free + widthOffset);
 		int freeHeight = (int) Math.round(height * free + heightOffset);
@@ -486,8 +547,7 @@ final class ModulePositionEditor {
 		if (candidates.isEmpty()) return new Resize(best, trueBounds, List.of());
 		List<Marker> markers = new ArrayList<>();
 		for (ResizeCandidate candidate : candidates) {
-			if (Double.compare(candidate.value, best) == 0
-					&& !markers.contains(candidate.marker)) {
+			if (Double.compare(candidate.value, best) == 0 && !markers.contains(candidate.marker)) {
 				markers.add(candidate.marker);
 			}
 		}
@@ -581,11 +641,11 @@ final class ModulePositionEditor {
 		return List.copyOf(guides);
 	}
 
-	/** A value in range, and in whole units where the setting counts in them. */
+	/** A value in range, and on an increment where the setting counts in them. */
 	private static double settled(double value, Sizing sizing, double limit) {
 		double capped = Math.clamp(value, sizing.min(), limit);
-		return sizing.integral()
-				? Math.clamp(Math.rint(capped), sizing.min(), limit) : capped;
+		return sizing.stepped()
+				? Math.clamp(sizing.round(capped), sizing.min(), limit) : capped;
 	}
 
 	/**
@@ -607,7 +667,7 @@ final class ModulePositionEditor {
 	/**
 	 * The setting that lands the line exactly on a rest, or {@code NaN} where none does.
 	 *
-	 * <p>A setting counting in whole units may not put a line on every coordinate, so the two
+	 * <p>A setting counting in increments may not put a line on every coordinate, so the two
 	 * values either side of the one the arithmetic asks for are tried before the rest is given
 	 * up on. Landing is checked rather than assumed,
 	 * because a rest that is merely close is a guide that does not line up with anything.
@@ -617,9 +677,9 @@ final class ModulePositionEditor {
 		double settled = settled(valueAt(rest, anchor, lower, slope, offset),
 				sizing, limit);
 		if (lineAt(anchor, lower, slope, offset, settled) == rest) return settled;
-		if (!sizing.integral()) return Double.NaN;
+		if (!sizing.stepped()) return Double.NaN;
 		for (int step = -1; step <= 1; step += 2) {
-			double beside = settled(settled + step, sizing, limit);
+			double beside = settled(settled + step * sizing.step(), sizing, limit);
 			if (lineAt(anchor, lower, slope, offset, beside) == rest) return beside;
 		}
 		return Double.NaN;

@@ -634,7 +634,7 @@ not.
 
 ## Placing the modules
 
-Seven modules carry a position: the velocity graph, the four flight stats panels, and the two
+Ten modules carry a position: the velocity graph, the seven flight stats panels, and the two
 speedometers. Each is an absolute top-left in scaled GUI pixels, clamped so that it stays on
 screen, and each can be set from its own page — or, for the stats panels, its own subpage — as a
 pair of numbers, or moved in the world with the settings screen open. Clicking a module opens
@@ -651,9 +651,10 @@ subpages are one bar or needle each, not one module each.
 **Corners resize, edges do not.** Three of these modules are a single size setting — the
 graph's width, the bar speedometer's plot height, the dial's radius — so there is no such thing
 as a nonuniform resize to offer, and an edge would have nothing to drag that a corner does not
-already drag. The stats panels are the exception, each with a width and a height of its own, and
-a corner drags them separately: pull it sideways and only the width moves. That is what a pair
-of edges would do one at a time, so it still does not need them.
+already drag. The stats panels are the exception, each with a width and a text size of its own;
+height follows from the text size and the rows shown. A corner solves width and text size
+separately: pull it sideways and only the width moves. That is what a pair of edges would do one
+at a time, so it still does not need them.
 
 **One setting, a pointer with two dimensions, so the answer is least squares.** The size chosen
 is the one whose box comes closest to the box the pointer is asking for. Where both axes follow
@@ -662,12 +663,27 @@ locked-aspect corner looks like anywhere else; for the bar speedometer, whose wi
 and labels rather than a setting, the same expression collapses to following the pointer
 vertically and ignoring the rest.
 
-**Two settings are solved one at a time.** A stats panel's width and height each answer one
-pointer axis. Width is established first, then height is capped at the largest text size whose
+**Two settings are solved one at a time.** A stats panel's width and text size each answer one
+pointer axis. Width is established first, then the text size is capped at the largest whose
 content minimum fits inside that width. Inside that boundary the axes are orthogonal; at the
 boundary the cap is the necessary coupling. Without it, pulling a corner mostly vertically
 could enlarge the text first and then force the panel's far horizontal edge well past the
 pointer merely to contain it.
+
+**Both bounds are read from the drag, never from the module as it is currently drawn.** The
+width's floor is the panel's rows at the smallest text size the setting allows — a constant —
+and the size's cap is taken from the width this same event just settled. Read live instead, the
+two close a loop: the floor rises with the text size and the cap falls with the width, so this
+event's width depends on the last event's size and this event's size on this event's width.
+That loop has fixed points a drag cannot leave. A panel sitting exactly on its content floor
+cannot get narrower, because the size it has demands that width, and cannot get larger, because
+the width it has forbids that size; it stands still under a pointer asking for something else
+entirely until the pointer happens to ask for something the loop admits, and then unwinds in a
+rush. **A drag's answer must be a function of where the pointer is and of nothing else** — not
+of how it got there — or dragging back does not undo dragging forward.
+
+Both are counted in screen pixels per font pixel, so they are exact inverses: a width holds
+precisely the sizes whose floors fit inside it, with nothing lost to rounding either way.
 
 **The box is affine in its settings, and the constant is measured rather than modelled.** A
 slope — the graph's aspect ratio, one per axis for a stats panel, two for the dial's diameter —
@@ -721,7 +737,7 @@ where it ends — which is what the shared line now says for both.
 
 The butt and the margin are five pixels apart, so at the default snap distance of four there is
 no position between them from which neither is reachable; the drag lands on whichever it is
-nearer. This is what the four stats panels are stacked with by default, and it is offered
+nearer. This is what the seven stats panels are stacked with by default, and it is offered
 between any two modules and on either axis, not only between panels.
 
 Only one answer can win, because one setting may place both moving edges. Every reachable rest
@@ -827,16 +843,17 @@ right-side settings panel leaves the HUD visible without blur. Each page has a r
 common controls are under Advanced. The screen reopens on the page, subpage and scroll position
 you left, with the Advanced switch as you left it, for the rest of the session.
 
-Position is an absolute top-left in scaled GUI pixels for each of the seven placed modules,
+Position is an absolute top-left in scaled GUI pixels for each of the ten placed modules,
 clamped to the screen; the anchors and the graph-to-stats attachment this paragraph used to
 describe are gone. With the settings screen open the modules are editable in the world: click
 one to open its settings, drag its middle to move it, drag a corner to resize it, or use the
 arrow keys for a pixel at a time. Moves and resizes both snap to the other modules and to the
 screen, and the coordinate and size fields stay in step with whatever the drag does. See
 *Placing the modules* above. Both horizontal and vertical chart bounds are editable, and each
-Flight Stats panel carries a width and a height of its own. Visibility is independent for all
-four instruments, each stats panel switches on and off on its own, and stats rows are
-selectable. Energy rate has been removed; cycle gain and apex differences remain.
+Flight Stats panel carries a width and a text size of its own, with height derived from its rows.
+Visibility is independent for all six instruments, each stats panel switches on and off on its
+own, and stats rows are selectable. Energy rate has been removed; cycle gain and apex differences
+remain.
 
 ## The readout panels
 
@@ -862,17 +879,89 @@ the matrices under it, sharing a left edge and a width so the stack has one righ
 shared width is 150, the widest of the floors below, which is the narrowest width every panel in
 the stack can be drawn at.
 
-**Width and height are set separately, and the height is the one that sets the text size.** The
-rows are laid out at a fixed line height and the panel is scaled to the height asked for, so it
-is always exactly as tall as its rows need and never carries a gap at the bottom. The width then
-buys one thing only: the distance between a label and the value right-aligned against the far
-edge. That gap is a panel's only dead space, and a single size setting could not close it —
-narrowing the panel shrank the reading along with it. The cost of the split is that switching a
-row off no longer makes its panel shorter; that panel keeps the height it was given and draws
-the rows that remain larger.
+**The two settings are a width in pixels and a text size, and the height is neither.** The rows
+are laid out at a fixed line height and drawn at the text size asked for, so the height is
+exactly the rows times that size: always exactly as tall as its rows need, and never carrying a
+gap at the bottom because there is no way to ask for one. The width then buys one thing only:
+the distance between a label and the value right-aligned against the far edge. That gap is a
+panel's only dead space, and a single size setting could not close it — narrowing the panel
+shrank the reading along with it.
+
+**The text size is the setting and the height is what follows from it.** That is the way round
+it has to be. The height was the setting once and the text size the quotient, and that made two
+things wrong at once. Switching a row off shrank the divisor and left the dividend where it was,
+so a checkbox reading *show total speed* also enlarged every letter on the panel; now it
+shortens the panel and leaves the letters alone, which is the only thing the checkbox claims to
+do. And a height free to be any pixel count made the text size free to be any fraction, so most
+panels sat at a size the font is not drawn at.
+
+**What has to be whole is not the text size but the screen pixels one pixel of the font covers.**
+Minecraft's font is a bitmap — `ascii.png` is 128×128 with 8×8 cells and a declared height of 8,
+so one pixel of a glyph is one GUI pixel at a text size of one — and its atlas is sampled
+`NEAREST`, so nothing is ever blended. What goes wrong at 1.3× is not blurring but rounding:
+each glyph pixel claims whichever screen pixels are nearest, so some strokes come out two pixels
+wide and their neighbours one, and the same letter is a different shape in different words.
+
+A glyph pixel covers the text size times the GUI scale, and it is that **product** that must be
+whole. The GUI scale is itself a whole number — `Window.getGuiScale` returns an `int` — so the
+sizes that survive are the multiples of one over it:
+
+| GUI scale | text sizes the font is drawn at exactly |
+| --- | --- |
+| 1 | 1, 2, 3, … |
+| 2 | ½, 1, 1½, 2, … |
+| 3 | ⅓, ⅔, 1, 1⅓, … |
+| 4 | ¼, ½, ¾, 1, 1¼, … |
+
+**Whole text sizes are only the special case of a GUI scale of one**, which is the mistake this
+model replaced. Half size is not throwing away every other row of the glyph unless the GUI scale
+really is 1; at 4 it is a glyph pixel drawn two screen pixels across, which is as exact as a
+glyph pixel drawn four across. The smallest text there is is one screen pixel per glyph pixel,
+which is one over the GUI scale — a quarter of the font's nominal size at GUI scale 4.
+
+**So the quantizing happens where the panel is drawn, not where the setting is written.** The
+setting is a plain multiplier and knows nothing about the GUI scale; the GUI scale can change
+under a config that is already saved, and the same file has to stay sensible at every one of
+them. `StatsPanel.fontPixels` rounds the product to the nearest whole screen pixel per glyph
+pixel and everything else is derived from that, so **a size that would interpolate cannot be
+drawn even if a hand-edited file asks for one.**
+
+This is also what makes two panels agree. Butted into a stack they are meant to read as one
+instrument, and nothing says *not one instrument* like two sections of it set in different
+sizes; two panels showing the same number are set to the same size, exactly, whatever their row
+counts. The editor used to carry a pair of resize rests for both of these jobs — one offering
+sizes the font is drawn at, one offering whatever size another panel on screen was drawn at —
+and both are gone with the need for them.
+
+**The grid does both jobs.** A rest pulls a continuous value onto a good one, and a drag can no
+longer produce a value that is not already good: it counts in steps of one over the GUI scale,
+so every value it can reach is one the font is drawn at. Matching another panel needs no rest
+either, for a different reason — the reachable sizes are the same grid for every panel, so
+another panel's size is always one this one can take, and the grid is coarse enough in pixels
+to land on by hand. A four-row panel at GUI scale 2 steps in twenty-four pixels, six times the
+snap distance. The rest for it was written, tried and taken out again: at the sizes and scales
+these panels are actually used at it changed nothing a drag was already doing.
+
+The panel's height is its rows times that size, so it comes in steps of one screen pixel per row
+rather than one whole layout — fine enough that alignment is not worth worrying about, and
+panels are aligned by moving them anyway. The box is rounded **up** to a whole GUI pixel, since
+the rows come to a whole number of *screen* pixels and not of GUI ones; the slack is under one
+GUI pixel and lands in the bottom padding.
+
+**Eight is the largest size offered**, because that is where the width setting runs out: the
+widest panel's rows need 150 pixels at size one and the width may be set to 1200, so a ninth
+size is one no panel could be made wide enough to hold.
 
 **A width narrower than the rows need is drawn at the width they need**, and each panel has its
 own floor, where its own widest row has met itself.
+
+**The rows are scaled by one factor on both axes.** The box is filled first, in screen pixels on
+the exact rectangle the settings ask for, and only the rows go inside the transform — so the
+width setting buys unscaled space to the right of the figures rather than stretching the glyphs
+sideways to reach the box's corner. Scaling the two axes separately had made a panel's text a
+slightly different shape for every width it was given, which is not much on its own and is
+exactly the wrong thing when the point is that two panels at one text size look like one
+instrument.
 
 **The floors are computed from the rows, not written down.** A row costs the panel's four pixels
 of padding either side, its label, two pixels of clearance so that at the floor the label and
@@ -892,39 +981,97 @@ A two-digit acceleration is the usual one, six pixels over.
 | Panel | Floor | The row that sets it |
 | --- | --- | --- |
 | Other | 86 | `GLIDE` at 28 against `-00.00 : 1` at 48 — the ratio is signed, which is what makes it the wider row |
-| Speed | 116 | `SPEED XYZ` at 52 against `-00.00 b/s` at 54, a straight-down terminal velocity being the widest speed actually read |
-| Acceleration | 115 | `ACCEL XYZ` measures the same 52; `+0.00 b/s²` is 53, a pixel inside a speed because the superscript is narrower than a digit |
-| Energy | 106 | `TE` at 12, then the two columns: 38, a pad, 42 |
+| Speed | 66 | `XYZ` at 18 against a 38-pixel column; the heading `SPEED b/s` at 52 is four short of that |
+| Acceleration | 67 | the heading `ACCEL b/s²` at 57, a pixel past its own figures, because it carries the superscript |
+| Energy | 116 | the heading `ENERGY b` at 46 against `ABS` and then the `REL` column: 18, a pad, 38 |
 | E-bounce velocity | 150 | `XYZ` at 18 against three 38-pixel columns and the two pads between them |
-| E-bounce delta | 110 | both rows at once: the heading `DELTA b` at 40 against `L-T`, and `XYZ` against two columns |
-| E-bounce ticks | 98 | the heading `TICKS` at 28 against `L-T`; the figures under it carry no label of their own |
+| E-bounce delta | 110 | the heading `DELTA b` at 40 against `L-T` and then a column |
+| E-bounce ticks | 118 | `TICKS` at 28 against both columns — the longest label of any matrix, on the row that carries two |
 
 Energy's floor is measured in the two-column mode, the widest of the three energy references
 and the default, so that changing the reference never moves the floor under a width already set.
 The velocity matrix is the one panel whose heading row is not what sets its floor: `VEL b/s` is
 its longest label, but the headings it runs at are single letters right-aligned into columns
 reserved for a figure, so the rows of figures beneath need more width than the heading does.
+**Every figure column on every panel reserves the same 38 pixels.** A column is placed by
+measuring back from the panel's right edge, so equal templates and equal widths put every
+panel's columns on the same screen pixels — and a stack butted together at one width is meant to
+read as one instrument, which it does not do if the energy panel's inner column stands two
+pixels off the matrices'. Separate templates had them agreeing on the rightmost column, since
+every panel aligns its last column onto its own right edge whatever the template says, and
+disagreeing on every column left of it. The useful accident that makes one width enough is that
+seven glyphs and one stop measure the same whether they are spent on three digits and two
+decimals or on four and one, so a two-decimal speed and a one-decimal altitude want the same
+column; `RATE_COLUMN` and `HEIGHT_COLUMN` name which a panel is drawing and are the same width.
+Elapsed ticks reserves one too, even though a tick count needs neither the sign nor the
+decimals, because what a column is for here is where its edges fall.
 
 The grips stop at these, and a narrower width typed into the box is drawn at the minimum rather
 than refused, so a reading never turns into an overlap.
 
+**A panel's unit is written once, on its heading row.** A panel is one kind of reading, so what
+it is measured in is a fact about the panel rather than about any row of it. Written on every row
+it cost twice over: the suffix on the figure, and a label saying `SPEED` three times over to
+introduce a `Y`, an `XZ` and an `XYZ` that were the whole of what those rows differed by. So
+Speed heads itself `SPEED b/s`, Acceleration `ACCEL b/s²` and Energy `ENERGY b`, exactly as the
+e-bounce matrices have always headed themselves `VEL b/s` and `DELTA b`, and the rows beneath are
+labelled by the only thing that tells them apart. It costs a row and saves three labels' worth of
+width, which is why Speed's floor fell from 116 to 66.
+
+The heading cannot be switched off. It is what lets a row be called `Y` rather than `SPEED Y`, so
+a panel drawing any row draws it; a panel drawing none is not drawn at all, heading included.
+*Other* is the one panel without one, because its two rows are a pitch in degrees and a
+dimensionless ratio — there is no one unit for a heading to state.
+
+**Energy's heading also names its columns**, since it is the one panel whose two columns are
+different kinds of thing: `ABS` is the height against the world's origin and `REL` the height
+against the last apex. Kinetic energy is an absolute and the cycle's gain is a difference, so
+each sits under the heading that describes it, and only potential and total energy fill both.
+The names appear only in the mode that draws both columns; one column has nothing to
+distinguish, and there the heading is the bare units label the other panels carry.
+
 | Row | Meaning |
 | --- | --- |
 | `PITCH` | Raw Minecraft pitch: **negative is looking up**. Matches F3 and elytrasim rather than the aviation convention. |
-| `SPEED XZ` | Horizontal speed. |
-| `SPEED XYZ` | Total speed. |
-| `SPEED Y` | Vertical speed; negative descending. |
 | `GLIDE` | Blocks forward per block down. Negative while climbing, where it reads as blocks forward per block *gained*. `--` only when level with speed, or stationary. |
+| `Y` `XZ` `XYZ` | Vertical, horizontal and total — of speed on the Speed panel, of its rate of change on Acceleration, and of an e-bounce velocity or displacement on the two matrices. Only `Y` is signed. |
 | `KE` | Kinetic energy as a height: the altitude your speed is worth. |
-| `PE` `TE` | Potential and total energy, **measured from the last apex**: how far below the top of the cycle you are, and how much of it is recoverable. Green means you are above the last apex, which for `TE` is a cycle that has already paid for itself. The dimmed figure to the left is the same height against the world's origin, which is what F3 and a map agree with. `--` until an apex has been seen. |
+| `PE` `TE` | Potential and total energy, **measured from the last apex**: how far below the top of the cycle you are, and how much of it is recoverable. Green means you are above the last apex, which for `TE` is a cycle that has already paid for itself. The dimmed figure under `ABS` is the same height against the world's origin, which is what F3 and a map agree with. `--` until an apex has been seen. |
 | `GAIN` | Total energy gained between the last two apexes: what the cycle was worth. |
+| `TICKS` | Elapsed ticks over each interval. Drawn on the row of figures rather than on the row of column names above it, because that is what it names. |
 
 The three e-bounce matrices read as columns rather than rows. The velocity matrix has one column
-per event — `T` touch, `L` leave, `D` deploy — and `X`, `XZ`, `XYZ` as its rows. The other two
+per event — `T` touch, `L` leave, `D` deploy — and `Y`, `XZ`, `XYZ` as its rows. The other two
 measure an interval, which is only ever the difference against the event before it, so they have
 no touch column and their headings name the subtraction: `L-T` and `D-L`. At equal widths those
 two columns sit under the velocity matrix's `L` and `D`, since all three right-align onto the
 same edges.
+
+**The rows are the Speed panel's, and for the Speed panel's reason:** the signed vertical
+component first, then the two magnitudes. A single world axis is not among them — `X` alone says
+which way the world happens to be oriented rather than which way the bounce went, and `XZ` is
+the rotation-independent quantity that replaces it. So the velocity matrix's top row is vertical
+speed at each event, and the position matrix's top row is the height gained or lost over each
+interval.
+
+### Signs and the sign colors
+
+**A reading that can go negative always writes its sign; a magnitude never writes one.** That is
+one rule and it covers every row: `PITCH`, `GLIDE`, `SPEED Y`, all three accelerations, `GAIN`,
+the apex-relative `PE` and `TE`, and the `Y` row of both matrices show a leading `+` or `-`, and
+`SPEED XZ`, `SPEED XYZ`, `KE`, the `XZ` and `XYZ` matrix rows and the elapsed ticks show
+neither. A minus that only appears half the time is easy to read past, and a `+` on a figure
+that could not have been anything else is noise. The muted absolute figure beside `PE` and `TE`
+follows the rule too, and is muted all the same: muting says how loudly a figure asks to be
+read, not which conventions it is written in.
+
+**The positive and negative colors belong to signed rates and deltas.** `SPEED Y`, all three
+accelerations, `GAIN`, the apex-relative `PE` and `TE`, and the `Y` row of both matrices use color
+to say which side of zero they are on. Pitch and glide ratio still write their signs, but remain
+neutral: there the sign names an orientation rather than a gain or loss. A magnitude has a floor
+at zero rather than a crossing, so coloring it would report it positive on every frame and the
+color would stop being a reading at all. The deadband is `rateColor`'s, so a colored reading
+sitting on zero is white rather than flickering between the two.
 
 ## The chart
 
