@@ -20,7 +20,8 @@ josie's todo/notes, don't edit this, tho you should include it in commits
     - configurable inset
     - configurable base radius (must have odd base size) actually no we don't have base radius, this is implied by length
         - lines are expressible as 0 rad and (special case i think) 0 step down
-    - build a gui editor for this
+    - build a gui editor for this?
+    - in a new worktree, we're going to work on the ladder marker aesthetics. please look at the current state. i have a vague vision, but i'd like to hear your thoughts (before making large changes)
 - make modules more unobtrusive
     - translucent
 - not fixed module render order?
@@ -33,7 +34,7 @@ josie's todo/notes, don't edit this, tho you should include it in commits
     - steal sodiums?
     - better color picker
 - vel graph: draw marker and trail in a different color for on-ground, off-ground, flying
-- stats panel resizing; somehow keep the text same size, but you can resize in both axes. probably need text size snapping.
+- hold shift to disable snapping
 
 ## myopic metrics
 
