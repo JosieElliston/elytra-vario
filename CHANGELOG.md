@@ -117,6 +117,8 @@ and key-registration APIs, not behavior.
 
 ### Changed
 
+- The default Flight Stats stack and both speedometers now begin below the in-world layout
+  editor's header instead of letting their top row sit behind it.
 - The default Flight Stats layout is one vertical stack of all seven panels down the left edge,
   in the order the single panel read in with the three matrices under it, every one of them 150
   wide so the stack has one right edge as well as one left. The matrices previously sat in a
