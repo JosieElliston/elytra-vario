@@ -330,7 +330,7 @@
 	"config.elytra-vario.toggleKey": "Visibility toggle key",
 	"config.elytra-vario.toggleKey.tooltip": "Toggles this instrument and saves its visibility.",
 	"config.elytra-vario.page.4": "Flight Stats",
-	"config.elytra-vario.positionEditor.tooltip": "%s\nDrag the middle to move; drag a corner to resize. Click to select its settings, then use the arrow keys for one-pixel moves.",
+	"config.elytra-vario.positionEditor.tooltip": "%s\nDrag the middle to move; drag a corner to resize. Hold Shift to disable snapping. Click to select its settings, then use the arrow keys for one-pixel moves. Right click to open the context menu.",
 	"config.elytra-vario.page.5": "Bar Speedometer",
 	"config.elytra-vario.showBarSpeedo": "Show bar speedometer",
 	"config.elytra-vario.showBarSpeedo.tooltip": "Show or hide the bar speedometer. The master HUD setting still applies.",
