@@ -53,7 +53,7 @@ public enum StatsPanel {
 	 *
 	 * <p>Its floor is 66, which its figures set. The heading row carries the units and nothing
 	 * else — there is one column here, so there is nothing to name — and {@code SPEED b/s} at 52
-	 * is eight pixels short of what {@code XYZ} against a speed comes to.
+	 * is four pixels short of what {@code XYZ} against a speed comes to.
 	 */
 	SPEED("statsSpeed", widest(
 			row("SPEED b/s", ""),

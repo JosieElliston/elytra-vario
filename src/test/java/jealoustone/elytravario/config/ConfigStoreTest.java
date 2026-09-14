@@ -212,6 +212,28 @@ class ConfigStoreTest {
 		}
 	}
 
+	/**
+	 * The stack is laid out from the heights the panels round <em>up</em> to, because that is
+	 * what they are drawn at: a panel's rows come to a whole number of screen pixels rather
+	 * than of GUI ones, and the slack lands in its bottom padding. Rounding to nearest here
+	 * stood a panel whose rows fall a fraction short of a pixel one pixel above where it draws
+	 * itself, and butted the next one a pixel into it.
+	 */
+	@Test void theStackIsLaidOutFromTheHeightsThePanelsRoundUpTo() {
+		// A third of a size, which is what 132 screen pixels of a 396-pixel layout comes to.
+		var values = ConfigStore.decode("{\"panelWidth\":396}");
+		for (var panel : LEGACY_PANELS) {
+			assertEquals("0.333333", values.get(panel.textSizeKey()), panel.name());
+		}
+		// Other lays out 28 tall and Speed and Acceleration 48, so a third of them is nine and
+		// a third and sixteen: the first rounds up to 10, the two whole ones stay put, and each
+		// panel overlaps the one above it by a border.
+		assertEquals("4", values.get(StatsPanel.OTHER.yKey()));
+		assertEquals("13", values.get(StatsPanel.SPEED.yKey()));
+		assertEquals("28", values.get(StatsPanel.ACCEL.yKey()));
+		assertEquals("43", values.get(StatsPanel.ENERGY.yKey()));
+	}
+
 	@Test void theNewerRetiredWidthAndHeightWinOverTheOlderSingleSize() {
 		var values = ConfigStore.decode("{\"statsSize\":198,\"statsWidth\":90,"
 				+ "\"statsHeight\":120}");

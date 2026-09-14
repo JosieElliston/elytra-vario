@@ -963,10 +963,6 @@ slightly different shape for every width it was given, which is not much on its 
 exactly the wrong thing when the point is that two panels at one text size look like one
 instrument.
 
-**Eight is the largest size offered**, because that is where the width setting runs out: the
-widest panel's rows need 150 pixels at size one and the width may be set to 1200, so a ninth
-size is one no panel could be made wide enough to hold.
-
 **The floors are computed from the rows, not written down.** A row costs the panel's four pixels
 of padding either side, its label, two pixels of clearance so that at the floor the label and
 the figure beside it are still two separate words, its own leftmost figure, and then a pad and a
@@ -985,7 +981,7 @@ A two-digit acceleration is the usual one, six pixels over.
 | Panel | Floor | The row that sets it |
 | --- | --- | --- |
 | Other | 86 | `GLIDE` at 28 against `-00.00 : 1` at 48 — the ratio is signed, which is what makes it the wider row |
-| Speed | 66 | `XYZ` at 18 against a 38-pixel column; the heading `SPEED b/s` at 52 is eight short of that |
+| Speed | 66 | `XYZ` at 18 against a 38-pixel column; the heading `SPEED b/s` at 52 is four short of that |
 | Acceleration | 67 | the heading `ACCEL b/s²` at 57, a pixel past its own figures, because it carries the superscript |
 | Energy | 116 | the heading `ENERGY b` at 46 against `ABS` and then the `REL` column: 18, a pad, 38 |
 | E-bounce velocity | 150 | `XYZ` at 18 against three 38-pixel columns and the two pads between them |
