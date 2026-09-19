@@ -83,8 +83,13 @@ final class MarkerPreviewController implements Controller<Integer> {
 			int outside = centerGap - shape.inset();
 			int top = y + 17;
 			int bottom = y + height - 3;
-			drawShadow(graphics, shape, outside, centerX, centerY,
-					top, bottom, x + 2, x + width - 2, shadow(color));
+			boolean dynamic = prefix.equals("holdPitch") || prefix.equals("optimalPitch")
+					|| prefix.equals("lookaheadPitch");
+			String shadowKey = dynamic ? "showDynamicMarkerShadows" : "showStaticMarkerShadows";
+			if (Boolean.parseBoolean(values.get(shadowKey))) {
+				drawShadow(graphics, shape, outside, centerX, centerY,
+						top, bottom, x + 2, x + width - 2, shadow(color));
+			}
 			drawMarker(graphics, shape, outside, centerX, centerY,
 					top, bottom, x + 2, x + width - 2, color);
 		}

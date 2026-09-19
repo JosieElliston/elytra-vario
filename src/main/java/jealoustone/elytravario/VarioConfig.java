@@ -29,6 +29,8 @@ public final class VarioConfig {
 	 * numeric angle-of-attack readout. It is on by default.
 	 */
 	public static boolean showFlightPath = true;
+	/** Shadows shared by the four markers derived from the player's current flight state. */
+	public static boolean showDynamicMarkerShadows = true;
 
 	/**
 	 * The optimal pitch bug: a pair of wedges in the ladder's center gap marking the pitch
@@ -95,6 +97,8 @@ public final class VarioConfig {
 	public static boolean showMaxHorizontalSpeedPitch = true;
 	public static boolean showMinimumFallSpeedPitch = true;
 	public static boolean showZeroPitch = true;
+	/** Shadows shared by the three fixed pitch-reference markers. */
+	public static boolean showStaticMarkerShadows = true;
 	public static int maxHorizontalSpeedPitchColor = 0x66E8EAED;
 	public static int minimumFallSpeedPitchColor = 0x66FFFFFF;
 	public static int zeroPitchColor = 0xE0E8EAED;

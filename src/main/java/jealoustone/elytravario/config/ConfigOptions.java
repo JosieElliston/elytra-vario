@@ -92,6 +92,8 @@ public final class ConfigOptions {
 		// order of the subpage dropdown and of the rows within each subpage.
 		add("showLadderMarkers", 2, 0, 1, 1, 0, false, false);
 		add("ladderMarkersGlidingOnly", 2, 0, 1, 1, 0, false, false);
+		add("showDynamicMarkerShadows", 2, 0, 1, 1, 0, false, false);
+		add("showStaticMarkerShadows", 2, 0, 1, 1, 0, false, false);
 
 		add("showFlightPath", 2, "flightPath", 0, 1, 1, 0, false, false);
 		add("flightPathColor", 2, "flightPath", 0, 1, 1, 0, true, false);

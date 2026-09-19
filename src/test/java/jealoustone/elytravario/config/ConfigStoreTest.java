@@ -30,6 +30,8 @@ class ConfigStoreTest {
 		assertEquals("66FFFFFF", defaults.get("minimumFallSpeedPitchColor"));
 		assertEquals("E0E8EAED", defaults.get("zeroPitchColor"));
 		assertEquals("66E8EAED", defaults.get("maxHorizontalSpeedPitchColor"));
+		assertEquals("true", defaults.get("showDynamicMarkerShadows"));
+		assertEquals("true", defaults.get("showStaticMarkerShadows"));
 	}
 
 	@Test void omittedSettingsUseDefaultsAndUnknownSettingsAreIgnored() {
