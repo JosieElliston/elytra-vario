@@ -139,6 +139,9 @@ public final class PitchLadderElement implements HudElement {
 
 	/** Kept clear of the screen edge, so the marker's wings are never half off it. */
 	private static final int MARKER_MARGIN = 12;
+	/** A restrained drop shadow separates small marks from both bright sky and dark terrain. */
+	private static final int MARKER_SHADOW_OFFSET = 1;
+	private static final double MARKER_SHADOW_OPACITY = 0.65;
 
 	/**
 	 * A rung a quarter turn off the camera axis is edge-on, and beyond that it is behind the
@@ -195,10 +198,12 @@ public final class PitchLadderElement implements HudElement {
 		}
 		if (!VarioInstrument.LADDER_MARKERS.visible(sample.gliding())) return;
 
-		drawBugs(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
-
 		if (VarioConfig.showFlightPath) {
-			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown);
+			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown, true);
+		}
+		drawBugs(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
+		if (VarioConfig.showFlightPath) {
+			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown, false);
 		}
 	}
 
@@ -268,6 +273,13 @@ public final class PitchLadderElement implements HudElement {
 		}
 
 		markers.sort((left, right) -> Integer.compare(right.shape().height(), left.shape().height()));
+		// Paint every shadow first. A short marker's shadow must not dirty the color of a taller
+		// marker under it when their readings agree.
+		for (PitchMarker marker : markers) {
+			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), shadow(marker.color()),
+					centerX + MARKER_SHADOW_OFFSET, centerY + MARKER_SHADOW_OFFSET,
+					scale, bandUp, bandDown);
+		}
 		for (PitchMarker marker : markers) {
 			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), marker.color(),
 					centerX, centerY, scale, bandUp, bandDown);
@@ -534,7 +546,8 @@ public final class PitchLadderElement implements HudElement {
 	 * makes it exact on both axes and correct in every camera mode.
 	 */
 	private void drawFlightPath(GuiGraphics graphics, Camera camera,
-			int centerX, int centerY, double scale, int bandUp, int bandDown) {
+			int centerX, int centerY, double scale, int bandUp, int bandDown,
+			boolean shadowPass) {
 		Vec3 velocity = recorder.velocity();
 		double speed = velocity.length();
 
@@ -568,7 +581,8 @@ public final class PitchLadderElement implements HudElement {
 			return;
 		}
 
-		int color = VarioConfig.flightPathColor;
+		int color = shadowPass ? shadow(VarioConfig.flightPathColor) : VarioConfig.flightPathColor;
+		int shadowOffset = shadowPass ? MARKER_SHADOW_OFFSET : 0;
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
@@ -578,12 +592,23 @@ public final class PitchLadderElement implements HudElement {
 		int x = (int) Math.floor(exactX);
 		pose.translate((float) (exactX - x), 0.0f);
 
+		drawFlightPathSymbol(graphics, x + shadowOffset, y + shadowOffset, color);
+
+		pose.popMatrix();
+	}
+
+	private static void drawFlightPathSymbol(GuiGraphics graphics, int x, int y,
+			int color) {
 		graphics.renderOutline(x - 3, y - 3, 7, 7, color);
 		graphics.fill(x - 10, y, x - 4, y + 1, color);
 		graphics.fill(x + 5, y, x + 11, y + 1, color);
 		graphics.fill(x, y - 8, x + 1, y - 3, color);
+	}
 
-		pose.popMatrix();
+	/** Black with opacity proportional to the mark it belongs to. */
+	private static int shadow(int color) {
+		int alpha = (int) Math.round(((color >>> 24) & 0xFF) * MARKER_SHADOW_OPACITY);
+		return alpha << 24;
 	}
 
 	/** Scales a color's alpha, leaving its RGB alone. */
