@@ -542,7 +542,7 @@ public final class VarioConfig {
 	public static boolean showDialSpeedoTerminalVelocityMarkers = false;
 	public static boolean showDialSpeedoLabels = true;
 	public static boolean showDialSpeedoBorder = true;
-	public static double dialSpeedoOpacity = 0.25;
+	public static double dialSpeedoBackgroundOpacity = 0.25;
 
 	public static boolean visible(boolean shown, boolean glidingOnly, boolean gliding) {
 		return enabled && (!hudGlidingOnly || gliding)

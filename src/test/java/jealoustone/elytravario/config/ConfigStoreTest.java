@@ -69,10 +69,11 @@ class ConfigStoreTest {
 		var migrated = ConfigStore.decode("{\"speedoRadius\":48,\"speedoOpacity\":30,"
 				+ "\"speedoX\":12,\"showSpeedoTotal\":false}");
 		assertEquals("48", migrated.get("dialSpeedoRadius"));
-		assertEquals("30", migrated.get("dialSpeedoOpacity"));
 		assertEquals("12", migrated.get("dialSpeedoX"));
 		assertEquals("false", migrated.get("showDialSpeedoTotal"));
 		assertEquals("96", migrated.get("barSpeedoHeight"));
+		// The background alone does not come back; it is renamed so that it cannot.
+		assertEquals("25", migrated.get("dialSpeedoBackgroundOpacity"));
 	}
 
 	@Test void versionThirteenSettingsMigrateToTheBarSpeedometer() {
@@ -297,6 +298,28 @@ class ConfigStoreTest {
 			assertEquals("false", values.get(panel.borderKey()), panel.name());
 		}
 		assertFalse(ConfigStore.encode(values).contains("\"panelOpacity\""));
+	}
+
+	/**
+	 * The dial's background is renamed, so a file saved by any build that defaulted it to 0.45
+	 * states a setting nothing reads and the dial takes the uniform quarter instead.
+	 *
+	 * <p>The bar speedometer is the control: it was already at the quarter, keeps its name, and
+	 * so keeps whatever the file says — a value that is respected here and dropped for the dial
+	 * shows the reset is the rename doing it and not the whole file being ignored.
+	 */
+	@Test void theDialsRetiredBackgroundOpacityBecomesTheUniformQuarter() {
+		var values = ConfigStore.decode("{\"dialSpeedoOpacity\":\"45\","
+				+ "\"barSpeedoOpacity\":\"60\"}");
+		assertEquals("25", values.get("dialSpeedoBackgroundOpacity"));
+		assertEquals("60", values.get("barSpeedoOpacity"));
+		assertFalse(ConfigStore.encode(values).contains("\"dialSpeedoOpacity\""));
+	}
+
+	/** A dial background chosen under the new name survives, or the rename would reset forever. */
+	@Test void theDialsRenamedBackgroundOpacityIsKept() {
+		var values = ConfigStore.decode("{\"dialSpeedoBackgroundOpacity\":\"45\"}");
+		assertEquals("45", values.get("dialSpeedoBackgroundOpacity"));
 	}
 
 	/** The panel the retired opacity defaulted to 0.69 on comes out at the uniform quarter. */
