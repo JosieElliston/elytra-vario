@@ -235,7 +235,7 @@ public final class ConfigOptions {
 	private static void addMarkerShape(String prefix, String group) {
 		add(prefix + "Inset", 2, group, 0, 100, 1, 0, false, false);
 		add(prefix + "Length", 2, group, 1, 100, 1, 0, false, false);
-		add(prefix + "Step", 2, group, 0, 100, 1, 0, false, false);
+		add(prefix + "Step", 2, group, 0, 4, 1, 0, false, false);
 	}
 
 	private static void add(String key, int page, String group, double min, double max, double factor,

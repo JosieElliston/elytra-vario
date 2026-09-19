@@ -368,6 +368,12 @@ class ConfigStoreTest {
 		assertNull(ConfigOptions.error(values));
 	}
 
+	@Test void markerStepSliderStopsAtFour() {
+		var values = ConfigOptions.defaults();
+		values.put("lookaheadPitchStep", "5");
+		assertEquals("invalid", ConfigOptions.error(values));
+	}
+
 	@Test void applyingConvertsUnitsAndInvalidDraftCannotPartiallyApply() {
 		var original = ConfigOptions.snapshot();
 		try {
