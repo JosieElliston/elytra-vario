@@ -116,7 +116,8 @@ import org.joml.Vector3fc;
  * cursor also measures.
  */
 public final class PitchLadderElement implements HudElement {
-	private record PitchMarker(float pitch, LadderMarkerShape shape, int color) { }
+	private record PitchMarker(float pitch, LadderMarkerShape shape, int color,
+			boolean dynamic) { }
 
 	/** Constant-pitch landmarks from the exact 26.2 steady-state flight model. */
 	private static final float MAX_HORIZONTAL_SPEED_PITCH = 53.366F;
@@ -201,7 +202,7 @@ public final class PitchLadderElement implements HudElement {
 		}
 		if (!VarioInstrument.LADDER_MARKERS.visible(sample.gliding())) return;
 
-		if (VarioConfig.showFlightPath) {
+		if (VarioConfig.showFlightPath && VarioConfig.showDynamicMarkerShadows) {
 			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown, true);
 		}
 		drawBugs(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
@@ -233,14 +234,14 @@ public final class PitchLadderElement implements HudElement {
 			if (lookahead != null) {
 				markers.add(new PitchMarker(lookahead.pitch(), new LadderMarkerShape(
 						VarioConfig.lookaheadPitchInset, VarioConfig.lookaheadPitchLength,
-						VarioConfig.lookaheadPitchStep), VarioConfig.lookaheadPitchColor));
+						VarioConfig.lookaheadPitchStep), VarioConfig.lookaheadPitchColor, true));
 			}
 		}
 
 		if (VarioConfig.showHoldPitch) {
 			markers.add(new PitchMarker(recorder.flightPathHold(), new LadderMarkerShape(
 					VarioConfig.holdPitchInset, VarioConfig.holdPitchLength,
-					VarioConfig.holdPitchStep), VarioConfig.holdPitchColor));
+					VarioConfig.holdPitchStep), VarioConfig.holdPitchColor, true));
 		}
 
 		if (VarioConfig.showOptimalPitch) {
@@ -249,7 +250,7 @@ public final class PitchLadderElement implements HudElement {
 			if (optimal != null) {
 				markers.add(new PitchMarker(optimal.pitch(), new LadderMarkerShape(
 						VarioConfig.optimalPitchInset, VarioConfig.optimalPitchLength,
-						VarioConfig.optimalPitchStep), VarioConfig.optimalPitchColor));
+						VarioConfig.optimalPitchStep), VarioConfig.optimalPitchColor, true));
 			}
 		}
 
@@ -258,7 +259,7 @@ public final class PitchLadderElement implements HudElement {
 					VarioConfig.maxHorizontalSpeedPitchInset,
 					VarioConfig.maxHorizontalSpeedPitchLength,
 					VarioConfig.maxHorizontalSpeedPitchStep),
-					VarioConfig.maxHorizontalSpeedPitchColor));
+					VarioConfig.maxHorizontalSpeedPitchColor, false));
 		}
 
 		if (VarioConfig.showMinimumFallSpeedPitch) {
@@ -266,19 +267,21 @@ public final class PitchLadderElement implements HudElement {
 					VarioConfig.minimumFallSpeedPitchInset,
 					VarioConfig.minimumFallSpeedPitchLength,
 					VarioConfig.minimumFallSpeedPitchStep),
-					VarioConfig.minimumFallSpeedPitchColor));
+					VarioConfig.minimumFallSpeedPitchColor, false));
 		}
 
 		if (VarioConfig.showZeroPitch) {
 			markers.add(new PitchMarker(ZERO_PITCH, new LadderMarkerShape(
 					VarioConfig.zeroPitchInset, VarioConfig.zeroPitchLength,
-					VarioConfig.zeroPitchStep), VarioConfig.zeroPitchColor));
+					VarioConfig.zeroPitchStep), VarioConfig.zeroPitchColor, false));
 		}
 
 		markers.sort((left, right) -> Integer.compare(right.shape().height(), left.shape().height()));
 		// Paint every shadow first. A short marker's shadow must not dirty the color of a taller
 		// marker under it when their readings agree.
 		for (PitchMarker marker : markers) {
+			if (marker.dynamic() ? !VarioConfig.showDynamicMarkerShadows
+					: !VarioConfig.showStaticMarkerShadows) continue;
 			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), marker.color(),
 					centerX, centerY, scale, bandUp, bandDown, true);
 		}
