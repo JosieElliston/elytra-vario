@@ -132,6 +132,8 @@ public final class VarioConfigScreen extends YACLScreen {
 					return builder;
 				});
 				group.option(option);
+				String markerPrefix = markerPrefixForStep(spec.key());
+				if (markerPrefix != null) group.option(markerPreview(markerPrefix, values));
 			}
 		}
 		for (OptionGroup.Builder group : groups.values()) category.group(group.build());
@@ -474,14 +476,29 @@ public final class VarioConfigScreen extends YACLScreen {
 	}
 
 	private static String markerShapeParent(String key) {
-		for (String prefix : List.of("lookaheadPitch", "holdPitch", "optimalPitch",
-				"maxHorizontalSpeedPitch", "minimumFallSpeedPitch", "zeroPitch")) {
+		for (String prefix : ConfigOptions.markerPrefixes()) {
 			if (key.equals(prefix + "Inset") || key.equals(prefix + "Length")
 					|| key.equals(prefix + "Step")) {
 				return "show" + capitalize(prefix);
 			}
 		}
 		return null;
+	}
+
+	private static String markerPrefixForStep(String key) {
+		for (String prefix : ConfigOptions.markerPrefixes()) {
+			if (key.equals(prefix + "Step")) return prefix;
+		}
+		return null;
+	}
+
+	private static Option<Integer> markerPreview(String prefix, Map<String, String> values) {
+		return Option.<Integer>createBuilder()
+				.name(text("markerPreview"))
+				.description(OptionDescription.of(text("markerPreview.tooltip")))
+				.binding(0, () -> 0, ignored -> { })
+				.customController(option -> new MarkerPreviewController(option, prefix, values))
+				.build();
 	}
 
 	private static boolean speedometerCommonEffect(String key, String prefix) {

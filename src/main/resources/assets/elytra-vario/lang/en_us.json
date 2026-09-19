@@ -40,6 +40,8 @@
 	"config.elytra-vario.showLadderMarkers.tooltip": "Show or hide all ladder markers. The master HUD setting still applies.",
 	"config.elytra-vario.ladderMarkersGlidingOnly": "Only while gliding",
 	"config.elytra-vario.ladderMarkersGlidingOnly.tooltip": "Show ladder markers only while elytra gliding.",
+	"config.elytra-vario.markerPreview": "Pixel preview",
+	"config.elytra-vario.markerPreview.tooltip": "Each preview pixel is one scaled GUI pixel. Shapes taller than the preview are clipped.",
 	"config.elytra-vario.group.lookahead": "Lookahead optimal",
 	"config.elytra-vario.group.hold": "Flight-path hold",
 	"config.elytra-vario.group.optimal": "One-tick optimal",
