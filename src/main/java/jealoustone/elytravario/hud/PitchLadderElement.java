@@ -1,7 +1,10 @@
 package jealoustone.elytravario.hud;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
@@ -118,6 +121,77 @@ import org.joml.Vector3fc;
 public final class PitchLadderElement implements HudElement {
 	private record PitchMarker(float pitch, LadderMarkerShape shape, int color,
 			boolean dynamic) { }
+	private record ShadowSpan(int left, int right, int alpha) { }
+
+	/** Combines all paired-marker shadows without darkening where their silhouettes overlap. */
+	private static final class MarkerShadowLayer {
+		private final Map<Integer, List<ShadowSpan>> shadows = new HashMap<>();
+		private final Map<Integer, List<ShadowSpan>> masks = new HashMap<>();
+
+		void add(int left, int right, int y, int color, boolean shadowEnabled) {
+			if (left >= right || ((color >>> 24) & 0xFF) == 0) return;
+			masks.computeIfAbsent(y, ignored -> new ArrayList<>())
+					.add(new ShadowSpan(left, right, 0));
+			if (!shadowEnabled) return;
+			int alpha = (shadow(color) >>> 24) & 0xFF;
+			if (alpha == 0) return;
+			shadows.computeIfAbsent(y + MARKER_SHADOW_OFFSET, ignored -> new ArrayList<>())
+					.add(new ShadowSpan(left + MARKER_SHADOW_OFFSET,
+							right + MARKER_SHADOW_OFFSET, alpha));
+		}
+
+		void render(GuiGraphicsExtractor graphics) {
+			for (var row : shadows.entrySet()) {
+				List<ShadowSpan> rowShadows = row.getValue();
+				List<ShadowSpan> rowMasks = masks.getOrDefault(row.getKey(), List.of());
+				TreeSet<Integer> edges = new TreeSet<>();
+				for (ShadowSpan span : rowShadows) {
+					edges.add(span.left());
+					edges.add(span.right());
+				}
+				for (ShadowSpan span : rowMasks) {
+					edges.add(span.left());
+					edges.add(span.right());
+				}
+
+				Integer left = null;
+				int runLeft = 0;
+				int runAlpha = 0;
+				for (int right : edges) {
+					if (left != null) {
+						int alpha = alphaAt(rowShadows, rowMasks, left, right);
+						if (alpha != runAlpha) {
+							if (runAlpha != 0) {
+								graphics.fill(runLeft, row.getKey(), left,
+										row.getKey() + 1, runAlpha << 24);
+							}
+							runLeft = left;
+							runAlpha = alpha;
+						}
+					}
+					left = right;
+				}
+				if (left != null && runAlpha != 0) {
+					graphics.fill(runLeft, row.getKey(), left,
+							row.getKey() + 1, runAlpha << 24);
+				}
+			}
+		}
+
+		private static int alphaAt(List<ShadowSpan> shadows, List<ShadowSpan> masks,
+				int left, int right) {
+			for (ShadowSpan mask : masks) {
+				if (mask.left() < right && mask.right() > left) return 0;
+			}
+			int alpha = 0;
+			for (ShadowSpan shadow : shadows) {
+				if (shadow.left() < right && shadow.right() > left) {
+					alpha = Math.max(alpha, shadow.alpha());
+				}
+			}
+			return alpha;
+		}
+	}
 
 	/** Constant-pitch landmarks from the exact 26.2 steady-state flight model. */
 	private static final float MAX_HORIZONTAL_SPEED_PITCH = 53.366F;
@@ -277,17 +351,40 @@ public final class PitchLadderElement implements HudElement {
 		}
 
 		markers.sort((left, right) -> Integer.compare(right.shape().height(), left.shape().height()));
-		// Paint every shadow first. A short marker's shadow must not dirty the color of a taller
-		// marker under it when their readings agree.
+		MarkerShadowLayer shadows = new MarkerShadowLayer();
 		for (PitchMarker marker : markers) {
-			if (marker.dynamic() ? !VarioConfig.showDynamicMarkerShadows
-					: !VarioConfig.showStaticMarkerShadows) continue;
-			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), marker.color(),
-					centerX, centerY, scale, bandUp, bandDown, true);
+			addBugShadow(shadows, cameraPitch, marker, centerX, centerY,
+					scale, bandUp, bandDown);
 		}
+		shadows.render(graphics);
 		for (PitchMarker marker : markers) {
 			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), marker.color(),
-					centerX, centerY, scale, bandUp, bandDown, false);
+					centerX, centerY, scale, bandUp, bandDown);
+		}
+	}
+
+	private void addBugShadow(MarkerShadowLayer shadows, float cameraPitch, PitchMarker marker,
+			int centerX, int centerY, double scale, int bandUp, int bandDown) {
+		if (Float.isNaN(marker.pitch())) return;
+		double elevation = cameraPitch - marker.pitch();
+		if (elevation >= MAX_ELEVATION || elevation <= -MAX_ELEVATION) return;
+		double offset = Math.tan(Math.toRadians(elevation)) * scale;
+		if (offset > bandUp || offset < -bandDown) return;
+		double edge = edgeFade(offset, bandUp, bandDown);
+		if (edge <= 0.0) return;
+
+		LadderMarkerShape shape = marker.shape();
+		int outside = VarioConfig.ladderCenterGap - shape.inset();
+		if (outside < shape.length()) return;
+		int color = fade(marker.color(), edge);
+		int y = (int) Math.floor(centerY - offset);
+		boolean enabled = marker.dynamic() ? VarioConfig.showDynamicMarkerShadows
+				: VarioConfig.showStaticMarkerShadows;
+		int radius = shape.height() / 2;
+		for (int row = -radius; row <= radius; row++) {
+			int inside = outside - shape.widthAt(row);
+			shadows.add(centerX - outside, centerX - inside, y + row, color, enabled);
+			shadows.add(centerX + inside, centerX + outside, y + row, color, enabled);
 		}
 	}
 
@@ -326,7 +423,7 @@ public final class PitchLadderElement implements HudElement {
 	 */
 	private void drawBug(GuiGraphics graphics, float cameraPitch, float pitch,
 			LadderMarkerShape shape, int bugColor, int centerX, int centerY, double scale,
-			int bandUp, int bandDown, boolean shadowPass) {
+			int bandUp, int bandDown) {
 		if (Float.isNaN(pitch)) {
 			return;
 		}
@@ -355,7 +452,7 @@ public final class PitchLadderElement implements HudElement {
 
 		int outside = VarioConfig.ladderCenterGap - shape.inset();
 		if (outside < shape.length()) return;
-		int color = fade(shadowPass ? shadow(bugColor) : bugColor, edge);
+		int color = fade(bugColor, edge);
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
@@ -365,44 +462,13 @@ public final class PitchLadderElement implements HudElement {
 		for (int row = -radius; row <= radius; row++) {
 			int width = shape.widthAt(row);
 			int inside = outside - width;
-			if (!shadowPass) {
-				graphics.fill(centerX - outside, y + row,
-						centerX - inside, y + row + 1, color);
-				graphics.fill(centerX + inside, y + row,
-						centerX + outside, y + row + 1, color);
-				continue;
-			}
-
-			// The translucent marker must not composite over its own shadow. Remove the
-			// unshifted silhouette on this screen row, leaving only the exposed drop shadow.
-			int shadowX = centerX + MARKER_SHADOW_OFFSET;
-			int shadowY = y + row + MARKER_SHADOW_OFFSET;
-			int maskWidth = shape.widthAt(row + MARKER_SHADOW_OFFSET);
-			if (maskWidth == 0) {
-				graphics.fill(shadowX - outside, shadowY,
-						shadowX - inside, shadowY + 1, color);
-				graphics.fill(shadowX + inside, shadowY,
-						shadowX + outside, shadowY + 1, color);
-				continue;
-			}
-
-			int maskInside = outside - maskWidth;
-			fillExcluding(graphics, shadowX - outside, shadowX - inside,
-					centerX - outside, centerX - maskInside, shadowY, color);
-			fillExcluding(graphics, shadowX + inside, shadowX + outside,
-					centerX + maskInside, centerX + outside, shadowY, color);
+			graphics.fill(centerX - outside, y + row,
+					centerX - inside, y + row + 1, color);
+			graphics.fill(centerX + inside, y + row,
+					centerX + outside, y + row + 1, color);
 		}
 
 		pose.popMatrix();
-	}
-
-	private static void fillExcluding(GuiGraphicsExtractor graphics, int left, int right,
-			int maskLeft, int maskRight, int y, int color) {
-		int beforeRight = Math.min(right, maskLeft);
-		if (left < beforeRight) graphics.fill(left, y, beforeRight, y + 1, color);
-
-		int afterLeft = Math.max(left, maskRight);
-		if (afterLeft < right) graphics.fill(afterLeft, y, right, y + 1, color);
 	}
 
 	/**
