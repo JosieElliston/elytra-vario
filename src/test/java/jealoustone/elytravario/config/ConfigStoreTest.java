@@ -350,6 +350,15 @@ class ConfigStoreTest {
 		assertEquals("size", ConfigOptions.error(values));
 	}
 
+	@Test void markersMustFitInsideTheLadderCenterGap() {
+		var values = ConfigOptions.defaults();
+		values.put("lookaheadPitchInset", "17");
+		assertEquals("markerSize", ConfigOptions.error(values));
+
+		values.put("lookaheadPitchLength", "5");
+		assertNull(ConfigOptions.error(values));
+	}
+
 	@Test void applyingConvertsUnitsAndInvalidDraftCannotPartiallyApply() {
 		var original = ConfigOptions.snapshot();
 		try {

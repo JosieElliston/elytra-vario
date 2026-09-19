@@ -443,6 +443,7 @@ public final class VarioConfigScreen extends YACLScreen {
 			case "dialSpeedoVerticalColor" -> "showDialSpeedoVertical";
 			default -> null;
 		};
+		if (parent == null) parent = markerShapeParent(key);
 		if (parent != null && !pendingBoolean(options, parent)) return false;
 		// A panel's own group names it, which is cheaper and plainer than searching the schema
 		// for the options that share it.
@@ -470,6 +471,17 @@ public final class VarioConfigScreen extends YACLScreen {
 					|| pendingBoolean(options, "showDialSpeedoVertical");
 		}
 		return true;
+	}
+
+	private static String markerShapeParent(String key) {
+		for (String prefix : List.of("lookaheadPitch", "holdPitch", "optimalPitch",
+				"maxHorizontalSpeedPitch", "minimumFallSpeedPitch", "zeroPitch")) {
+			if (key.equals(prefix + "Inset") || key.equals(prefix + "Length")
+					|| key.equals(prefix + "Step")) {
+				return "show" + capitalize(prefix);
+			}
+		}
+		return null;
 	}
 
 	private static boolean speedometerCommonEffect(String key, String prefix) {
