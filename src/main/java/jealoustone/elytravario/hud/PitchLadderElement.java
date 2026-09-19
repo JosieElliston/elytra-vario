@@ -1,9 +1,9 @@
 package jealoustone.elytravario.hud;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import jealoustone.elytravario.VarioConfig;
@@ -122,75 +122,122 @@ public final class PitchLadderElement implements HudElement {
 	private record PitchMarker(float pitch, LadderMarkerShape shape, int color,
 			boolean dynamic) { }
 	private record FlightPathMarker(double x, double y, int color) { }
-	private record ShadowSpan(int left, int right, int alpha) { }
+	private record ShadowRectangle(float left, float top, float right, float bottom,
+			int alpha) { }
 
 	/** Combines all marker shadows without darkening where their silhouettes overlap. */
 	private static final class MarkerShadowLayer {
-		private final Map<Integer, List<ShadowSpan>> shadows = new HashMap<>();
-		private final Map<Integer, List<ShadowSpan>> masks = new HashMap<>();
+		private final List<ShadowRectangle> shadows = new ArrayList<>();
+		private final List<ShadowRectangle> masks = new ArrayList<>();
 
-		void add(int left, int right, int y, int color, boolean shadowEnabled) {
+		void add(float left, float right, float top, int color, boolean shadowEnabled) {
 			if (left >= right || ((color >>> 24) & 0xFF) == 0) return;
-			masks.computeIfAbsent(y, ignored -> new ArrayList<>())
-					.add(new ShadowSpan(left, right, 0));
+			masks.add(new ShadowRectangle(left, top, right, top + 1.0f, 0));
 			if (!shadowEnabled) return;
 			int alpha = (shadow(color) >>> 24) & 0xFF;
 			if (alpha == 0) return;
-			shadows.computeIfAbsent(y + MARKER_SHADOW_OFFSET, ignored -> new ArrayList<>())
-					.add(new ShadowSpan(left + MARKER_SHADOW_OFFSET,
-							right + MARKER_SHADOW_OFFSET, alpha));
+			shadows.add(new ShadowRectangle(left + MARKER_SHADOW_OFFSET,
+					top + MARKER_SHADOW_OFFSET, right + MARKER_SHADOW_OFFSET,
+					top + MARKER_SHADOW_OFFSET + 1.0f, alpha));
 		}
 
 		void render(GuiGraphicsExtractor graphics) {
-			for (var row : shadows.entrySet()) {
-				List<ShadowSpan> rowShadows = row.getValue();
-				List<ShadowSpan> rowMasks = masks.getOrDefault(row.getKey(), List.of());
-				TreeSet<Integer> edges = new TreeSet<>();
-				for (ShadowSpan span : rowShadows) {
-					edges.add(span.left());
-					edges.add(span.right());
-				}
-				for (ShadowSpan span : rowMasks) {
-					edges.add(span.left());
-					edges.add(span.right());
-				}
-
-				Integer left = null;
-				int runLeft = 0;
-				int runAlpha = 0;
-				for (int right : edges) {
-					if (left != null) {
-						int alpha = alphaAt(rowShadows, rowMasks, left, right);
-						if (alpha != runAlpha) {
-							if (runAlpha != 0) {
-								graphics.fill(runLeft, row.getKey(), left,
-										row.getKey() + 1, runAlpha << 24);
-							}
-							runLeft = left;
-							runAlpha = alpha;
-						}
-					}
-					left = right;
-				}
-				if (left != null && runAlpha != 0) {
-					graphics.fill(runLeft, row.getKey(), left,
-							row.getKey() + 1, runAlpha << 24);
+			if (shadows.isEmpty()) return;
+			TreeMap<Float, List<ShadowRectangle>> starts = new TreeMap<>();
+			TreeMap<Float, List<ShadowRectangle>> ends = new TreeMap<>();
+			for (ShadowRectangle rectangle : shadows) addEvents(starts, ends, rectangle);
+			for (ShadowRectangle rectangle : masks) addEvents(starts, ends, rectangle);
+			NavigableSet<Float> yEdges = new TreeSet<>();
+			yEdges.addAll(starts.keySet());
+			yEdges.addAll(ends.keySet());
+			List<ShadowRectangle> activeShadows = new ArrayList<>();
+			List<ShadowRectangle> activeMasks = new ArrayList<>();
+			for (float top : yEdges) {
+				remove(activeShadows, activeMasks, ends.get(top));
+				add(activeShadows, activeMasks, starts.get(top));
+				Float bottom = yEdges.higher(top);
+				if (bottom != null && top < bottom && !activeShadows.isEmpty()) {
+					renderSlab(graphics, activeShadows, activeMasks, top, bottom);
 				}
 			}
 		}
 
-		private static int alphaAt(List<ShadowSpan> shadows, List<ShadowSpan> masks,
-				int left, int right) {
-			for (ShadowSpan mask : masks) {
+		private void renderSlab(GuiGraphicsExtractor graphics,
+				List<ShadowRectangle> activeShadows, List<ShadowRectangle> activeMasks,
+				float top, float bottom) {
+			TreeSet<Float> xEdges = new TreeSet<>();
+			for (ShadowRectangle rectangle : activeShadows) {
+				xEdges.add(rectangle.left());
+				xEdges.add(rectangle.right());
+			}
+			for (ShadowRectangle rectangle : activeMasks) {
+				xEdges.add(rectangle.left());
+				xEdges.add(rectangle.right());
+			}
+
+			Float left = null;
+			float runLeft = 0.0f;
+			int runAlpha = 0;
+			for (float right : xEdges) {
+				if (left != null) {
+					int alpha = alphaAt(activeShadows, activeMasks, left, right);
+					if (alpha != runAlpha) {
+						if (runAlpha != 0) fill(graphics, runLeft, top, left, bottom, runAlpha);
+						runLeft = left;
+						runAlpha = alpha;
+					}
+				}
+				left = right;
+			}
+			if (left != null && runAlpha != 0) {
+				fill(graphics, runLeft, top, left, bottom, runAlpha);
+			}
+		}
+
+		private static int alphaAt(List<ShadowRectangle> shadows,
+				List<ShadowRectangle> masks, float left, float right) {
+			for (ShadowRectangle mask : masks) {
 				if (mask.left() < right && mask.right() > left) return 0;
 			}
 			int alpha = 0;
-			for (ShadowSpan shadow : shadows) {
+			for (ShadowRectangle shadow : shadows) {
 				if (shadow.left() < right && shadow.right() > left) {
 					alpha = Math.max(alpha, shadow.alpha());
 				}
 			}
 			return alpha;
+		}
+
+		private static void fill(GuiGraphicsExtractor graphics, float left, float top,
+				float right, float bottom, int alpha) {
+			Matrix3x2fStack pose = graphics.pose();
+			pose.pushMatrix();
+			pose.translate(left, top);
+			pose.scale(right - left, bottom - top);
+			graphics.fill(0, 0, 1, 1, alpha << 24);
+			pose.popMatrix();
+		}
+
+		private void addEvents(TreeMap<Float, List<ShadowRectangle>> starts,
+				TreeMap<Float, List<ShadowRectangle>> ends, ShadowRectangle rectangle) {
+			starts.computeIfAbsent(rectangle.top(), ignored -> new ArrayList<>()).add(rectangle);
+			ends.computeIfAbsent(rectangle.bottom(), ignored -> new ArrayList<>()).add(rectangle);
+		}
+
+		private void add(List<ShadowRectangle> activeShadows,
+				List<ShadowRectangle> activeMasks, List<ShadowRectangle> rectangles) {
+			if (rectangles == null) return;
+			for (ShadowRectangle rectangle : rectangles) {
+				(rectangle.alpha() == 0 ? activeMasks : activeShadows).add(rectangle);
+			}
+		}
+
+		private void remove(List<ShadowRectangle> activeShadows,
+				List<ShadowRectangle> activeMasks, List<ShadowRectangle> rectangles) {
+			if (rectangles == null) return;
+			for (ShadowRectangle rectangle : rectangles) {
+				(rectangle.alpha() == 0 ? activeMasks : activeShadows).remove(rectangle);
+			}
 		}
 	}
 
@@ -388,7 +435,7 @@ public final class PitchLadderElement implements HudElement {
 		int outside = VarioConfig.ladderCenterGap - shape.inset();
 		if (outside < shape.length()) return;
 		int color = fade(marker.color(), edge);
-		int y = (int) Math.floor(centerY - offset);
+		float y = (float) (centerY - offset);
 		boolean enabled = marker.dynamic() ? VarioConfig.showDynamicMarkerShadows
 				: VarioConfig.showStaticMarkerShadows;
 		int radius = shape.height() / 2;
@@ -703,19 +750,19 @@ public final class PitchLadderElement implements HudElement {
 
 	private static void addFlightPathShadow(MarkerShadowLayer shadows,
 			FlightPathMarker marker) {
-		int x = (int) Math.floor(marker.x());
-		int y = (int) Math.floor(marker.y());
+		float x = (float) marker.x();
+		float y = (float) marker.y();
 		boolean enabled = VarioConfig.showDynamicMarkerShadows;
 		shadows.add(x - 3, x + 4, y - 3, marker.color(), enabled);
 		shadows.add(x - 3, x + 4, y + 3, marker.color(), enabled);
-		for (int row = y - 2; row <= y + 2; row++) {
-			shadows.add(x - 3, x - 2, row, marker.color(), enabled);
-			shadows.add(x + 3, x + 4, row, marker.color(), enabled);
+		for (int row = -2; row <= 2; row++) {
+			shadows.add(x - 3, x - 2, y + row, marker.color(), enabled);
+			shadows.add(x + 3, x + 4, y + row, marker.color(), enabled);
 		}
 		shadows.add(x - 10, x - 4, y, marker.color(), enabled);
 		shadows.add(x + 5, x + 11, y, marker.color(), enabled);
-		for (int row = y - 8; row < y - 3; row++) {
-			shadows.add(x, x + 1, row, marker.color(), enabled);
+		for (int row = -8; row < -3; row++) {
+			shadows.add(x, x + 1, y + row, marker.color(), enabled);
 		}
 	}
 
