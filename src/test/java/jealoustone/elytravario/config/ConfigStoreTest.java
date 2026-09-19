@@ -359,6 +359,15 @@ class ConfigStoreTest {
 		assertNull(ConfigOptions.error(values));
 	}
 
+	@Test void zeroIsTheOnlyStepThatProducesALine() {
+		var values = ConfigOptions.defaults();
+		values.put("optimalPitchStep", values.get("optimalPitchLength"));
+		assertEquals("markerStep", ConfigOptions.error(values));
+
+		values.put("optimalPitchStep", "0");
+		assertNull(ConfigOptions.error(values));
+	}
+
 	@Test void applyingConvertsUnitsAndInvalidDraftCannotPartiallyApply() {
 		var original = ConfigOptions.snapshot();
 		try {

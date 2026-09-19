@@ -304,8 +304,8 @@ public final class VarioConfig {
 	 * bug lands on the horizon in a steady glide and on the labels near ±20, and clearing the
 	 * labels entirely puts it so far outboard that it stops reading as part of the ladder.
 	 *
-	 * <p>Each marker has its own inset from the ladder, horizontal length and vertical pixels
-	 * per one-pixel step. The geometry is deliberately expressed in pixels rather than as a
+	 * <p>Each marker has its own inset from the ladder, horizontal length and horizontal pixels
+	 * removed per row. The geometry is deliberately expressed in pixels rather than as a
 	 * sampled triangle: every diagonal is an exact staircase. A step of zero is the one-row
 	 * line used by fixed pitch references. Insets may differ as another way to tell overlapping
 	 * markers apart, though the factory defaults align all of their outside edges.
