@@ -407,8 +407,7 @@ public final class VarioConfig {
 	 * dimensions are independent, so its label/value gap can be changed without changing its
 	 * text. A width below the content minimum is drawn at that minimum.
 	 *
-	 * <p><b>The default positions stack all seven in one column below the layout editor's
-	 * header, borders shared.</b> Each
+	 * <p><b>The default positions stack all seven in one column, borders shared.</b> Each
 	 * panel's top is its predecessor's bottom less one, which is the editor's overlap snap
 	 * written out: boxes butted together read as one panel ruled into sections, and that rule is
 	 * the one the old single panel drew between its speed and energy halves. They share a left
@@ -420,7 +419,7 @@ public final class VarioConfig {
 	 */
 	public static boolean showStatsOther = true;
 	public static int statsOtherX = 4;
-	public static int statsOtherY = 32;
+	public static int statsOtherY = 4;
 	public static int statsOtherWidth = 150;
 	public static double statsOtherTextSize = 1.0;
 	public static double statsOtherOpacity = 0.25;
@@ -428,7 +427,7 @@ public final class VarioConfig {
 
 	public static boolean showStatsSpeed = true;
 	public static int statsSpeedX = 4;
-	public static int statsSpeedY = 59;
+	public static int statsSpeedY = 31;
 	public static int statsSpeedWidth = 150;
 	public static double statsSpeedTextSize = 1.0;
 	public static double statsSpeedOpacity = 0.25;
@@ -436,7 +435,7 @@ public final class VarioConfig {
 
 	public static boolean showStatsAccel = true;
 	public static int statsAccelX = 4;
-	public static int statsAccelY = 106;
+	public static int statsAccelY = 78;
 	public static int statsAccelWidth = 150;
 	public static double statsAccelTextSize = 1.0;
 	public static double statsAccelOpacity = 0.25;
@@ -444,7 +443,7 @@ public final class VarioConfig {
 
 	public static boolean showStatsEnergy = true;
 	public static int statsEnergyX = 4;
-	public static int statsEnergyY = 153;
+	public static int statsEnergyY = 125;
 	public static int statsEnergyWidth = 150;
 	public static double statsEnergyTextSize = 1.0;
 	public static double statsEnergyOpacity = 0.25;
@@ -452,7 +451,7 @@ public final class VarioConfig {
 
 	public static boolean showStatsBounceVelocity = true;
 	public static int statsBounceVelocityX = 4;
-	public static int statsBounceVelocityY = 210;
+	public static int statsBounceVelocityY = 182;
 	public static int statsBounceVelocityWidth = 150;
 	public static double statsBounceVelocityTextSize = 1.0;
 	public static double statsBounceVelocityOpacity = 0.25;
@@ -460,7 +459,7 @@ public final class VarioConfig {
 
 	public static boolean showStatsBounceDistance = true;
 	public static int statsBounceDistanceX = 4;
-	public static int statsBounceDistanceY = 257;
+	public static int statsBounceDistanceY = 229;
 	public static int statsBounceDistanceWidth = 150;
 	public static double statsBounceDistanceTextSize = 1.0;
 	public static double statsBounceDistanceOpacity = 0.25;
@@ -468,7 +467,7 @@ public final class VarioConfig {
 
 	public static boolean showStatsBounceTicks = true;
 	public static int statsBounceTicksX = 4;
-	public static int statsBounceTicksY = 304;
+	public static int statsBounceTicksY = 276;
 	public static int statsBounceTicksWidth = 150;
 	public static double statsBounceTicksTextSize = 1.0;
 	public static double statsBounceTicksOpacity = 0.25;
@@ -501,7 +500,7 @@ public final class VarioConfig {
 	public static boolean showBarSpeedo = true;
 	public static boolean barSpeedoGlidingOnly = false;
 	public static int barSpeedoX = 144;
-	public static int barSpeedoY = 32;
+	public static int barSpeedoY = 4;
 
 	/** Plot height in scaled GUI pixels and the top of its scale in blocks/tick. */
 	public static int barSpeedoHeight = 96;
@@ -535,7 +534,7 @@ public final class VarioConfig {
 	public static boolean showDialSpeedo = true;
 	public static boolean dialSpeedoGlidingOnly = false;
 	public static int dialSpeedoX = 240;
-	public static int dialSpeedoY = 32;
+	public static int dialSpeedoY = 4;
 	public static int dialSpeedoRadius = 64;
 	public static double dialSpeedoMaxSpeed = 4.0;
 	public static double dialSpeedoMajorStep = 1.0;
