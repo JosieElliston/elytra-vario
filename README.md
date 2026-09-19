@@ -10,13 +10,13 @@ The pitch ladder shows pitches fixed to their position in the world.
 
 There are several ladder markers you can show:
 
-- flight path: the current velocity
-- one-tick optimal: the pitch that maximizes your energy gain on the next tick
-- lookahead optimal: the pitch that maximizes your energy gain if you were to hold it for 20 ticks
-- flight-path hold: the pitch that preserves your velocity direction
+- flight path: the direction of your current velocity, shown relative to where you are looking
+- flight-path hold: the pitch that preserves your velocity direction over the next tick
+- one-tick optimal: the pitch that maximizes total-energy gain on the next tick
+- lookahead optimal: the pitch that maximizes total-energy gain if held for 20 ticks
+- min fall speed: the pitch that minimizes steady-state downward speed
+- zero: the level-pitch reference, which also maximizes the steady-state glide ratio
 - max horizontal speed: the pitch that maximizes steady-state horizontal speed
-- min fall speed: the pitch that minimizes steady-state vertical speed
-- zero: this happens to be the pitch that maximizes the steady-state glide ratio
 
 | reference            |    pitch | horizontal speed | vertical speed | glide ratio |
 | -------------------- | -------: | ---------------: | -------------: | ----------: |

@@ -98,4 +98,9 @@ class ConfigOptionsTest {
 			assertEquals(-1.5, VarioConfig.chartMinVxz);
 		} finally { ConfigOptions.apply(original); }
 	}
+
+	@Test void ladderMarkerSubpagesRunFromMeasuredDirectionThroughReferences() {
+		assertEquals(List.of("flightPath", "hold", "optimal", "lookahead",
+				"minimumFallSpeed", "zero", "maxHorizontalSpeed"), ConfigOptions.groups(2));
+	}
 }

@@ -23,10 +23,10 @@ public final class VarioConfig {
 	public static boolean showEnergyField = true;
 
 	/**
-	 * The flight path marker shows where the player is going rather than where they are
-	 * looking. Its vertical gap from the crosshair shows angle of attack, and its horizontal
-	 * gap shows sideslip, making it more expressive than the former numeric angle-of-attack
-	 * readout. It is on by default.
+	 * The flight path marker shows the direction of the player's current velocity rather than
+	 * the direction the camera is looking. Its vertical gap from the crosshair shows angle of
+	 * attack, and its horizontal gap shows sideslip, making it more expressive than the former
+	 * numeric angle-of-attack readout. It is on by default.
 	 */
 	public static boolean showFlightPath = true;
 
@@ -89,7 +89,7 @@ public final class VarioConfig {
 	 * orientation, or flight phase.
 	 *
 	 * <p>All three are on by default. They are scale landmarks rather than advice, and are
-	 * drawn as zero-rise lines in the ladder's center gap. Their shared neutral color keeps
+	 * drawn as zero-step, one-row lines in the ladder's center gap. Their shared neutral color keeps
 	 * them in the ladder's visual family and leaves color for the state-dependent bugs.
 	 */
 	public static boolean showMaxHorizontalSpeedPitch = true;

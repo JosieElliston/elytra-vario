@@ -13,8 +13,8 @@ import jealoustone.elytravario.hud.StatsPanel;
 /** One schema for screen controls, disk validation, defaults, and runtime application. */
 public final class ConfigOptions {
 	private static final List<Option> OPTIONS = new ArrayList<>();
-	private static final List<String> MARKER_PREFIXES = List.of("lookaheadPitch", "holdPitch",
-			"optimalPitch", "maxHorizontalSpeedPitch", "minimumFallSpeedPitch", "zeroPitch");
+	private static final List<String> MARKER_PREFIXES = List.of("holdPitch", "optimalPitch",
+			"lookaheadPitch", "minimumFallSpeedPitch", "zeroPitch", "maxHorizontalSpeedPitch");
 	// Which options sit above a page's subpage selector rather than in its list is the screen's
 	// question, and VarioInstrument already names them, so nothing here has to.
 
@@ -93,10 +93,8 @@ public final class ConfigOptions {
 		add("showLadderMarkers", 2, 0, 1, 1, 0, false, false);
 		add("ladderMarkersGlidingOnly", 2, 0, 1, 1, 0, false, false);
 
-		add("showLookaheadPitch", 2, "lookahead", 0, 1, 1, 0, false, false);
-		add("lookaheadPitchColor", 2, "lookahead", 0, 1, 1, 0, true, false);
-		addMarkerShape("lookaheadPitch", "lookahead");
-		add("lookaheadTicks", 2, "lookahead", 1, 60, 1, 0, false, true);
+		add("showFlightPath", 2, "flightPath", 0, 1, 1, 0, false, false);
+		add("flightPathColor", 2, "flightPath", 0, 1, 1, 0, true, false);
 
 		add("showHoldPitch", 2, "hold", 0, 1, 1, 0, false, false);
 		add("holdPitchColor", 2, "hold", 0, 1, 1, 0, true, false);
@@ -106,9 +104,10 @@ public final class ConfigOptions {
 		add("optimalPitchColor", 2, "optimal", 0, 1, 1, 0, true, false);
 		addMarkerShape("optimalPitch", "optimal");
 
-		add("showMaxHorizontalSpeedPitch", 2, "maxHorizontalSpeed", 0, 1, 1, 0, false, false);
-		add("maxHorizontalSpeedPitchColor", 2, "maxHorizontalSpeed", 0, 1, 1, 0, true, false);
-		addMarkerShape("maxHorizontalSpeedPitch", "maxHorizontalSpeed");
+		add("showLookaheadPitch", 2, "lookahead", 0, 1, 1, 0, false, false);
+		add("lookaheadPitchColor", 2, "lookahead", 0, 1, 1, 0, true, false);
+		addMarkerShape("lookaheadPitch", "lookahead");
+		add("lookaheadTicks", 2, "lookahead", 1, 60, 1, 0, false, true);
 
 		add("showMinimumFallSpeedPitch", 2, "minimumFallSpeed", 0, 1, 1, 0, false, false);
 		add("minimumFallSpeedPitchColor", 2, "minimumFallSpeed", 0, 1, 1, 0, true, false);
@@ -118,8 +117,9 @@ public final class ConfigOptions {
 		add("zeroPitchColor", 2, "zero", 0, 1, 1, 0, true, false);
 		addMarkerShape("zeroPitch", "zero");
 
-		add("showFlightPath", 2, "flightPath", 0, 1, 1, 0, false, false);
-		add("flightPathColor", 2, "flightPath", 0, 1, 1, 0, true, false);
+		add("showMaxHorizontalSpeedPitch", 2, "maxHorizontalSpeed", 0, 1, 1, 0, false, false);
+		add("maxHorizontalSpeedPitchColor", 2, "maxHorizontalSpeed", 0, 1, 1, 0, true, false);
+		addMarkerShape("maxHorizontalSpeedPitch", "maxHorizontalSpeed");
 
 		add("showChart", 3, 0, 1, 1, 0, false, false);
 		add("chartGlidingOnly", 3, 0, 1, 1, 0, false, false);
