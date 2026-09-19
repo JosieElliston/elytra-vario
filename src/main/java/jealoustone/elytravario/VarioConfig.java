@@ -23,12 +23,14 @@ public final class VarioConfig {
 	public static boolean showEnergyField = true;
 
 	/**
-	 * The flight path marker shows where the player is going rather than where they are
-	 * looking. Its vertical gap from the crosshair shows angle of attack, and its horizontal
-	 * gap shows sideslip, making it more expressive than the former numeric angle-of-attack
-	 * readout. It is on by default.
+	 * The flight path marker shows the direction of the player's current velocity rather than
+	 * the direction the camera is looking. Its vertical gap from the crosshair shows angle of
+	 * attack, and its horizontal gap shows sideslip, making it more expressive than the former
+	 * numeric angle-of-attack readout. It is on by default.
 	 */
 	public static boolean showFlightPath = true;
+	/** Shadows shared by the four markers derived from the player's current flight state. */
+	public static boolean showDynamicMarkerShadows = true;
 
 	/**
 	 * The optimal pitch bug: a pair of wedges in the ladder's center gap marking the pitch
@@ -50,7 +52,7 @@ public final class VarioConfig {
 
 	/**
 	 * The other two bugs, each marking a pitch some rule says to fly, both drawn in the same
-	 * band of the center gap and told apart by color and by height.
+	 * band of the center gap and told apart by color and configurable pixel geometry.
 	 *
 	 * <p>Together with the one above they are the three myopic rules an optimised pump cycle
 	 * turns out to obey piecewise:
@@ -89,14 +91,16 @@ public final class VarioConfig {
 	 * orientation, or flight phase.
 	 *
 	 * <p>All three are on by default. They are scale landmarks rather than advice, and are
-	 * drawn as zero-rise lines in the ladder's center gap. Their shared neutral color keeps
+	 * drawn as zero-step, one-row lines in the ladder's center gap. Their shared neutral color keeps
 	 * them in the ladder's visual family and leaves color for the state-dependent bugs.
 	 */
 	public static boolean showMaxHorizontalSpeedPitch = true;
 	public static boolean showMinimumFallSpeedPitch = true;
 	public static boolean showZeroPitch = true;
-	public static int maxHorizontalSpeedPitchColor = 0xE0E8EAED;
-	public static int minimumFallSpeedPitchColor = 0xE0E8EAED;
+	/** Shadows shared by the three fixed pitch-reference markers. */
+	public static boolean showStaticMarkerShadows = true;
+	public static int maxHorizontalSpeedPitchColor = 0x66E8EAED;
+	public static int minimumFallSpeedPitchColor = 0x66FFFFFF;
 	public static int zeroPitchColor = 0xE0E8EAED;
 
 	/**
@@ -304,53 +308,58 @@ public final class VarioConfig {
 	 * bug lands on the horizon in a steady glide and on the labels near ±20, and clearing the
 	 * labels entirely puts it so far outboard that it stops reading as part of the ladder.
 	 *
-	 * <p>{@code ladderBugGap} is the clearance between the wedge's base and the inner end of
-	 * the rungs; {@code ladderBugLength} is how far it tapers inwards from there, and
-	 * {@code ladderBugRise} its half-height at the base. The apex points inwards, so the pair
-	 * closes on the marked pitch like a caliper, and frames the crosshair when the pitch
-	 * being flown is already the best one.
+	 * <p>Each marker has its own inset from the ladder, horizontal length and horizontal pixels
+	 * removed per row. The geometry is deliberately expressed in pixels rather than as a
+	 * sampled triangle: every diagonal is an exact staircase. A step of zero is the one-row
+	 * line used by fixed pitch references. Insets may differ as another way to tell overlapping
+	 * markers apart, though the factory defaults align all of their outside edges.
 	 *
-	 * <p>Magenta because the ladder is otherwise entirely gray and the chart has already
-	 * spent yellow and cyan — and because elytrasim draws the same quantity in the same
-	 * color. Alpha matches the datum rungs: it is one small mark and it has to be findable.
+	 * <p>Hot red keeps both energy optimizers in one warm family while separating this
+	 * immediate, one-tick reading from the lookahead's amber. Alpha matches the datum rungs:
+	 * it is one small mark and it has to be findable.
 	 */
-	public static int ladderBugGap = 2;
-	public static int ladderBugLength = 8;
-	public static int ladderBugRise = 2;
-	public static int optimalPitchColor = 0xE0FF5AE0;
+	public static int optimalPitchInset = 2;
+	public static int optimalPitchLength = 8;
+	public static int optimalPitchStep = 2;
+	public static int optimalPitchColor = 0xE0FF4F5E;
 
 	/**
-	 * The other two bugs share that geometry and differ only in rise, which is the second
-	 * channel their identity is carried on.
+	 * The three advisory bugs each own their shape settings. Their defaults deliberately use
+	 * the same compact 2:1 wedge, while color carries their identity; length, step and inset
+	 * remain available as additional channels.
 	 *
-	 * <p>Color alone would not be enough. All three bugs occupy one band — there is nowhere
-	 * else on the ladder for them, the center gap being the only radius no rung or label ever
-	 * reaches — so they overlap whenever the rules agree, and agreement is common. Ranking
-	 * them by height makes an overlap nest instead of merge: the apexes coincide, the taller
-	 * shoulders still show past the shorter ones, and the pile reads as a set of chevrons
-	 * rather than as one mark of uncertain color.
-	 *
-	 * <p>Which bug gets which height is a display choice tuned in flight, and it is worth being
-	 * plain that it encodes no claim — the lookahead is the tallest and the hold one step under
-	 * it because that is what reads well with both of them up, not because the ordering means
-	 * anything. The one thing about these numbers that matters structurally is that they are
-	 * distinct.
-	 *
-	 * <p><b>{@code drawBugs} must draw them in descending order of rise</b>, since that is what
-	 * makes an overlap nest rather than hide the taller bug. Changing the ranking here means
-	 * reordering the calls there; nothing checks it.
+	 * <p>All three occupy one band — there is nowhere else on the ladder for them, the center
+	 * gap being the only radius no rung or label ever reaches — so agreement can overlap them.
+	 * The renderer sorts by computed height, tallest first, so customized shorter markers and
+	 * one-row references remain visible on top. Shape differences are display choices and
+	 * encode no claim about the underlying rules.
 	 */
-	public static int ladderLookaheadRise = 6;
-	public static int ladderHoldRise = 4;
+	public static int lookaheadPitchInset = 2;
+	public static int lookaheadPitchLength = 8;
+	public static int lookaheadPitchStep = 2;
+	public static int holdPitchInset = 2;
+	public static int holdPitchLength = 8;
+	public static int holdPitchStep = 2;
 
 	/**
 	 * The other two bugs' colors.
 	 *
-	 * <p>Amber and green are picked the way the magenta was: away from the chart's yellow and
-	 * cyan, away from each other, and readable against both sky and ground.
+	 * <p>Amber keeps the lookahead in the warm energy family. Blue-violet makes hold a cool,
+	 * kinematic reading without borrowing the flight-path marker's distinctive sky blue.
 	 */
 	public static int lookaheadPitchColor = 0xE0F7A900;
-	public static int holdPitchColor = 0xE000B533;
+	public static int holdPitchColor = 0xE08C7BFF;
+
+	/** Fixed pitch references use the same shape vocabulary with a zero-step line. */
+	public static int maxHorizontalSpeedPitchInset = 2;
+	public static int maxHorizontalSpeedPitchLength = 8;
+	public static int maxHorizontalSpeedPitchStep = 0;
+	public static int minimumFallSpeedPitchInset = 2;
+	public static int minimumFallSpeedPitchLength = 8;
+	public static int minimumFallSpeedPitchStep = 0;
+	public static int zeroPitchInset = 2;
+	public static int zeroPitchLength = 8;
+	public static int zeroPitchStep = 0;
 
 	/**
 	 * Per-instrument visibility, as two independent questions rather than one three-way choice:

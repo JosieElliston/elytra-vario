@@ -20,6 +20,20 @@ class ConfigStoreTest {
 		assertEquals(defaults, ConfigStore.decode(ConfigStore.encode(defaults)));
 	}
 
+	@Test void markerAppearanceDefaultsMatchTheTunedSet() {
+		var defaults = ConfigOptions.defaults();
+		for (String prefix : java.util.List.of("holdPitch", "optimalPitch", "lookaheadPitch")) {
+			assertEquals("2", defaults.get(prefix + "Inset"));
+			assertEquals("8", defaults.get(prefix + "Length"));
+			assertEquals("2", defaults.get(prefix + "Step"));
+		}
+		assertEquals("66FFFFFF", defaults.get("minimumFallSpeedPitchColor"));
+		assertEquals("E0E8EAED", defaults.get("zeroPitchColor"));
+		assertEquals("66E8EAED", defaults.get("maxHorizontalSpeedPitchColor"));
+		assertEquals("true", defaults.get("showDynamicMarkerShadows"));
+		assertEquals("true", defaults.get("showStaticMarkerShadows"));
+	}
+
 	@Test void omittedSettingsUseDefaultsAndUnknownSettingsAreIgnored() {
 		var values = ConfigStore.decode("{\"chartMinVxz\":\"-20\",\"futureOption\":true,"
 				+ "\"showAngleOfAttack\":true}");
@@ -37,6 +51,20 @@ class ConfigStoreTest {
 		assertFalse(values.containsKey("speedoAnchor"));
 		assertFalse(values.containsKey("futureOption"));
 		assertFalse(values.containsKey("showAngleOfAttack"));
+	}
+
+	@Test void preShapeConfigsAdoptTheNewMarkerAppearanceOnce() {
+		var defaults = ConfigOptions.defaults();
+		var migrated = ConfigStore.decode("{\"showHoldPitch\":false,"
+				+ "\"holdPitchColor\":\"A0123456\",\"flightPathColor\":\"A0654321\"}");
+		assertEquals("false", migrated.get("showHoldPitch"));
+		assertEquals(defaults.get("holdPitchColor"), migrated.get("holdPitchColor"));
+		assertEquals(defaults.get("flightPathColor"), migrated.get("flightPathColor"));
+
+		var current = ConfigStore.decode("{\"lookaheadPitchInset\":2,"
+				+ "\"holdPitchColor\":\"A0123456\",\"flightPathColor\":\"A0654321\"}");
+		assertEquals("A0123456", current.get("holdPitchColor"));
+		assertEquals("A0654321", current.get("flightPathColor"));
 	}
 
 	@Test void legacyDialSettingsReturnToTheDial() {
@@ -395,6 +423,31 @@ class ConfigStoreTest {
 		values.put("chartMaxVy", "200");
 		values.put("chartSize", "512");
 		assertEquals("size", ConfigOptions.error(values));
+	}
+
+	@Test void markersMustFitInsideTheLadderCenterGap() {
+		var values = ConfigOptions.defaults();
+		values.put("lookaheadPitchInset", "17");
+		assertEquals("markerSize", ConfigOptions.error(values));
+
+		values.put("lookaheadPitchLength", "5");
+		assertNull(ConfigOptions.error(values));
+	}
+
+	@Test void zeroIsTheOnlyStepThatProducesALine() {
+		var values = ConfigOptions.defaults();
+		values.put("optimalPitchLength", "4");
+		values.put("optimalPitchStep", "4");
+		assertEquals("markerStep", ConfigOptions.error(values));
+
+		values.put("optimalPitchStep", "0");
+		assertNull(ConfigOptions.error(values));
+	}
+
+	@Test void markerStepSliderStopsAtFour() {
+		var values = ConfigOptions.defaults();
+		values.put("lookaheadPitchStep", "5");
+		assertEquals("invalid", ConfigOptions.error(values));
 	}
 
 	@Test void applyingConvertsUnitsAndInvalidDraftCannotPartiallyApply() {

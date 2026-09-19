@@ -84,6 +84,12 @@ public final class ConfigStore {
 		JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 		Map<String, String> values = ConfigOptions.defaults();
 		boolean oldDial = root.has("speedoRadius") && !root.has("speedoHeight");
+		// Marker geometry and its pixel preview arrived as one redesign. A config from before
+		// that redesign has colors but no shape keys; carry its visibility and calculations
+		// forward, but deliberately adopt the new appearance as one coherent default. Once the
+		// file has been saved with shape keys, later appearance edits are ordinary persisted
+		// settings again.
+		boolean oldMarkerAppearance = !root.has("lookaheadPitchInset");
 		for (var entry : RETIRED.entrySet()) {
 			// A file holding both the old key and the new ones was written by a newer build, so
 			// what it says now wins over what it used to say.
@@ -112,7 +118,10 @@ public final class ConfigStore {
 			if (legacy != null && root.has(legacy)) {
 				values.put(option.key(), root.get(legacy).getAsString());
 			}
-			if (root.has(option.key())) values.put(option.key(), root.get(option.key()).getAsString());
+			if (root.has(option.key())
+					&& !(oldMarkerAppearance && markerAppearance(option.key()))) {
+				values.put(option.key(), root.get(option.key()).getAsString());
+			}
 		}
 		// Module size used to be stored as a floating-point scale. Preserve the exact rendered
 		// width those settings produced; one save replaces the retired keys with pixel sizes.
@@ -125,6 +134,15 @@ public final class ConfigStore {
 		statsHeightToTextSize(root, values);
 		if (ConfigOptions.error(values) != null) throw new IllegalArgumentException("Invalid config values");
 		return values;
+	}
+
+	private static boolean markerAppearance(String key) {
+		if (key.equals("flightPathColor")) return true;
+		for (String prefix : ConfigOptions.markerPrefixes()) {
+			if (key.equals(prefix + "Color") || key.equals(prefix + "Inset")
+					|| key.equals(prefix + "Length") || key.equals(prefix + "Step")) return true;
+		}
+		return false;
 	}
 
 	/**

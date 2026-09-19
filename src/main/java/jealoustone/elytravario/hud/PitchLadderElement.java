@@ -1,5 +1,20 @@
 package jealoustone.elytravario.hud;
 
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NavigableSet;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import jealoustone.elytravario.ElytraVario;
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.flight.FlightRecorder;
@@ -13,16 +28,23 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.font.TextRenderable;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.TextureSetup;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 import org.joml.Matrix3x2fStack;
+import org.joml.Matrix3x2fc;
+import org.joml.Matrix4f;
 import org.joml.Vector3fc;
 
 /**
  * A pitch ladder drawn over the world view, with a set of bugs showing where each of the pump
- * cycle's rules says to point, and a flight path marker showing where the player is actually
- * going.
+ * cycle's rules says to point, and a flight path marker showing the direction of the player's
+ * current velocity.
  *
  * <p>Unlike the readout panel this is a <em>conformal</em> instrument: every mark is placed
  * by projecting a direction through the same camera the world was drawn with, so a rung
@@ -71,10 +93,8 @@ import org.joml.Vector3fc;
  * is drawn against the crosshair on both axes rather than as a fourth mark in this band.
  *
  * <p>They share one band, since the center gap is the only place any of them can go, and are
- * told apart by color and by height, so that a pile of agreeing bugs nests into chevrons
- * rather than merging into one mark. Which bug gets which height is a display choice tuned in
- * flight and carries no claim; what the code depends on is only that the heights are distinct
- * and that {@code drawBugs} draws them tallest first.
+ * told apart by color and configurable pixel geometry. Their exact staircases are drawn
+ * tallest first, leaving every customized shorter marker visible on top.
  *
  * <p>Nothing here tells you which rule the phase you are in calls for. That switch is the
  * open part of the problem, and a display that guessed at it would be inventing the answer
@@ -114,6 +134,145 @@ import org.joml.Vector3fc;
  * cursor also measures.
  */
 public final class PitchLadderElement implements HudElement {
+	private record PitchMarker(float pitch, LadderMarkerShape shape, int color,
+			boolean dynamic) { }
+	private record FlightPathMarker(double x, double y, int color) { }
+	private record ShadowRectangle(float left, float top, float right, float bottom,
+			int alpha) { }
+	private record LabelGlyphRenderState(Matrix3x2fc pose, TextRenderable renderable,
+			ScreenRectangle scissorArea, RenderPipeline pipeline, float depth)
+			implements GuiElementRenderState {
+		@Override
+		public void buildVertices(VertexConsumer vertices) {
+			Matrix4f matrix = new Matrix4f().mul(pose).translate(0.0f, 0.0f, depth);
+			renderable.render(matrix, vertices, 0xF000F0, true);
+		}
+
+		@Override
+		public TextureSetup textureSetup() {
+			return TextureSetup.singleTextureWithLightmap(renderable.textureView(),
+					RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
+		}
+
+		@Override public ScreenRectangle bounds() { return null; }
+	}
+
+	/** Combines all marker shadows without darkening where their silhouettes overlap. */
+	private static final class MarkerShadowLayer {
+		private final List<ShadowRectangle> shadows = new ArrayList<>();
+		private final List<ShadowRectangle> masks = new ArrayList<>();
+
+		void add(float left, float right, float top, int color, boolean shadowEnabled) {
+			if (left >= right || ((color >>> 24) & 0xFF) == 0) return;
+			masks.add(new ShadowRectangle(left, top, right, top + 1.0f, 0));
+			if (!shadowEnabled) return;
+			int alpha = (shadow(color) >>> 24) & 0xFF;
+			if (alpha == 0) return;
+			shadows.add(new ShadowRectangle(left + MARKER_SHADOW_OFFSET,
+					top + MARKER_SHADOW_OFFSET, right + MARKER_SHADOW_OFFSET,
+					top + MARKER_SHADOW_OFFSET + 1.0f, alpha));
+		}
+
+		void render(GuiGraphicsExtractor graphics) {
+			if (shadows.isEmpty()) return;
+			TreeMap<Float, List<ShadowRectangle>> starts = new TreeMap<>();
+			TreeMap<Float, List<ShadowRectangle>> ends = new TreeMap<>();
+			for (ShadowRectangle rectangle : shadows) addEvents(starts, ends, rectangle);
+			for (ShadowRectangle rectangle : masks) addEvents(starts, ends, rectangle);
+			NavigableSet<Float> yEdges = new TreeSet<>();
+			yEdges.addAll(starts.keySet());
+			yEdges.addAll(ends.keySet());
+			List<ShadowRectangle> activeShadows = new ArrayList<>();
+			List<ShadowRectangle> activeMasks = new ArrayList<>();
+			for (float top : yEdges) {
+				remove(activeShadows, activeMasks, ends.get(top));
+				add(activeShadows, activeMasks, starts.get(top));
+				Float bottom = yEdges.higher(top);
+				if (bottom != null && top < bottom && !activeShadows.isEmpty()) {
+					renderSlab(graphics, activeShadows, activeMasks, top, bottom);
+				}
+			}
+		}
+
+		private void renderSlab(GuiGraphicsExtractor graphics,
+				List<ShadowRectangle> activeShadows, List<ShadowRectangle> activeMasks,
+				float top, float bottom) {
+			TreeSet<Float> xEdges = new TreeSet<>();
+			for (ShadowRectangle rectangle : activeShadows) {
+				xEdges.add(rectangle.left());
+				xEdges.add(rectangle.right());
+			}
+			for (ShadowRectangle rectangle : activeMasks) {
+				xEdges.add(rectangle.left());
+				xEdges.add(rectangle.right());
+			}
+
+			Float left = null;
+			float runLeft = 0.0f;
+			int runAlpha = 0;
+			for (float right : xEdges) {
+				if (left != null) {
+					int alpha = alphaAt(activeShadows, activeMasks, left, right);
+					if (alpha != runAlpha) {
+						if (runAlpha != 0) fill(graphics, runLeft, top, left, bottom, runAlpha);
+						runLeft = left;
+						runAlpha = alpha;
+					}
+				}
+				left = right;
+			}
+			if (left != null && runAlpha != 0) {
+				fill(graphics, runLeft, top, left, bottom, runAlpha);
+			}
+		}
+
+		private static int alphaAt(List<ShadowRectangle> shadows,
+				List<ShadowRectangle> masks, float left, float right) {
+			for (ShadowRectangle mask : masks) {
+				if (mask.left() < right && mask.right() > left) return 0;
+			}
+			int alpha = 0;
+			for (ShadowRectangle shadow : shadows) {
+				if (shadow.left() < right && shadow.right() > left) {
+					alpha = Math.max(alpha, shadow.alpha());
+				}
+			}
+			return alpha;
+		}
+
+		private static void fill(GuiGraphicsExtractor graphics, float left, float top,
+				float right, float bottom, int alpha) {
+			Matrix3x2fStack pose = graphics.pose();
+			pose.pushMatrix();
+			pose.translate(left, top);
+			pose.scale(right - left, bottom - top);
+			graphics.fill(0, 0, 1, 1, alpha << 24);
+			pose.popMatrix();
+		}
+
+		private void addEvents(TreeMap<Float, List<ShadowRectangle>> starts,
+				TreeMap<Float, List<ShadowRectangle>> ends, ShadowRectangle rectangle) {
+			starts.computeIfAbsent(rectangle.top(), ignored -> new ArrayList<>()).add(rectangle);
+			ends.computeIfAbsent(rectangle.bottom(), ignored -> new ArrayList<>()).add(rectangle);
+		}
+
+		private void add(List<ShadowRectangle> activeShadows,
+				List<ShadowRectangle> activeMasks, List<ShadowRectangle> rectangles) {
+			if (rectangles == null) return;
+			for (ShadowRectangle rectangle : rectangles) {
+				(rectangle.alpha() == 0 ? activeMasks : activeShadows).add(rectangle);
+			}
+		}
+
+		private void remove(List<ShadowRectangle> activeShadows,
+				List<ShadowRectangle> activeMasks, List<ShadowRectangle> rectangles) {
+			if (rectangles == null) return;
+			for (ShadowRectangle rectangle : rectangles) {
+				(rectangle.alpha() == 0 ? activeMasks : activeShadows).remove(rectangle);
+			}
+		}
+	}
+
 	/** Constant-pitch landmarks from the exact 26.2 steady-state flight model. */
 	private static final float MAX_HORIZONTAL_SPEED_PITCH = 53.366F;
 	private static final float MINIMUM_FALL_SPEED_PITCH = -13.233F;
@@ -136,6 +295,27 @@ public final class PitchLadderElement implements HudElement {
 
 	/** Kept clear of the screen edge, so the marker's wings are never half off it. */
 	private static final int MARKER_MARGIN = 12;
+	/** A restrained drop shadow separates small marks from both bright sky and dark terrain. */
+	private static final int MARKER_SHADOW_OFFSET = 1;
+	private static final double MARKER_SHADOW_OPACITY = 0.35;
+	private static final double LABEL_SHADOW_OPACITY = 0.35;
+	private static final float LABEL_FOREGROUND_DEPTH = 0.03f;
+	private static final RenderPipeline LABEL_MASK_PIPELINE = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.GUI_TEXT_SNIPPET)
+					.withLocation(ElytraVario.id("pipeline/ladder_label_mask"))
+					.withVertexShader("core/text")
+					.withFragmentShader("core/text")
+					.withDepthStencilState(DepthStencilState.DEFAULT)
+					.withColorTargetState(new ColorTargetState(Optional.empty(),
+							GpuFormat.RGBA8_UNORM, ColorTargetState.WRITE_NONE))
+					.build());
+	private static final RenderPipeline LABEL_TEXT_PIPELINE = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.GUI_TEXT_SNIPPET)
+					.withLocation(ElytraVario.id("pipeline/ladder_label_text"))
+					.withVertexShader("core/text")
+					.withFragmentShader("core/text")
+					.withDepthStencilState(DepthStencilState.DEFAULT)
+					.build());
 
 	/**
 	 * A rung a quarter turn off the camera axis is edge-on, and beyond that it is behind the
@@ -182,91 +362,140 @@ public final class PitchLadderElement implements HudElement {
 		int bandUp = (int) Math.round(halfHeight * VarioConfig.ladderBandFractionUp);
 		int bandDown = (int) Math.round(halfHeight * VarioConfig.ladderBandFractionDown);
 		float cameraPitch = camera.xRot();
+		boolean markersVisible = VarioInstrument.LADDER_MARKERS.visible(sample.gliding());
+		List<PitchMarker> markers = markersVisible ? pitchMarkers() : List.of();
+		FlightPathMarker flightPath = markersVisible && VarioConfig.showFlightPath
+				? flightPath(camera, centerX, centerY, scale, bandUp, bandDown) : null;
+
+		// Shadows belong behind the ladder as well as behind their markers. Combining them in
+		// one layer also prevents coincident dynamic and static markers from darkening twice.
+		if (markersVisible) {
+			MarkerShadowLayer shadows = new MarkerShadowLayer();
+			for (PitchMarker marker : markers) {
+				addBugShadow(shadows, cameraPitch, marker, centerX, centerY,
+						scale, bandUp, bandDown);
+			}
+			if (flightPath != null) addFlightPathShadow(shadows, flightPath);
+			shadows.render(graphics);
+		}
 
 		// Fine ticks first, so a coarse rung always paints over one where the two land
-		// together at the very edge of the fine range.
+		// together at the very edge of the fine range. Both paint over marker shadows.
 		if (VarioInstrument.LADDER.visible(sample.gliding())) {
 			if (VarioConfig.showFineTicks) drawFineTicks(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 			drawRungs(graphics, minecraft.font, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 		}
-		if (!VarioInstrument.LADDER_MARKERS.visible(sample.gliding())) return;
+		if (!markersVisible) return;
 
-		drawBugs(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
-
-		if (VarioConfig.showFlightPath) {
-			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown);
-		}
+		drawBugs(graphics, markers, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
+		if (flightPath != null) drawFlightPath(graphics, flightPath);
 	}
 
 	/**
-	 * The three bugs, drawn tallest first.
+	 * The pitch markers, sorted tallest first so shorter shapes remain visible on top.
 	 *
 	 * <p>The order is the whole trick to keeping them separable. They occupy one band and
-	 * their apexes land on the same row whenever the rules agree, so a taller wedge drawn
-	 * first keeps its shoulders visible past every shorter one painted over it, and a pile of
-	 * agreeing bugs reads as nested chevrons instead of as one mark of indeterminate color.
-	 * Reversing it would bury the taller bugs under the shorter ones exactly when they agree,
-	 * which is when the pile is worth reading as a pile.
+	 * their points land on the same row whenever the rules agree. A taller wedge drawn first
+	 * keeps its shoulders visible past every shorter one painted over it. Equal-height shapes
+	 * retain their stable collection order, and one-row fixed references naturally sort last.
 	 *
 	 * <p>Each is skipped when its rule has nothing to say. The two energy searches return null
 	 * whenever the player is not gliding, and the hold returns {@code NaN} both there and at
 	 * the states where no pitch holds the flight path angle at all — so the bugs appear with
 	 * the wing and leave with it, and the dive's bug also leaves when the dive is past saving.
 	 */
-	private void drawBugs(GuiGraphicsExtractor graphics, float cameraPitch,
-			int centerX, int centerY, double scale, int bandUp, int bandDown) {
-		// In descending order of rise, which is what makes an overlap nest. Retuning the rises
-		// in VarioConfig means reordering these calls to match; nothing checks it.
+	private List<PitchMarker> pitchMarkers() {
+		List<PitchMarker> markers = new ArrayList<>();
+
 		if (VarioConfig.showLookaheadPitch) {
 			OptimalPitch lookahead = recorder.optimalPitch(VarioConfig.lookaheadTicks);
 
 			if (lookahead != null) {
-				drawBug(graphics, cameraPitch, lookahead.pitch(), VarioConfig.ladderLookaheadRise,
-						VarioConfig.lookaheadPitchColor,
-						centerX, centerY, scale, bandUp, bandDown);
+				markers.add(new PitchMarker(lookahead.pitch(), new LadderMarkerShape(
+						VarioConfig.lookaheadPitchInset, VarioConfig.lookaheadPitchLength,
+						VarioConfig.lookaheadPitchStep), VarioConfig.lookaheadPitchColor, true));
 			}
 		}
 
 		if (VarioConfig.showHoldPitch) {
-			drawBug(graphics, cameraPitch, recorder.flightPathHold(),
-					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
+			markers.add(new PitchMarker(recorder.flightPathHold(), new LadderMarkerShape(
+					VarioConfig.holdPitchInset, VarioConfig.holdPitchLength,
+					VarioConfig.holdPitchStep), VarioConfig.holdPitchColor, true));
 		}
 
 		if (VarioConfig.showOptimalPitch) {
 			OptimalPitch optimal = recorder.optimalPitch();
 
 			if (optimal != null) {
-				drawBug(graphics, cameraPitch, optimal.pitch(), VarioConfig.ladderBugRise,
-						VarioConfig.optimalPitchColor,
-						centerX, centerY, scale, bandUp, bandDown);
+				markers.add(new PitchMarker(optimal.pitch(), new LadderMarkerShape(
+						VarioConfig.optimalPitchInset, VarioConfig.optimalPitchLength,
+						VarioConfig.optimalPitchStep), VarioConfig.optimalPitchColor, true));
 			}
 		}
 
-		// Fixed scale references go down last. Their zero rise makes each a single row, so
-		// drawing them after every wedge keeps the little markers visible when readings agree.
 		if (VarioConfig.showMaxHorizontalSpeedPitch) {
-			drawBug(graphics, cameraPitch, MAX_HORIZONTAL_SPEED_PITCH, 0,
-					VarioConfig.maxHorizontalSpeedPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
+			markers.add(new PitchMarker(MAX_HORIZONTAL_SPEED_PITCH, new LadderMarkerShape(
+					VarioConfig.maxHorizontalSpeedPitchInset,
+					VarioConfig.maxHorizontalSpeedPitchLength,
+					VarioConfig.maxHorizontalSpeedPitchStep),
+					VarioConfig.maxHorizontalSpeedPitchColor, false));
 		}
 
 		if (VarioConfig.showMinimumFallSpeedPitch) {
-			drawBug(graphics, cameraPitch, MINIMUM_FALL_SPEED_PITCH, 0,
-					VarioConfig.minimumFallSpeedPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
+			markers.add(new PitchMarker(MINIMUM_FALL_SPEED_PITCH, new LadderMarkerShape(
+					VarioConfig.minimumFallSpeedPitchInset,
+					VarioConfig.minimumFallSpeedPitchLength,
+					VarioConfig.minimumFallSpeedPitchStep),
+					VarioConfig.minimumFallSpeedPitchColor, false));
 		}
 
 		if (VarioConfig.showZeroPitch) {
-			drawBug(graphics, cameraPitch, ZERO_PITCH, 0, VarioConfig.zeroPitchColor,
+			markers.add(new PitchMarker(ZERO_PITCH, new LadderMarkerShape(
+					VarioConfig.zeroPitchInset, VarioConfig.zeroPitchLength,
+					VarioConfig.zeroPitchStep), VarioConfig.zeroPitchColor, false));
+		}
+
+		markers.sort((left, right) -> Integer.compare(right.shape().height(), left.shape().height()));
+		return markers;
+	}
+
+	private void drawBugs(GuiGraphicsExtractor graphics, List<PitchMarker> markers,
+			float cameraPitch, int centerX, int centerY, double scale,
+			int bandUp, int bandDown) {
+		for (PitchMarker marker : markers) {
+			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), marker.color(),
 					centerX, centerY, scale, bandUp, bandDown);
 		}
 	}
 
+	private void addBugShadow(MarkerShadowLayer shadows, float cameraPitch, PitchMarker marker,
+			int centerX, int centerY, double scale, int bandUp, int bandDown) {
+		if (Float.isNaN(marker.pitch())) return;
+		double elevation = cameraPitch - marker.pitch();
+		if (elevation >= MAX_ELEVATION || elevation <= -MAX_ELEVATION) return;
+		double offset = Math.tan(Math.toRadians(elevation)) * scale;
+		if (offset > bandUp || offset < -bandDown) return;
+		double edge = edgeFade(offset, bandUp, bandDown);
+		if (edge <= 0.0) return;
+
+		LadderMarkerShape shape = marker.shape();
+		int outside = VarioConfig.ladderCenterGap - shape.inset();
+		if (outside < shape.length()) return;
+		int color = fade(marker.color(), edge);
+		float y = (float) (centerY - offset);
+		boolean enabled = marker.dynamic() ? VarioConfig.showDynamicMarkerShadows
+				: VarioConfig.showStaticMarkerShadows;
+		int radius = shape.height() / 2;
+		for (int row = -radius; row <= radius; row++) {
+			int inside = outside - shape.widthAt(row);
+			shadows.add(centerX - outside, centerX - inside, y + row, color, enabled);
+			shadows.add(centerX + inside, centerX + outside, y + row, color, enabled);
+		}
+	}
+
 	/**
-	 * One bug: a mirrored pair of wedges marking a pitch, {@code rise} pixels tall at the
-	 * base and tapering to an apex on the row that is the reading. A rise of zero is a single
-	 * row rather than a wedge.
+	 * One bug: a mirrored pair of exact pixel staircases pointing at a pitch. A shape whose
+	 * step is zero is a single row rather than a wedge.
 	 *
 	 * <p>It is placed by the same projection as the rungs, so it lies against the world like
 	 * they do, and while it is on the ladder it carries the same edge fade they do and
@@ -276,8 +505,8 @@ public final class PitchLadderElement implements HudElement {
 	 * a long way to go.
 	 *
 	 * <p>The wedges live inside the center gap and point inwards, which is the only radius
-	 * that never meets a rung or a label; see {@code VarioConfig.ladderBugGap}. Drawn as a
-	 * stack of rows rather than as a polygon, since the HUD's primitives are rectangles.
+	 * that never meets a rung or a label. They are drawn as a stack of rows rather than as a
+	 * polygon, since the HUD's primitives are rectangles and the staircase itself is deliberate.
 	 *
 	 * <p>A {@code NaN} pitch draws nothing. That is a real answer from the hold rather than a
 	 * defensive check — it is how it says the state it is describing has no such pitch — so it
@@ -298,7 +527,7 @@ public final class PitchLadderElement implements HudElement {
 	 * rule.
 	 */
 	private void drawBug(GuiGraphicsExtractor graphics, float cameraPitch, float pitch,
-			int riseSetting, int bugColor, int centerX, int centerY, double scale,
+			LadderMarkerShape shape, int bugColor, int centerX, int centerY, double scale,
 			int bandUp, int bandDown) {
 		if (Float.isNaN(pitch)) {
 			return;
@@ -326,27 +555,22 @@ public final class PitchLadderElement implements HudElement {
 			return;
 		}
 
-		int base = Math.max(1, VarioConfig.ladderCenterGap - VarioConfig.ladderBugGap);
-		int apex = Math.max(0, base - VarioConfig.ladderBugLength);
-		int rise = Math.max(0, riseSetting);
+		int outside = VarioConfig.ladderCenterGap - shape.inset();
+		if (outside < shape.length()) return;
 		int color = fade(bugColor, edge);
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
 		int y = subpixel(pose, centerY - offset);
 
-		for (int row = -rise; row <= rise; row++) {
-			// The taper: the wedge's inner edge retreats towards the base as the row moves
-			// away from the marked pitch, leaving the apex on the row that is the reading.
-			int inner = rise == 0 ? apex
-					: apex + (int) Math.round((base - apex) * (double) Math.abs(row) / rise);
-
-			if (inner >= base) {
-				continue;
-			}
-
-			graphics.fill(centerX - base, y + row, centerX - inner, y + row + 1, color);
-			graphics.fill(centerX + inner, y + row, centerX + base, y + row + 1, color);
+		int radius = shape.height() / 2;
+		for (int row = -radius; row <= radius; row++) {
+			int width = shape.widthAt(row);
+			int inside = outside - width;
+			graphics.fill(centerX - outside, y + row,
+					centerX - inside, y + row + 1, color);
+			graphics.fill(centerX + inside, y + row,
+					centerX + outside, y + row + 1, color);
 		}
 
 		pose.popMatrix();
@@ -398,14 +622,45 @@ public final class PitchLadderElement implements HudElement {
 				String label = Integer.toString(pitch);
 				int labelY = y - LABEL_RISE;
 				int labelColor = fade(VarioConfig.ladderLabelColor, edge * VarioConfig.ladderOpacity);
-				graphics.text(font, label, centerX - outer - LABEL_GAP - font.width(label),
-						labelY, labelColor, true);
-				graphics.text(font, label, centerX + outer + LABEL_GAP,
-						labelY, labelColor, true);
+				drawLabel(graphics, font, label,
+						centerX - outer - LABEL_GAP - font.width(label), labelY, labelColor);
+				drawLabel(graphics, font, label,
+						centerX + outer + LABEL_GAP, labelY, labelColor);
 			}
 
 			pose.popMatrix();
 		}
+	}
+
+	/** Draws a text shadow only where the shifted glyph is not covered by the foreground. */
+	private static void drawLabel(GuiGraphicsExtractor graphics, Font font, String text,
+			int x, int y, int color) {
+		int alpha = (color >>> 24) & 0xFF;
+		if (alpha == 0) return;
+		int shadowColor = (int) Math.round(alpha * LABEL_SHADOW_OPACITY) << 24;
+		Font.PreparedText foreground = font.prepareText(text, x, y, color, false, 0);
+		Font.PreparedText shadow = font.prepareText(text, x + 1, y + 1,
+				shadowColor, false, 0);
+		Matrix3x2fc pose = new org.joml.Matrix3x2f(graphics.pose());
+		ScreenRectangle scissor = graphics.scissorStack.peek();
+
+		submitLabelGlyphs(graphics, foreground, pose, scissor,
+				LABEL_MASK_PIPELINE, LABEL_FOREGROUND_DEPTH);
+		submitLabelGlyphs(graphics, shadow, pose, scissor, LABEL_TEXT_PIPELINE, 0.0f);
+		submitLabelGlyphs(graphics, foreground, pose, scissor,
+				LABEL_TEXT_PIPELINE, LABEL_FOREGROUND_DEPTH);
+	}
+
+	private static void submitLabelGlyphs(GuiGraphicsExtractor graphics,
+			Font.PreparedText text, Matrix3x2fc pose, ScreenRectangle scissor,
+			RenderPipeline pipeline, float depth) {
+		text.visit(new Font.GlyphVisitor() {
+			@Override
+			public void acceptRenderable(TextRenderable renderable) {
+				graphics.guiRenderState.addGlyphToCurrentLayer(new LabelGlyphRenderState(
+						pose, renderable, scissor, pipeline, depth));
+			}
+		});
 	}
 
 	/**
@@ -523,20 +778,20 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * The flight path marker: where the player is going, as against the crosshair's where
-	 * they are looking. The vertical gap between the two is the angle of attack, and the
-	 * horizontal gap is sideslip.
+	 * The flight path marker: the direction of the player's current velocity, as against the
+	 * crosshair's direction of view. The vertical gap between the two is the angle of attack,
+	 * and the horizontal gap is sideslip.
 	 *
 	 * <p>Projected against the camera's own basis rather than from pitch and yaw, which
 	 * makes it exact on both axes and correct in every camera mode.
 	 */
-	private void drawFlightPath(GuiGraphicsExtractor graphics, Camera camera,
-			int centerX, int centerY, double scale, int bandUp, int bandDown) {
+	private FlightPathMarker flightPath(Camera camera, int centerX, int centerY,
+			double scale, int bandUp, int bandDown) {
 		Vec3 velocity = recorder.velocity();
 		double speed = velocity.length();
 
 		if (speed < MIN_SPEED) {
-			return;
+			return null;
 		}
 
 		Vec3 direction = velocity.scale(1.0 / speed);
@@ -549,7 +804,7 @@ public final class PitchLadderElement implements HudElement {
 		// Travelling behind the camera: there is no forward projection of the marker, and
 		// pinning it to an edge would only say something false about which edge.
 		if (depth < MIN_DEPTH) {
-			return;
+			return null;
 		}
 
 		double offsetY = dot(direction, up) / depth * scale;
@@ -562,25 +817,58 @@ public final class PitchLadderElement implements HudElement {
 		// Out of reach on either axis it is simply not drawn, like the bugs: held at an edge
 		// it would claim a place it is not, and where you are going is not a thing to aim at.
 		if (Math.abs(offsetX) > reach || offsetY > bandUp || offsetY < -bandDown) {
-			return;
+			return null;
 		}
 
-		int color = VarioConfig.flightPathColor;
+		return new FlightPathMarker(centerX + offsetX, centerY - offsetY,
+				VarioConfig.flightPathColor);
+	}
+
+	private static void addFlightPathShadow(MarkerShadowLayer shadows,
+			FlightPathMarker marker) {
+		float x = (float) marker.x();
+		float y = (float) marker.y();
+		boolean enabled = VarioConfig.showDynamicMarkerShadows;
+		shadows.add(x - 3, x + 4, y - 3, marker.color(), enabled);
+		shadows.add(x - 3, x + 4, y + 3, marker.color(), enabled);
+		for (int row = -2; row <= 2; row++) {
+			shadows.add(x - 3, x - 2, y + row, marker.color(), enabled);
+			shadows.add(x + 3, x + 4, y + row, marker.color(), enabled);
+		}
+		shadows.add(x - 10, x - 4, y, marker.color(), enabled);
+		shadows.add(x + 5, x + 11, y, marker.color(), enabled);
+		for (int row = -8; row < -3; row++) {
+			shadows.add(x, x + 1, y + row, marker.color(), enabled);
+		}
+	}
+
+	private static void drawFlightPath(GuiGraphicsExtractor graphics,
+			FlightPathMarker marker) {
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
 
-		int y = subpixel(pose, centerY - offsetY);
-		double exactX = centerX + offsetX;
-		int x = (int) Math.floor(exactX);
-		pose.translate((float) (exactX - x), 0.0f);
+		int y = subpixel(pose, marker.y());
+		int x = (int) Math.floor(marker.x());
+		pose.translate((float) (marker.x() - x), 0.0f);
 
+		drawFlightPathSymbol(graphics, x, y, marker.color());
+
+		pose.popMatrix();
+	}
+
+	private static void drawFlightPathSymbol(GuiGraphicsExtractor graphics, int x, int y,
+			int color) {
 		graphics.outline(x - 3, y - 3, 7, 7, color);
 		graphics.fill(x - 10, y, x - 4, y + 1, color);
 		graphics.fill(x + 5, y, x + 11, y + 1, color);
 		graphics.fill(x, y - 8, x + 1, y - 3, color);
+	}
 
-		pose.popMatrix();
+	/** Black with opacity proportional to the mark it belongs to. */
+	private static int shadow(int color) {
+		int alpha = (int) Math.round(((color >>> 24) & 0xFF) * MARKER_SHADOW_OPACITY);
+		return alpha << 24;
 	}
 
 	/** Scales a color's alpha, leaving its RGB alone. */
