@@ -298,7 +298,9 @@ can be recovered from the pattern alone in peripheral vision: faint stubs every 
 near the center, short rungs every ten, longer ones every twenty, and the datum lines — the
 horizon and ±40 — longest and brightest. Strength runs strictly downhill across the four, and
 the two weakest share an RGB so that nothing but alpha separates them. Only the twenties are
-labeled, and faintly. A digit on every rung is the clutter this arrangement exists to avoid.
+labeled, and faintly. Their one-pixel shadow is masked by the foreground glyph before either
+color is painted, so translucent text does not reveal or compound its own shadow. A digit on every
+rung is the clutter this arrangement exists to avoid.
 
 Every tier is solid. The ten-degree rungs were dashed at first, which made a third channel say
 what length and strength had already said — and at that size the dashes mostly read as noise

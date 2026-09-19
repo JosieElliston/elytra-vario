@@ -1,11 +1,17 @@
 package jealoustone.elytravario.hud;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import jealoustone.elytravario.ElytraVario;
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.flight.FlightRecorder;
@@ -19,11 +25,17 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.font.TextRenderable;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.TextureSetup;
+import net.minecraft.client.gui.render.state.GuiElementRenderState;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 import org.joml.Matrix3x2fStack;
+import org.joml.Matrix3x2fc;
+import org.joml.Matrix4f;
 import org.joml.Vector3fc;
 
 /**
@@ -124,6 +136,23 @@ public final class PitchLadderElement implements HudElement {
 	private record FlightPathMarker(double x, double y, int color) { }
 	private record ShadowRectangle(float left, float top, float right, float bottom,
 			int alpha) { }
+	private record LabelGlyphRenderState(Matrix3x2fc pose, TextRenderable renderable,
+			ScreenRectangle scissorArea, RenderPipeline pipeline, float depth)
+			implements GuiElementRenderState {
+		@Override
+		public void buildVertices(VertexConsumer vertices) {
+			Matrix4f matrix = new Matrix4f().mul(pose).translate(0.0f, 0.0f, depth);
+			renderable.render(matrix, vertices, 0xF000F0, true);
+		}
+
+		@Override
+		public TextureSetup textureSetup() {
+			return TextureSetup.singleTextureWithLightmap(renderable.textureView(),
+					RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
+		}
+
+		@Override public ScreenRectangle bounds() { return null; }
+	}
 
 	/** Combines all marker shadows without darkening where their silhouettes overlap. */
 	private static final class MarkerShadowLayer {
@@ -141,7 +170,7 @@ public final class PitchLadderElement implements HudElement {
 					top + MARKER_SHADOW_OFFSET + 1.0f, alpha));
 		}
 
-		void render(GuiGraphicsExtractor graphics) {
+		void render(GuiGraphics graphics) {
 			if (shadows.isEmpty()) return;
 			TreeMap<Float, List<ShadowRectangle>> starts = new TreeMap<>();
 			TreeMap<Float, List<ShadowRectangle>> ends = new TreeMap<>();
@@ -162,7 +191,7 @@ public final class PitchLadderElement implements HudElement {
 			}
 		}
 
-		private void renderSlab(GuiGraphicsExtractor graphics,
+		private void renderSlab(GuiGraphics graphics,
 				List<ShadowRectangle> activeShadows, List<ShadowRectangle> activeMasks,
 				float top, float bottom) {
 			TreeSet<Float> xEdges = new TreeSet<>();
@@ -208,7 +237,7 @@ public final class PitchLadderElement implements HudElement {
 			return alpha;
 		}
 
-		private static void fill(GuiGraphicsExtractor graphics, float left, float top,
+		private static void fill(GuiGraphics graphics, float left, float top,
 				float right, float bottom, int alpha) {
 			Matrix3x2fStack pose = graphics.pose();
 			pose.pushMatrix();
@@ -266,8 +295,21 @@ public final class PitchLadderElement implements HudElement {
 	/** A restrained drop shadow separates small marks from both bright sky and dark terrain. */
 	private static final int MARKER_SHADOW_OFFSET = 1;
 	private static final double MARKER_SHADOW_OPACITY = 0.35;
-	/** Style shadow alpha is multiplied by the label's effective alpha. */
-	private static final int LABEL_SHADOW_COLOR = 0x59000000;
+	private static final double LABEL_SHADOW_OPACITY = 0.35;
+	private static final float LABEL_FOREGROUND_DEPTH = 0.03f;
+	private static final RenderPipeline LABEL_MASK_PIPELINE = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.GUI_TEXT_SNIPPET)
+					.withLocation(ElytraVario.id("pipeline/ladder_label_mask"))
+					.withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
+					.withDepthWrite(true)
+					.withColorWrite(false, false)
+					.build());
+	private static final RenderPipeline LABEL_TEXT_PIPELINE = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.GUI_TEXT_SNIPPET)
+					.withLocation(ElytraVario.id("pipeline/ladder_label_text"))
+					.withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
+					.withDepthWrite(true)
+					.build());
 
 	/**
 	 * A rung a quarter turn off the camera axis is edge-on, and beyond that it is behind the
@@ -412,7 +454,7 @@ public final class PitchLadderElement implements HudElement {
 		return markers;
 	}
 
-	private void drawBugs(GuiGraphicsExtractor graphics, List<PitchMarker> markers,
+	private void drawBugs(GuiGraphics graphics, List<PitchMarker> markers,
 			float cameraPitch, int centerX, int centerY, double scale,
 			int bandUp, int bandDown) {
 		for (PitchMarker marker : markers) {
@@ -573,18 +615,47 @@ public final class PitchLadderElement implements HudElement {
 			// their own tier, and a digit on every one is the clutter this ladder avoids.
 			if (major && VarioConfig.showLadderLabels) {
 				String label = Integer.toString(pitch);
-				Component styledLabel = Component.literal(label)
-						.withStyle(style -> style.withShadowColor(LABEL_SHADOW_COLOR));
 				int labelY = y - LABEL_RISE;
 				int labelColor = fade(VarioConfig.ladderLabelColor, edge * VarioConfig.ladderOpacity);
-				graphics.drawString(font, styledLabel, centerX - outer - LABEL_GAP - font.width(label),
-						labelY, labelColor, false);
-				graphics.drawString(font, styledLabel, centerX + outer + LABEL_GAP,
-						labelY, labelColor, false);
+				drawLabel(graphics, font, label,
+						centerX - outer - LABEL_GAP - font.width(label), labelY, labelColor);
+				drawLabel(graphics, font, label,
+						centerX + outer + LABEL_GAP, labelY, labelColor);
 			}
 
 			pose.popMatrix();
 		}
+	}
+
+	/** Draws a text shadow only where the shifted glyph is not covered by the foreground. */
+	private static void drawLabel(GuiGraphics graphics, Font font, String text,
+			int x, int y, int color) {
+		int alpha = (color >>> 24) & 0xFF;
+		if (alpha == 0) return;
+		int shadowColor = (int) Math.round(alpha * LABEL_SHADOW_OPACITY) << 24;
+		Font.PreparedText foreground = font.prepareText(text, x, y, color, false, 0);
+		Font.PreparedText shadow = font.prepareText(text, x + 1, y + 1,
+				shadowColor, false, 0);
+		Matrix3x2fc pose = new org.joml.Matrix3x2f(graphics.pose());
+		ScreenRectangle scissor = graphics.scissorStack.peek();
+
+		submitLabelGlyphs(graphics, foreground, pose, scissor,
+				LABEL_MASK_PIPELINE, LABEL_FOREGROUND_DEPTH);
+		submitLabelGlyphs(graphics, shadow, pose, scissor, LABEL_TEXT_PIPELINE, 0.0f);
+		submitLabelGlyphs(graphics, foreground, pose, scissor,
+				LABEL_TEXT_PIPELINE, LABEL_FOREGROUND_DEPTH);
+	}
+
+	private static void submitLabelGlyphs(GuiGraphics graphics,
+			Font.PreparedText text, Matrix3x2fc pose, ScreenRectangle scissor,
+			RenderPipeline pipeline, float depth) {
+		text.visit(new Font.GlyphVisitor() {
+			@Override
+			public void acceptGlyph(TextRenderable.Styled renderable) {
+				graphics.guiRenderState.submitGlyphToCurrentLayer(new LabelGlyphRenderState(
+						pose, renderable, scissor, pipeline, depth));
+			}
+		});
 	}
 
 	/**
@@ -766,7 +837,7 @@ public final class PitchLadderElement implements HudElement {
 		}
 	}
 
-	private static void drawFlightPath(GuiGraphicsExtractor graphics,
+	private static void drawFlightPath(GuiGraphics graphics,
 			FlightPathMarker marker) {
 
 		Matrix3x2fStack pose = graphics.pose();
