@@ -843,6 +843,10 @@ right-side settings panel leaves the HUD visible without blur. Each page has a r
 common controls are under Advanced. The screen reopens on the page, subpage and scroll position
 you left, with the Advanced switch as you left it, for the rest of the session.
 
+The release introducing per-marker pixel geometry deliberately adopts its complete new marker
+appearance instead of carrying forward the old saved colors. Once that migration has happened,
+later color and shape edits persist normally.
+
 Position is an absolute top-left in scaled GUI pixels for each of the ten placed modules,
 clamped to the screen; the anchors and the graph-to-stats attachment this paragraph used to
 describe are gone. With the settings screen open the modules are editable in the world: click
@@ -1164,9 +1168,10 @@ the evidence.
 
 The six paired pitch markers share one band of the ladder, since the center gap is the only
 place on it any of them can go. The three advisory bugs overlap whenever two rules agree. Each
-has its own inset, horizontal length and integer pixel step. Their odd heights follow from that
-geometry, and the renderer sorts them tallest first, so shorter markers and one-row references
-remain visible on top. The different shapes are tuned by eye and mean nothing in themselves.
+has its own inset, horizontal length and integer pixel step. The factory defaults give all three
+the same compact 2:1 wedge and distinguish them by color; customized heights sort tallest first,
+so shorter markers and one-row references remain visible on top. Shape differences are tuned by
+eye and mean nothing in themselves.
 
 **When an answer is further out than the band reaches, the bug leaves the ladder.** All three
 do this, and the flight path marker with them. It matters most for the two rules: each governs

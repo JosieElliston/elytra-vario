@@ -74,9 +74,8 @@ import org.joml.Vector3fc;
  * is drawn against the crosshair on both axes rather than as a fourth mark in this band.
  *
  * <p>They share one band, since the center gap is the only place any of them can go, and are
- * told apart by color and by configurable pixel geometry, so that a pile of agreeing bugs
- * nests into chevrons rather than merging into one mark. Their exact staircases are drawn
- * tallest first, leaving every shorter marker visible on top.
+ * told apart by color and configurable pixel geometry. Their exact staircases are drawn
+ * tallest first, leaving every customized shorter marker visible on top.
  *
  * <p>Nothing here tells you which rule the phase you are in calls for. That switch is the
  * open part of the problem, and a display that guessed at it would be inventing the answer
@@ -207,9 +206,8 @@ public final class PitchLadderElement implements HudElement {
 	 *
 	 * <p>The order is the whole trick to keeping them separable. They occupy one band and
 	 * their points land on the same row whenever the rules agree. A taller wedge drawn first
-	 * keeps its shoulders visible past every shorter one painted over it, and a pile of agreeing
-	 * bugs reads as nested chevrons instead of as one mark of indeterminate color. One-row fixed
-	 * references naturally sort last.
+	 * keeps its shoulders visible past every shorter one painted over it. Equal-height shapes
+	 * retain their stable collection order, and one-row fixed references naturally sort last.
 	 *
 	 * <p>Each is skipped when its rule has nothing to say. The two energy searches return null
 	 * whenever the player is not gliding, and the hold returns {@code NaN} both there and at

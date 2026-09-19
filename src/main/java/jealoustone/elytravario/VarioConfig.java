@@ -50,7 +50,7 @@ public final class VarioConfig {
 
 	/**
 	 * The other two bugs, each marking a pitch some rule says to fly, both drawn in the same
-	 * band of the center gap and told apart by color and by height.
+	 * band of the center gap and told apart by color and configurable pixel geometry.
 	 *
 	 * <p>Together with the one above they are the three myopic rules an optimised pump cycle
 	 * turns out to obey piecewise:
@@ -95,8 +95,8 @@ public final class VarioConfig {
 	public static boolean showMaxHorizontalSpeedPitch = true;
 	public static boolean showMinimumFallSpeedPitch = true;
 	public static boolean showZeroPitch = true;
-	public static int maxHorizontalSpeedPitchColor = 0xE0E8EAED;
-	public static int minimumFallSpeedPitchColor = 0xE0E8EAED;
+	public static int maxHorizontalSpeedPitchColor = 0x66E8EAED;
+	public static int minimumFallSpeedPitchColor = 0x66FFFFFF;
 	public static int zeroPitchColor = 0xE0E8EAED;
 
 	/**
@@ -315,36 +315,27 @@ public final class VarioConfig {
 	 * it is one small mark and it has to be findable.
 	 */
 	public static int optimalPitchInset = 2;
-	public static int optimalPitchLength = 2;
-	public static int optimalPitchStep = 1;
+	public static int optimalPitchLength = 8;
+	public static int optimalPitchStep = 2;
 	public static int optimalPitchColor = 0xE0FF4F5E;
 
 	/**
-	 * The other two bugs use progressively taller shapes, which is the second channel their
-	 * identity is carried on.
+	 * The three advisory bugs each own their shape settings. Their defaults deliberately use
+	 * the same compact 2:1 wedge, while color carries their identity; length, step and inset
+	 * remain available as additional channels.
 	 *
-	 * <p>Color alone would not be enough. All three bugs occupy one band — there is nowhere
-	 * else on the ladder for them, the center gap being the only radius no rung or label ever
-	 * reaches — so they overlap whenever the rules agree, and agreement is common. Ranking
-	 * them by height makes an overlap nest instead of merge: their marked rows coincide, the
-	 * taller silhouettes still show past the shorter ones, and the pile reads as a set of chevrons
-	 * rather than as one mark of uncertain color.
-	 *
-	 * <p>Which bug gets which height is a display choice tuned in flight, and it is worth being
-	 * plain that it encodes no claim — the lookahead is the tallest and the hold one step under
-	 * it because that is what reads well with both of them up, not because the ordering means
-	 * anything. The one thing about these numbers that matters structurally is that they are
-	 * distinct.
-	 *
-	 * <p>The renderer sorts all bugs by computed height, tallest first, so shorter markers and
-	 * one-row references remain visible when their readings agree.
+	 * <p>All three occupy one band — there is nowhere else on the ladder for them, the center
+	 * gap being the only radius no rung or label ever reaches — so agreement can overlap them.
+	 * The renderer sorts by computed height, tallest first, so customized shorter markers and
+	 * one-row references remain visible on top. Shape differences are display choices and
+	 * encode no claim about the underlying rules.
 	 */
 	public static int lookaheadPitchInset = 2;
-	public static int lookaheadPitchLength = 6;
-	public static int lookaheadPitchStep = 1;
+	public static int lookaheadPitchLength = 8;
+	public static int lookaheadPitchStep = 2;
 	public static int holdPitchInset = 2;
-	public static int holdPitchLength = 4;
-	public static int holdPitchStep = 1;
+	public static int holdPitchLength = 8;
+	public static int holdPitchStep = 2;
 
 	/**
 	 * The other two bugs' colors.
