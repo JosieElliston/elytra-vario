@@ -538,7 +538,7 @@ weaker rule, 34° RMS, saturated against the nose-up stop for the first sixty ti
 
 **Holding the angle is not pointing along it**, which is the obvious misreading and the thing
 the flight path marker is worth turning on to see. By the end of a dive the nose sits about 30°
-*below* the flight path — pitch 47° against γ 17° — so the green bug and the marker are nowhere
+*below* the flight path — pitch 47° against γ 17° — so the blue-violet bug and the marker are nowhere
 near each other, and the gap between them is the angle of attack the hold is asking for.
 
 **It is bisected on the residual's sign, not minimised on its magnitude.** The natural phrasing
@@ -1144,8 +1144,8 @@ switch rules rather than what any rule is.
 | Bug | Colour | Marks | Its phase |
 | --- | --- | --- | --- |
 | Lookahead | Amber | The constant pitch gaining the most energy over the next 20 ticks | **The gain phase** — the climb out of the flick, where most of a cycle's energy is made |
-| Hold | Green | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree. Gone once the dive is over |
-| Optimal pitch | Magenta | The same over one tick | *Off by default.* A gradient rather than a plan, and wrong through both phases above |
+| Hold | Blue-violet | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree. Gone once the dive is over |
+| Optimal pitch | Hot red | The same over one tick | *Off by default.* A gradient rather than a plan, and wrong through both phases above |
 
 Two are on. The one-tick bug parks on the horizon through the whole dive and pins to the
 nose-up stop entering the climb, so in the phases being flown it is two more marks saying
@@ -1173,7 +1173,7 @@ that way* for whole phases at a time, which is an invitation to fly a rule exact
 not the rule. Gone says the one true thing instead, and it matches what each already does when
 its search has no answer at all — so a bug that is not there means one thing rather than two.
 
-The magenta one comes nearer to a real limit off the ladder — near-90° nose-down through a
+The hot-red one comes nearer to a real limit off the ladder — near-90° nose-down through a
 slow descent — but pitch clamps at ±90, so the mouse finds the stop by itself. The bugs earn
 their place at interior angles, where they are actual targets to fly to.
 
@@ -1214,7 +1214,7 @@ forever and bleeds height. The floor it decays towards is the flight path angle 
 glide that maximises forward speed, which vanilla puts at 53° nose-down doing 3.39 blocks/tick.
 
 **Holding the angle is not pointing along it.** By the end of a dive the nose sits about 30°
-*below* the flight path, so the green bug and the flight path marker are nowhere near each
+*below* the flight path, so the blue-violet bug and the flight path marker are nowhere near each
 other, and the gap between them is the angle of attack the hold is asking for. Turning the
 marker on is what makes that gap visible.
 
@@ -1225,7 +1225,7 @@ be sustained by any attitude — rather than picking the least bad degree.
 
 | Switch | Default | Effect |
 | --- | --- | --- |
-| `showOptimalPitch` | Off | The magenta one-tick bug on the ladder |
+| `showOptimalPitch` | Off | The hot-red one-tick bug on the ladder |
 | `showFlightPath` | On | A winged circle showing where you are going rather than where you are looking. Its vertical gap from the crosshair is angle of attack, and its horizontal gap is sideslip. It is not drawn once it falls outside the ladder band or off the edge of the screen |
 
 Sideslip remains readable without the flight-path marker from the gap between the chart's two
@@ -1244,7 +1244,7 @@ cursors.
 - **Nothing decides which bug to follow.** The four rules fit four phases, the switch points
   are learnable, and the HUD does not attempt them. Reading it well means knowing which phase
   you are in.
-- **The heatmap still sees one tick ahead and no further**, as does the magenta bug. They are a
+- **The heatmap still sees one tick ahead and no further**, as does the hot-red bug. They are a
   gradient, not a plan.
 - **The 20-tick bug scores a pitch held constant for 20 ticks**, which is not what anybody
   flies. It answers "what is a fixed attitude worth from here", not "what is the best flight

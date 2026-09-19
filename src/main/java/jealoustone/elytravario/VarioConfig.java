@@ -310,14 +310,14 @@ public final class VarioConfig {
 	 * line used by fixed pitch references. Insets may differ as another way to tell overlapping
 	 * markers apart, though the factory defaults align all of their outside edges.
 	 *
-	 * <p>Magenta because the ladder is otherwise entirely gray and the chart has already
-	 * spent yellow and cyan — and because elytrasim draws the same quantity in the same
-	 * color. Alpha matches the datum rungs: it is one small mark and it has to be findable.
+	 * <p>Hot red keeps both energy optimizers in one warm family while separating this
+	 * immediate, one-tick reading from the lookahead's amber. Alpha matches the datum rungs:
+	 * it is one small mark and it has to be findable.
 	 */
 	public static int optimalPitchInset = 2;
 	public static int optimalPitchLength = 2;
 	public static int optimalPitchStep = 1;
-	public static int optimalPitchColor = 0xE0FF5AE0;
+	public static int optimalPitchColor = 0xE0FF4F5E;
 
 	/**
 	 * The other two bugs use progressively taller shapes, which is the second channel their
@@ -349,11 +349,11 @@ public final class VarioConfig {
 	/**
 	 * The other two bugs' colors.
 	 *
-	 * <p>Amber and green are picked the way the magenta was: away from the chart's yellow and
-	 * cyan, away from each other, and readable against both sky and ground.
+	 * <p>Amber keeps the lookahead in the warm energy family. Blue-violet makes hold a cool,
+	 * kinematic reading without borrowing the flight-path marker's distinctive sky blue.
 	 */
 	public static int lookaheadPitchColor = 0xE0F7A900;
-	public static int holdPitchColor = 0xE000B533;
+	public static int holdPitchColor = 0xE08C7BFF;
 
 	/** Fixed pitch references use the same shape vocabulary with a zero-step line. */
 	public static int maxHorizontalSpeedPitchInset = 2;
