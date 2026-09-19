@@ -24,8 +24,8 @@ import org.joml.Vector3fc;
 
 /**
  * A pitch ladder drawn over the world view, with a set of bugs showing where each of the pump
- * cycle's rules says to point, and a flight path marker showing where the player is actually
- * going.
+ * cycle's rules says to point, and a flight path marker showing the direction of the player's
+ * current velocity.
  *
  * <p>Unlike the readout panel this is a <em>conformal</em> instrument: every mark is placed
  * by projecting a direction through the same camera the world was drawn with, so a rung
@@ -527,9 +527,9 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * The flight path marker: where the player is going, as against the crosshair's where
-	 * they are looking. The vertical gap between the two is the angle of attack, and the
-	 * horizontal gap is sideslip.
+	 * The flight path marker: the direction of the player's current velocity, as against the
+	 * crosshair's direction of view. The vertical gap between the two is the angle of attack,
+	 * and the horizontal gap is sideslip.
 	 *
 	 * <p>Projected against the camera's own basis rather than from pitch and yaw, which
 	 * makes it exact on both axes and correct in every camera mode.

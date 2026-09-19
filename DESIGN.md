@@ -367,12 +367,12 @@ quantisation down to the physical pixel the GUI scale is drawn at.
 
 ## The bugs
 
-**Four of them, because the optimum is piecewise myopic.** An optimised 300-tick cycle divides
+**Three advisory bugs, because the optimum is piecewise myopic.** An optimized 300-tick cycle divides
 into a dive, a snap to level, a flick to near-vertical and a gain phase, and through the two
 long phases the globally optimal pitch agrees with a simple rule of the current state — a
 different rule in each. So the ladder carries a bug per rule rather than one cue pretending to
-cover the whole cycle, plus a gray reference bug the dive's rule is read against. What it
-deliberately does **not** carry is any indication of which phase you are in. The switch points
+cover the whole cycle. What it deliberately does **not** carry is any indication of which phase
+you are in. The switch points
 are learnable — tuning them independently rediscovers the optimum's own — but they are the open
 part of the problem, and a display that guessed would be inventing the answer rather than
 showing the evidence.
@@ -574,8 +574,9 @@ luck rather than structure.
 
 ## Direction-of-travel reading
 
-The flight-path marker is the sole direction-of-travel reading. Its vertical gap from the
-crosshair shows angle of attack spatially, while its horizontal gap shows sideslip. The former
+The flight-path marker is the sole direction-of-travel reading: it projects the player's current
+velocity vector relative to the camera. Its vertical gap from the crosshair shows angle of attack
+spatially, while its horizontal gap shows sideslip. The former
 numeric `AOA` row expressed only the first of those dimensions, so it and its setting were
 removed rather than maintaining two renderings of one reading. The marker defaults to on; the
 chart also shows sideslip as the gap between its two cursors.
@@ -1130,44 +1131,47 @@ Marks fade out as they approach the top and bottom of the ladder rather than bli
 Labels are in raw Minecraft pitch, matching the `PITCH` row: **negative is above the horizon**.
 Nothing else marks which side of the horizon a rung is on — the sky and the ground already do.
 
-## The bugs
+## Ladder markers
 
-A pair of wedges on either side of the crosshair marks a pitch to fly. The gap between the
-crosshair and a bug is the correction; when there is none, its two wedges close around the
-crosshair. They are the only advisory marks on the ladder and the only things on it that are
-not gray, and they are drawn only while actually gliding.
+The settings put the measured direction first, then the three computed pitch suggestions, then
+the three fixed pitch references:
 
-There are three, because an optimised pump cycle turns out to be **piecewise myopic**: each
-phase of it follows a simple rule of the current state, and the hard part is knowing when to
-switch rules rather than what any rule is.
-
-| Bug | Colour | Marks | Its phase |
+| Marker | Default | Appearance | What it marks |
 | --- | --- | --- | --- |
-| Lookahead | Amber | The constant pitch gaining the most energy over the next 20 ticks | **The gain phase** — the climb out of the flick, where most of a cycle's energy is made |
-| Hold | Blue-violet | The pitch that leaves the flight path angle where it is | **The dive** — parameter-free, and it fits the whole descent to under a degree. Gone once the dive is over |
-| Optimal pitch | Hot red | The same over one tick | *Off by default.* A gradient rather than a plan, and wrong through both phases above |
+| Flight path | On | Sky-blue winged circle | The direction of the player's current velocity relative to the camera. Its vertical separation from the crosshair is angle of attack; its horizontal separation is sideslip |
+| Flight-path hold | On | Blue-violet wedge pair | The pitch that would preserve the current velocity direction through the next tick. This is the dive rule |
+| One-tick optimal | Off | Hot-red wedge pair | The pitch that maximizes total-energy gain on the next tick. It is a gradient rather than a pump-cycle plan |
+| Lookahead optimal | On | Amber wedge pair | The constant pitch that maximizes total-energy gain if held for the configured lookahead, twenty ticks by default. This is the gain-phase rule |
+| Minimum fall speed | On | Gray line pair | The fixed −13.233° pitch with the lowest steady-state downward speed |
+| Zero pitch / best glide | On | Gray line pair | The fixed 0° pitch, which also has the best steady-state glide ratio |
+| Maximum horizontal speed | On | Gray line pair | The fixed +53.366° pitch with the greatest steady-state horizontal speed |
 
-Two are on. The one-tick bug parks on the horizon through the whole dive and pins to the
-nose-up stop entering the climb, so in the phases being flown it is two more marks saying
-nothing; it is kept because it is the reading elytrasim plots and the heatmap colours.
+The flight-path marker is not a pitch recommendation. It is the two-dimensional projection of
+the measured velocity vector and uses its own circle-and-wings shape. The other six markers are
+mirrored pairs inside the ladder's center gap. For an advisory wedge, the gap from the
+crosshair is the correction; when there is none, the wedges close around the crosshair.
 
-Where you are actually going is the flight path marker's job and is not repeated here. A gray
-bug for it was, until it turned out to be one reading drawn twice.
+There are three advisory bugs because an optimized pump cycle turns out to be **piecewise
+myopic**: each phase follows a simple rule of the current state, and the hard part is knowing
+when to switch rules rather than what any rule is. Hold and lookahead are on by default. The
+one-tick bug parks on the horizon through the whole dive and pins to the nose-up stop entering
+the climb, so in the phases being flown it adds a mark without useful advice; it remains
+available because it is the reading elytrasim plots and the heatmap colors.
 
 **Nothing tells you which rule the phase you are in calls for.** That switch is the open part
 of the problem; a display that guessed at it would be inventing the answer rather than showing
 the evidence.
 
-They share one band of the ladder, since the center gap is the only place on it any of them
-can go, so they overlap whenever two rules agree. Each has its own inset, horizontal length and
-integer pixel step. Their odd heights follow from that geometry, and the renderer sorts them
-tallest first, so shorter markers and one-row references remain visible on top. The different
-shapes are tuned by eye and mean nothing in themselves.
+The six paired pitch markers share one band of the ladder, since the center gap is the only
+place on it any of them can go. The three advisory bugs overlap whenever two rules agree. Each
+has its own inset, horizontal length and integer pixel step. Their odd heights follow from that
+geometry, and the renderer sorts them tallest first, so shorter markers and one-row references
+remain visible on top. The different shapes are tuned by eye and mean nothing in themselves.
 
 **When an answer is further out than the band reaches, the bug leaves the ladder.** All three
 do this, and the flight path marker with them. It matters most for the two rules: each governs
 one phase and each sends its answer off the ladder during the phases it does not govern — the
-amber one into a second mode 40–50° nose-up through the dive, the green one into a steep
+amber one into a second mode 40–50° nose-up through the dive, the blue-violet one into a steep
 nose-down answer once the dive is over. Held at the edge in gray they would read as *keep going
 that way* for whole phases at a time, which is an invitation to fly a rule exactly where it is
 not the rule. Gone says the one true thing instead, and it matches what each already does when
@@ -1203,15 +1207,15 @@ mentions energy.
 
 ### Reading the hold bug
 
-Point at it and the direction you are travelling one tick from now is the direction you are
-travelling now. Against an optimised 300-tick cycle it fits the optimal pitch through the
+Point at it and the direction you are traveling one tick from now is the direction you are
+traveling now. Against an optimized 300-tick cycle it fits the optimal pitch through the
 whole descent to **0.73° RMS with nothing to tune**.
 
 It does not hold the angle exactly, and that is the point: flown, the flight path angle decays
-towards about 16.6° below the horizon, losing a twentieth of the remaining gap each tick, and
+toward about 16.6° below the horizon, losing a twentieth of the remaining gap each tick, and
 the optimum decays the same way. An exact hold is a *worse* rule — it keeps its entry angle
-forever and bleeds height. The floor it decays towards is the flight path angle of the steady
-glide that maximises forward speed, which vanilla puts at 53° nose-down doing 3.39 blocks/tick.
+forever and bleeds height. The floor it decays toward is the flight path angle of the steady
+glide that maximizes forward speed, which vanilla puts at 53° nose-down doing 3.39 blocks/tick.
 
 **Holding the angle is not pointing along it.** By the end of a dive the nose sits about 30°
 *below* the flight path, so the blue-violet bug and the flight path marker are nowhere near each
@@ -1223,13 +1227,10 @@ be sustained by any attitude — rather than picking the least bad degree.
 
 ## Marker switches
 
-| Switch | Default | Effect |
-| --- | --- | --- |
-| `showOptimalPitch` | Off | The hot-red one-tick bug on the ladder |
-| `showFlightPath` | On | A winged circle showing where you are going rather than where you are looking. Its vertical gap from the crosshair is angle of attack, and its horizontal gap is sideslip. It is not drawn once it falls outside the ladder band or off the edge of the screen |
-
-Sideslip remains readable without the flight-path marker from the gap between the chart's two
-cursors.
+Every row in the marker table has its own switch on the Ladder Markers page. The instrument's
+single key binding still toggles the entire overlay; seven more key bindings would add clutter
+without making the overlay easier to fly. Without the flight-path marker, sideslip remains
+readable from the gap between the velocity graph's two cursors.
 
 ## Known limitations
 
