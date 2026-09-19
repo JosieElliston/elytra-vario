@@ -16,6 +16,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
@@ -142,6 +143,8 @@ public final class PitchLadderElement implements HudElement {
 	/** A restrained drop shadow separates small marks from both bright sky and dark terrain. */
 	private static final int MARKER_SHADOW_OFFSET = 1;
 	private static final double MARKER_SHADOW_OPACITY = 0.35;
+	/** Style shadow alpha is multiplied by the label's effective alpha. */
+	private static final int LABEL_SHADOW_COLOR = 0x59000000;
 
 	/**
 	 * A rung a quarter turn off the camera axis is edge-on, and beyond that it is behind the
@@ -442,11 +445,13 @@ public final class PitchLadderElement implements HudElement {
 			// their own tier, and a digit on every one is the clutter this ladder avoids.
 			if (major && VarioConfig.showLadderLabels) {
 				String label = Integer.toString(pitch);
+				Component styledLabel = Component.literal(label)
+						.withStyle(style -> style.withShadowColor(LABEL_SHADOW_COLOR));
 				int labelY = y - LABEL_RISE;
 				int labelColor = fade(VarioConfig.ladderLabelColor, edge * VarioConfig.ladderOpacity);
-				graphics.text(font, label, centerX - outer - LABEL_GAP - font.width(label),
+				graphics.text(font, styledLabel, centerX - outer - LABEL_GAP - font.width(label),
 						labelY, labelColor, false);
-				graphics.text(font, label, centerX + outer + LABEL_GAP,
+				graphics.text(font, styledLabel, centerX + outer + LABEL_GAP,
 						labelY, labelColor, false);
 			}
 
