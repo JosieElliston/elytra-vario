@@ -304,30 +304,30 @@ public final class VarioConfig {
 	 * bug lands on the horizon in a steady glide and on the labels near ±20, and clearing the
 	 * labels entirely puts it so far outboard that it stops reading as part of the ladder.
 	 *
-	 * <p>{@code ladderBugGap} is the clearance between the wedge's base and the inner end of
-	 * the rungs; {@code ladderBugLength} is how far it tapers inwards from there, and
-	 * {@code ladderBugRise} its half-height at the base. The apex points inwards, so the pair
-	 * closes on the marked pitch like a caliper, and frames the crosshair when the pitch
-	 * being flown is already the best one.
+	 * <p>Each marker has its own inset from the ladder, horizontal length and vertical pixels
+	 * per one-pixel step. The geometry is deliberately expressed in pixels rather than as a
+	 * sampled triangle: every diagonal is an exact staircase. A step of zero is the one-row
+	 * line used by fixed pitch references. Insets may differ as another way to tell overlapping
+	 * markers apart, though the factory defaults align all of their outside edges.
 	 *
 	 * <p>Magenta because the ladder is otherwise entirely gray and the chart has already
 	 * spent yellow and cyan — and because elytrasim draws the same quantity in the same
 	 * color. Alpha matches the datum rungs: it is one small mark and it has to be findable.
 	 */
-	public static int ladderBugGap = 2;
-	public static int ladderBugLength = 8;
-	public static int ladderBugRise = 2;
+	public static int optimalPitchInset = 2;
+	public static int optimalPitchLength = 2;
+	public static int optimalPitchStep = 1;
 	public static int optimalPitchColor = 0xE0FF5AE0;
 
 	/**
-	 * The other two bugs share that geometry and differ only in rise, which is the second
-	 * channel their identity is carried on.
+	 * The other two bugs use progressively taller shapes, which is the second channel their
+	 * identity is carried on.
 	 *
 	 * <p>Color alone would not be enough. All three bugs occupy one band — there is nowhere
 	 * else on the ladder for them, the center gap being the only radius no rung or label ever
 	 * reaches — so they overlap whenever the rules agree, and agreement is common. Ranking
-	 * them by height makes an overlap nest instead of merge: the apexes coincide, the taller
-	 * shoulders still show past the shorter ones, and the pile reads as a set of chevrons
+	 * them by height makes an overlap nest instead of merge: their marked rows coincide, the
+	 * taller silhouettes still show past the shorter ones, and the pile reads as a set of chevrons
 	 * rather than as one mark of uncertain color.
 	 *
 	 * <p>Which bug gets which height is a display choice tuned in flight, and it is worth being
@@ -336,12 +336,15 @@ public final class VarioConfig {
 	 * anything. The one thing about these numbers that matters structurally is that they are
 	 * distinct.
 	 *
-	 * <p><b>{@code drawBugs} must draw them in descending order of rise</b>, since that is what
-	 * makes an overlap nest rather than hide the taller bug. Changing the ranking here means
-	 * reordering the calls there; nothing checks it.
+	 * <p>The renderer sorts all bugs by computed height, tallest first, so shorter markers and
+	 * one-row references remain visible when their readings agree.
 	 */
-	public static int ladderLookaheadRise = 6;
-	public static int ladderHoldRise = 4;
+	public static int lookaheadPitchInset = 2;
+	public static int lookaheadPitchLength = 6;
+	public static int lookaheadPitchStep = 1;
+	public static int holdPitchInset = 2;
+	public static int holdPitchLength = 4;
+	public static int holdPitchStep = 1;
 
 	/**
 	 * The other two bugs' colors.
@@ -351,6 +354,17 @@ public final class VarioConfig {
 	 */
 	public static int lookaheadPitchColor = 0xE0F7A900;
 	public static int holdPitchColor = 0xE000B533;
+
+	/** Fixed pitch references use the same shape vocabulary with a zero-step line. */
+	public static int maxHorizontalSpeedPitchInset = 2;
+	public static int maxHorizontalSpeedPitchLength = 8;
+	public static int maxHorizontalSpeedPitchStep = 0;
+	public static int minimumFallSpeedPitchInset = 2;
+	public static int minimumFallSpeedPitchLength = 8;
+	public static int minimumFallSpeedPitchStep = 0;
+	public static int zeroPitchInset = 2;
+	public static int zeroPitchLength = 8;
+	public static int zeroPitchStep = 0;
 
 	/**
 	 * Per-instrument visibility, as two independent questions rather than one three-way choice:

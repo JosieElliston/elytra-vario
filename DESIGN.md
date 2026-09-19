@@ -380,12 +380,11 @@ showing the evidence.
 **They share one band and are ranked by height.** The center gap is the only radius on the
 ladder that nothing else ever draws in, so all three have to live there, and they land on the
 same rows whenever two rules agree — which is common. Colour alone would turn that into one
-mark of indeterminate hue. Ranking them by rise and drawing tallest first makes an overlap
-*nest* instead: the apexes coincide, the taller shoulders show past the shorter ones, and the
-pile reads as a set of chevrons. Which bug gets which height is a display choice tuned in
-flight and carries no claim; the one thing about it that matters structurally is that the
-heights are distinct. Nothing enforces the ordering — `drawBugs` draws in a fixed sequence that
-has to be kept in step with the rises by hand.
+mark of indeterminate hue. Each shape is an exact pixel staircase configured by its inset from
+the ladder, its horizontal length and the vertical rows per one-pixel step. Drawing them in
+descending computed height makes an overlap *nest*: shorter marks remain visible on top, and
+one-row references are necessarily last. Which bug gets which shape is a display choice tuned
+in flight and carries no claim.
 
 **No bug pegs; each leaves the ladder.** The original behaviour was to hold a bug at the edge
 of the band and turn it gray, which reads as a direction to keep going in. That reading is
@@ -1160,9 +1159,10 @@ of the problem; a display that guessed at it would be inventing the answer rathe
 the evidence.
 
 They share one band of the ladder, since the center gap is the only place on it any of them
-can go, so they overlap whenever two rules agree. They are ranked by height as well as colour
-and drawn tallest first, so a pile nests into chevrons instead of merging into one mark of
-uncertain colour. Which bug gets which height is tuned by eye and means nothing in itself.
+can go, so they overlap whenever two rules agree. Each has its own inset, horizontal length and
+integer pixel step. Their odd heights follow from that geometry, and the renderer sorts them
+tallest first, so shorter markers and one-row references remain visible on top. The different
+shapes are tuned by eye and mean nothing in themselves.
 
 **When an answer is further out than the band reaches, the bug leaves the ladder.** All three
 do this, and the flight path marker with them. It matters most for the two rules: each governs

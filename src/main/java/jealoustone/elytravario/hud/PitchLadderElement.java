@@ -1,5 +1,8 @@
 package jealoustone.elytravario.hud;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jealoustone.elytravario.VarioConfig;
 import jealoustone.elytravario.VarioInstrument;
 import jealoustone.elytravario.flight.FlightRecorder;
@@ -71,10 +74,9 @@ import org.joml.Vector3fc;
  * is drawn against the crosshair on both axes rather than as a fourth mark in this band.
  *
  * <p>They share one band, since the center gap is the only place any of them can go, and are
- * told apart by color and by height, so that a pile of agreeing bugs nests into chevrons
- * rather than merging into one mark. Which bug gets which height is a display choice tuned in
- * flight and carries no claim; what the code depends on is only that the heights are distinct
- * and that {@code drawBugs} draws them tallest first.
+ * told apart by color and by configurable pixel geometry, so that a pile of agreeing bugs
+ * nests into chevrons rather than merging into one mark. Their exact staircases are drawn
+ * tallest first, leaving every shorter marker visible on top.
  *
  * <p>Nothing here tells you which rule the phase you are in calls for. That switch is the
  * open part of the problem, and a display that guessed at it would be inventing the answer
@@ -114,6 +116,8 @@ import org.joml.Vector3fc;
  * cursor also measures.
  */
 public final class PitchLadderElement implements HudElement {
+	private record PitchMarker(float pitch, LadderMarkerShape shape, int color) { }
+
 	/** Constant-pitch landmarks from the exact 26.2 steady-state flight model. */
 	private static final float MAX_HORIZONTAL_SPEED_PITCH = 53.366F;
 	private static final float MINIMUM_FALL_SPEED_PITCH = -13.233F;
@@ -200,14 +204,13 @@ public final class PitchLadderElement implements HudElement {
 	}
 
 	/**
-	 * The three bugs, drawn tallest first.
+	 * The pitch markers, sorted tallest first so shorter shapes remain visible on top.
 	 *
 	 * <p>The order is the whole trick to keeping them separable. They occupy one band and
-	 * their apexes land on the same row whenever the rules agree, so a taller wedge drawn
-	 * first keeps its shoulders visible past every shorter one painted over it, and a pile of
-	 * agreeing bugs reads as nested chevrons instead of as one mark of indeterminate color.
-	 * Reversing it would bury the taller bugs under the shorter ones exactly when they agree,
-	 * which is when the pile is worth reading as a pile.
+	 * their points land on the same row whenever the rules agree. A taller wedge drawn first
+	 * keeps its shoulders visible past every shorter one painted over it, and a pile of agreeing
+	 * bugs reads as nested chevrons instead of as one mark of indeterminate color. One-row fixed
+	 * references naturally sort last.
 	 *
 	 * <p>Each is skipped when its rule has nothing to say. The two energy searches return null
 	 * whenever the player is not gliding, and the hold returns {@code NaN} both there and at
@@ -216,58 +219,66 @@ public final class PitchLadderElement implements HudElement {
 	 */
 	private void drawBugs(GuiGraphics graphics, float cameraPitch,
 			int centerX, int centerY, double scale, int bandUp, int bandDown) {
-		// In descending order of rise, which is what makes an overlap nest. Retuning the rises
-		// in VarioConfig means reordering these calls to match; nothing checks it.
+		List<PitchMarker> markers = new ArrayList<>();
+
 		if (VarioConfig.showLookaheadPitch) {
 			OptimalPitch lookahead = recorder.optimalPitch(VarioConfig.lookaheadTicks);
 
 			if (lookahead != null) {
-				drawBug(graphics, cameraPitch, lookahead.pitch(), VarioConfig.ladderLookaheadRise,
-						VarioConfig.lookaheadPitchColor,
-						centerX, centerY, scale, bandUp, bandDown);
+				markers.add(new PitchMarker(lookahead.pitch(), new LadderMarkerShape(
+						VarioConfig.lookaheadPitchInset, VarioConfig.lookaheadPitchLength,
+						VarioConfig.lookaheadPitchStep), VarioConfig.lookaheadPitchColor));
 			}
 		}
 
 		if (VarioConfig.showHoldPitch) {
-			drawBug(graphics, cameraPitch, recorder.flightPathHold(),
-					VarioConfig.ladderHoldRise, VarioConfig.holdPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
+			markers.add(new PitchMarker(recorder.flightPathHold(), new LadderMarkerShape(
+					VarioConfig.holdPitchInset, VarioConfig.holdPitchLength,
+					VarioConfig.holdPitchStep), VarioConfig.holdPitchColor));
 		}
 
 		if (VarioConfig.showOptimalPitch) {
 			OptimalPitch optimal = recorder.optimalPitch();
 
 			if (optimal != null) {
-				drawBug(graphics, cameraPitch, optimal.pitch(), VarioConfig.ladderBugRise,
-						VarioConfig.optimalPitchColor,
-						centerX, centerY, scale, bandUp, bandDown);
+				markers.add(new PitchMarker(optimal.pitch(), new LadderMarkerShape(
+						VarioConfig.optimalPitchInset, VarioConfig.optimalPitchLength,
+						VarioConfig.optimalPitchStep), VarioConfig.optimalPitchColor));
 			}
 		}
 
-		// Fixed scale references go down last. Their zero rise makes each a single row, so
-		// drawing them after every wedge keeps the little markers visible when readings agree.
 		if (VarioConfig.showMaxHorizontalSpeedPitch) {
-			drawBug(graphics, cameraPitch, MAX_HORIZONTAL_SPEED_PITCH, 0,
-					VarioConfig.maxHorizontalSpeedPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
+			markers.add(new PitchMarker(MAX_HORIZONTAL_SPEED_PITCH, new LadderMarkerShape(
+					VarioConfig.maxHorizontalSpeedPitchInset,
+					VarioConfig.maxHorizontalSpeedPitchLength,
+					VarioConfig.maxHorizontalSpeedPitchStep),
+					VarioConfig.maxHorizontalSpeedPitchColor));
 		}
 
 		if (VarioConfig.showMinimumFallSpeedPitch) {
-			drawBug(graphics, cameraPitch, MINIMUM_FALL_SPEED_PITCH, 0,
-					VarioConfig.minimumFallSpeedPitchColor,
-					centerX, centerY, scale, bandUp, bandDown);
+			markers.add(new PitchMarker(MINIMUM_FALL_SPEED_PITCH, new LadderMarkerShape(
+					VarioConfig.minimumFallSpeedPitchInset,
+					VarioConfig.minimumFallSpeedPitchLength,
+					VarioConfig.minimumFallSpeedPitchStep),
+					VarioConfig.minimumFallSpeedPitchColor));
 		}
 
 		if (VarioConfig.showZeroPitch) {
-			drawBug(graphics, cameraPitch, ZERO_PITCH, 0, VarioConfig.zeroPitchColor,
+			markers.add(new PitchMarker(ZERO_PITCH, new LadderMarkerShape(
+					VarioConfig.zeroPitchInset, VarioConfig.zeroPitchLength,
+					VarioConfig.zeroPitchStep), VarioConfig.zeroPitchColor));
+		}
+
+		markers.sort((left, right) -> Integer.compare(right.shape().height(), left.shape().height()));
+		for (PitchMarker marker : markers) {
+			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), marker.color(),
 					centerX, centerY, scale, bandUp, bandDown);
 		}
 	}
 
 	/**
-	 * One bug: a mirrored pair of wedges marking a pitch, {@code rise} pixels tall at the
-	 * base and tapering to an apex on the row that is the reading. A rise of zero is a single
-	 * row rather than a wedge.
+	 * One bug: a mirrored pair of exact pixel staircases pointing at a pitch. A shape whose
+	 * step is zero is a single row rather than a wedge.
 	 *
 	 * <p>It is placed by the same projection as the rungs, so it lies against the world like
 	 * they do, and while it is on the ladder it carries the same edge fade they do and
@@ -277,8 +288,8 @@ public final class PitchLadderElement implements HudElement {
 	 * a long way to go.
 	 *
 	 * <p>The wedges live inside the center gap and point inwards, which is the only radius
-	 * that never meets a rung or a label; see {@code VarioConfig.ladderBugGap}. Drawn as a
-	 * stack of rows rather than as a polygon, since the HUD's primitives are rectangles.
+	 * that never meets a rung or a label. They are drawn as a stack of rows rather than as a
+	 * polygon, since the HUD's primitives are rectangles and the staircase itself is deliberate.
 	 *
 	 * <p>A {@code NaN} pitch draws nothing. That is a real answer from the hold rather than a
 	 * defensive check — it is how it says the state it is describing has no such pitch — so it
@@ -299,7 +310,7 @@ public final class PitchLadderElement implements HudElement {
 	 * rule.
 	 */
 	private void drawBug(GuiGraphics graphics, float cameraPitch, float pitch,
-			int riseSetting, int bugColor, int centerX, int centerY, double scale,
+			LadderMarkerShape shape, int bugColor, int centerX, int centerY, double scale,
 			int bandUp, int bandDown) {
 		if (Float.isNaN(pitch)) {
 			return;
@@ -327,27 +338,20 @@ public final class PitchLadderElement implements HudElement {
 			return;
 		}
 
-		int base = Math.max(1, VarioConfig.ladderCenterGap - VarioConfig.ladderBugGap);
-		int apex = Math.max(0, base - VarioConfig.ladderBugLength);
-		int rise = Math.max(0, riseSetting);
+		int outside = VarioConfig.ladderCenterGap - shape.inset();
+		if (outside < shape.length()) return;
 		int color = fade(bugColor, edge);
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
 		int y = subpixel(pose, centerY - offset);
 
-		for (int row = -rise; row <= rise; row++) {
-			// The taper: the wedge's inner edge retreats towards the base as the row moves
-			// away from the marked pitch, leaving the apex on the row that is the reading.
-			int inner = rise == 0 ? apex
-					: apex + (int) Math.round((base - apex) * (double) Math.abs(row) / rise);
-
-			if (inner >= base) {
-				continue;
-			}
-
-			graphics.fill(centerX - base, y + row, centerX - inner, y + row + 1, color);
-			graphics.fill(centerX + inner, y + row, centerX + base, y + row + 1, color);
+		int radius = shape.height() / 2;
+		for (int row = -radius; row <= radius; row++) {
+			int width = shape.widthAt(row);
+			int inside = outside - width;
+			graphics.fill(centerX - outside, y + row, centerX - inside, y + row + 1, color);
+			graphics.fill(centerX + inside, y + row, centerX + outside, y + row + 1, color);
 		}
 
 		pose.popMatrix();

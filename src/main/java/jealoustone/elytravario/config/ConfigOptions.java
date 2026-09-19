@@ -13,6 +13,8 @@ import jealoustone.elytravario.hud.StatsPanel;
 /** One schema for screen controls, disk validation, defaults, and runtime application. */
 public final class ConfigOptions {
 	private static final List<Option> OPTIONS = new ArrayList<>();
+	private static final List<String> MARKER_PREFIXES = List.of("lookaheadPitch", "holdPitch",
+			"optimalPitch", "maxHorizontalSpeedPitch", "minimumFallSpeedPitch", "zeroPitch");
 	// Which options sit above a page's subpage selector rather than in its list is the screen's
 	// question, and VarioInstrument already names them, so nothing here has to.
 
@@ -93,22 +95,28 @@ public final class ConfigOptions {
 
 		add("showLookaheadPitch", 2, "lookahead", 0, 1, 1, 0, false, false);
 		add("lookaheadPitchColor", 2, "lookahead", 0, 1, 1, 0, true, false);
+		addMarkerShape("lookaheadPitch", "lookahead");
 		add("lookaheadTicks", 2, "lookahead", 1, 60, 1, 0, false, true);
 
 		add("showHoldPitch", 2, "hold", 0, 1, 1, 0, false, false);
 		add("holdPitchColor", 2, "hold", 0, 1, 1, 0, true, false);
+		addMarkerShape("holdPitch", "hold");
 
 		add("showOptimalPitch", 2, "optimal", 0, 1, 1, 0, false, false);
 		add("optimalPitchColor", 2, "optimal", 0, 1, 1, 0, true, false);
+		addMarkerShape("optimalPitch", "optimal");
 
 		add("showMaxHorizontalSpeedPitch", 2, "maxHorizontalSpeed", 0, 1, 1, 0, false, false);
 		add("maxHorizontalSpeedPitchColor", 2, "maxHorizontalSpeed", 0, 1, 1, 0, true, false);
+		addMarkerShape("maxHorizontalSpeedPitch", "maxHorizontalSpeed");
 
 		add("showMinimumFallSpeedPitch", 2, "minimumFallSpeed", 0, 1, 1, 0, false, false);
 		add("minimumFallSpeedPitchColor", 2, "minimumFallSpeed", 0, 1, 1, 0, true, false);
+		addMarkerShape("minimumFallSpeedPitch", "minimumFallSpeed");
 
 		add("showZeroPitch", 2, "zero", 0, 1, 1, 0, false, false);
 		add("zeroPitchColor", 2, "zero", 0, 1, 1, 0, true, false);
+		addMarkerShape("zeroPitch", "zero");
 
 		add("showFlightPath", 2, "flightPath", 0, 1, 1, 0, false, false);
 		add("flightPathColor", 2, "flightPath", 0, 1, 1, 0, true, false);
@@ -224,6 +232,12 @@ public final class ConfigOptions {
 		add(key, page, null, min, max, factor, choices, color, advanced);
 	}
 
+	private static void addMarkerShape(String prefix, String group) {
+		add(prefix + "Inset", 2, group, 0, 100, 1, 0, false, false);
+		add(prefix + "Length", 2, group, 1, 100, 1, 0, false, false);
+		add(prefix + "Step", 2, group, 0, 8, 1, 0, false, false);
+	}
+
 	private static void add(String key, int page, String group, double min, double max, double factor,
 			int choices, boolean color, boolean advanced) {
 		try {
@@ -271,6 +285,12 @@ public final class ConfigOptions {
 		if (x < 0.05 - 1e-9 || y < 0.05 - 1e-9) return "range";
 		double scale = number(parsed, "chartSize") / x;
 		if (Math.round(y * scale) < 2 || Math.round(y * scale) > 512) return "size";
+		int centerGap = (Integer) parsed.get("ladderCenterGap");
+		for (String prefix : MARKER_PREFIXES) {
+			int inset = (Integer) parsed.get(prefix + "Inset");
+			int length = (Integer) parsed.get(prefix + "Length");
+			if (inset + length > centerGap) return "markerSize";
+		}
 		return null;
 	}
 
