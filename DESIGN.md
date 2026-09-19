@@ -593,7 +593,7 @@ ladder markers: those are seven settings behind one switch on one page, and the 
 as one overlay, so seven more binds would buy nothing that switching the whole set off does not.
 Unbound by default because seven keys is a lot to take off a keyboard that already has `V` on it
 for an action most flights never need, and because the settings screen puts the binding control
-directly beneath the pair of switches it flips, so anyone who wants one finds it there.
+directly above the pair of switches it flips, so anyone who wants one finds it there.
 
 **Visibility was one three-way choice and is now two switches**, which is what makes the keys
 work. Always / only while gliding / hidden puts *off* in the same setting as *when*, so a key
@@ -638,17 +638,20 @@ not.
 
 Ten modules carry a position: the velocity graph, the seven flight stats panels, and the two
 speedometers. Each is an absolute top-left in scaled GUI pixels, clamped so that it stays on
-screen, and each can be set from its own page — or, for the stats panels, its own subpage — as a
+screen, and each can be set from its own page — or, for the stats panels, its own section — as a
 pair of numbers, or moved in the world with the settings screen open. Clicking a module opens
 its settings; dragging its middle moves it; dragging a corner resizes it; the arrow keys move
 the selected module a pixel at a time.
 
-**A page may carry more than one module, and then its subpage selector chooses between them.**
-Flight Stats is the case: one subpage per panel, so the selection the arrow keys and the quiet
-outline follow is whichever panel's settings are on screen, and clicking a panel in the world
-moves the dropdown to it. A page carrying one module leaves its group unset and keeps that
-module selected whatever subpage is showing, which is what the speedometers want — their
-subpages are one bar or needle each, not one module each.
+**A page may carry more than one module, and then the selected section chooses between them.**
+Flight Stats is the case: one section per panel, so the module the arrow keys and the quiet
+outline follow is the one whose section this page last had selected, and clicking a panel in
+the world selects its section, which is also what sends the Settings button to its page. A page
+carrying one module leaves its group unset and keeps that module selected whatever section is
+selected, which is what the speedometers want — their extra sections are one bar or needle
+each, not one module each. A section naming no module at all — every page's *General*, and most
+of the rest — selects the page's first, since the editor is reached from those as often as from
+a module's own section.
 
 **Corners resize, edges do not.** Three of these modules are a single size setting — the
 graph's width, the bar speedometer's plot height, the dial's radius — so there is no such thing
@@ -834,16 +837,26 @@ Needs JDK 25.
 Open Mod Menu's configuration button for Elytra Vario. Seven pages separate Global, Pitch Ladder,
 Ladder Markers, Velocity Graph, Flight Stats, Bar Speedometer, and Dial Speedometer. Global holds the
 HUD master switch; each instrument’s
-visibility control stays on its own page, and a page may divide into subpages under a selector —
-one per marker on Ladder Markers, one per bar or needle on the speedometers, one per panel on
-Flight Stats. Ladder-marker names identify the displayed quantities;
+visibility control stays on its own page. Ladder-marker names identify the displayed quantities;
 tooltips define their calculations and describe possible uses. Edits take effect in the HUD as
 you make them and save themselves to `config/elytra-vario.json`, so there is nothing to confirm
 on the way out: Close and Escape simply close. A half-typed number is held back from both the
 HUD and the file until it reads as a number, with the reason shown under the Close button. In game, a
-right-side settings panel leaves the HUD visible without blur. Each page has a reset, and less
-common controls are under Advanced. The screen reopens on the page, subpage and scroll position
-you left, with the Advanced switch as you left it, for the rest of the session.
+right-side settings panel leaves the HUD visible without blur. Each page has a reset. Reopening
+the settings from the layout editor returns to the page the selected module is on; every other
+way in opens on Global.
+
+**Every page is divided into collapsible sections, and the first of them is the same four rows
+everywhere**: the HUD layout button, the key that toggles what the page configures, the switch
+that toggles the same thing, and its only-while-gliding companion. A page's own switch is the
+control most visits are for, so it is never somewhere a reader has to look for it, and the
+pages with the most settings — Pitch Ladder, Velocity Graph — are the ones that would otherwise
+open as an undifferentiated wall. What follows differs by page: *Band*, *Rungs and labels* and
+*Fine ticks* on Pitch Ladder; *Axes*, *Velocity trail*, *Energy heatmap* and a section per
+cursor on Velocity Graph; one per marker on Ladder Markers, one per panel on Flight Stats, and
+one per bar or needle followed by *Scale*, *Overlays* and *Panel* on the speedometers. The
+sections a page is cut into are declared in `ConfigOptions` beside the settings themselves, so
+that the screen, the layout editor and the written config file all read in one order.
 
 The release introducing per-marker pixel geometry deliberately adopts its complete new marker
 appearance instead of carrying forward the old saved colors. Once that migration has happened,
@@ -866,7 +879,7 @@ remain.
 **One panel per kind of reading, not one panel for all of them.** Flight Stats is seven boxes —
 *Other* (pitch, glide), *Speed*, *Acceleration*, *Energy*, and the three e-bounce matrices
 (*velocity*, *position delta*, *elapsed ticks*) — each placed, sized and switched on its own,
-each a module of the position editor, each a subpage of the Flight Stats page.
+each a module of the position editor, each a section of the Flight Stats page.
 
 The reason is the width. A row wants the width its widest label and figure need, and one panel
 had to give every row the same one, so the panel was as wide as its widest row and every

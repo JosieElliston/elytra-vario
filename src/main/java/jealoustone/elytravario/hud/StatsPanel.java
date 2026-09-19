@@ -23,7 +23,7 @@ import jealoustone.elytravario.VarioInstrument;
  * available between any two of them and in either direction. See
  * {@link jealoustone.elytravario.config.ModulePositionEditor}.
  *
- * <p>Each panel's settings are one subpage of the Flight Stats page, named by {@link #group()},
+ * <p>Each panel's settings are one section of the Flight Stats page, named by {@link #group()},
  * and every one of them is this panel's prefix plus a suffix. Only the master switch, its
  * gliding-only companion and the positive and negative colors remain shared: the switch is what
  * the toggle key binds to, and the colors are a palette rather than a layout.
@@ -190,7 +190,7 @@ public enum StatsPanel {
 		this.rowKeys = List.of(rowKeys);
 	}
 
-	/** The subpage this panel's settings live on, which is also the prefix they all share. */
+	/** The settings section this panel's rows live in, also the prefix they all share. */
 	public String group() { return prefix; }
 
 	public String showKey() { return "showStats" + suffix(); }

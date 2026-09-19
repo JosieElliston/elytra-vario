@@ -15,8 +15,8 @@ public final class ConfigOptions {
 	private static final List<Option> OPTIONS = new ArrayList<>();
 	private static final List<String> MARKER_PREFIXES = List.of("holdPitch", "optimalPitch",
 			"lookaheadPitch", "minimumFallSpeedPitch", "zeroPitch", "maxHorizontalSpeedPitch");
-	// Which options sit above a page's subpage selector rather than in its list is the screen's
-	// question, and VarioInstrument already names them, so nothing here has to.
+	// Which page a setting is on, and which section of it, are both answered here, so that the
+	// settings screen, the layout editor and the config file all read the same order.
 
 	public record Option(Field field, int page, String group, double min, double max, double factor,
 			int choices, boolean color, boolean advanced, String defaultValue) {
@@ -66,35 +66,49 @@ public final class ConfigOptions {
 	}
 
 	static {
-		add("enabled", 0, 0, 1, 1, 0, false, false);
-		add("hudGlidingOnly", 0, 0, 1, 1, 0, false, false);
-		add("positionMargin", 0, 0, 64, 1, 0, false, false);
-		add("positionSnapDistance", 0, 0, 64, 1, 0, false, false);
+		// Every setting names the section it is drawn in, and the screen draws a page's
+		// sections in the order their first setting is declared here. "general" leads every
+		// page: the layout button, the toggle key, the instrument's switch and its
+		// gliding-only companion, in that order on all seven pages. The screen adds the first
+		// two itself — neither is a setting of this mod's own file — so a page's general
+		// section starts here at the switch.
+		add("enabled", 0, "general", 0, 1, 1, 0, false, false);
+		add("hudGlidingOnly", 0, "general", 0, 1, 1, 0, false, false);
+		add("positionMargin", 0, "layoutEditor", 0, 64, 1, 0, false, false);
+		add("positionSnapDistance", 0, "layoutEditor", 0, 64, 1, 0, false, false);
 
-		add("showLadder", 1, 0, 1, 1, 0, false, false);
-		add("ladderGlidingOnly", 1, 0, 1, 1, 0, false, false);
-		add("ladderOpacity", 1, 0, 100, 100, 0, false, false);
-		add("ladderCenterGap", 1, 12, 100, 1, 0, false, false);
-		add("ladderBandFractionUp", 1, 5, 100, 100, 0, false, false);
-		add("ladderBandFractionDown", 1, 5, 100, 100, 0, false, false);
-		add("showLadderLabels", 1, 0, 1, 1, 0, false, false);
-		add("showFineTicks", 1, 0, 1, 1, 0, false, false);
-		add("ladderFineLength", 1, 1, 60, 1, 0, false, true);
-		add("ladderMinorLength", 1, 1, 100, 1, 0, false, true);
-		add("ladderMajorLength", 1, 1, 150, 1, 0, false, true);
-		add("ladderPrimeLength", 1, 1, 200, 1, 0, false, true);
-		add("ladderHorizonExtra", 1, 0, 100, 1, 0, false, true);
-		add("ladderFineStepDegrees", 1, 1, 10, 1, 0, false, true);
-		add("ladderFineRangeDegrees", 1, 1, 30, 1, 0, false, true);
-		add("ladderFadeFraction", 1, 0, 50, 100, 0, false, true);
+		add("showLadder", 1, "general", 0, 1, 1, 0, false, false);
+		add("ladderGlidingOnly", 1, "general", 0, 1, 1, 0, false, false);
 
-		// The on/off switch heads the page; the rest is one subpage per marker, in the
-		// order of the subpage dropdown and of the rows within each subpage.
-		add("showLadderMarkers", 2, 0, 1, 1, 0, false, false);
-		add("ladderMarkersGlidingOnly", 2, 0, 1, 1, 0, false, false);
-		add("showDynamicMarkerShadows", 2, 0, 1, 1, 0, false, false);
-		add("showStaticMarkerShadows", 2, 0, 1, 1, 0, false, false);
+		// The band is where the ladder reaches to, and the ladder markers are drawn in the
+		// same one, so these four are the settings the Ladder Markers page shares — which is
+		// why they stay available while either page's switch is on.
+		add("ladderCenterGap", 1, "ladderBand", 12, 100, 1, 0, false, false);
+		add("ladderBandFractionUp", 1, "ladderBand", 5, 100, 100, 0, false, false);
+		add("ladderBandFractionDown", 1, "ladderBand", 5, 100, 100, 0, false, false);
+		add("ladderFadeFraction", 1, "ladderBand", 0, 50, 100, 0, false, true);
 
+		add("ladderOpacity", 1, "ladderRungs", 0, 100, 100, 0, false, false);
+		add("showLadderLabels", 1, "ladderRungs", 0, 1, 1, 0, false, false);
+		add("ladderMinorLength", 1, "ladderRungs", 1, 100, 1, 0, false, true);
+		add("ladderMajorLength", 1, "ladderRungs", 1, 150, 1, 0, false, true);
+		add("ladderPrimeLength", 1, "ladderRungs", 1, 200, 1, 0, false, true);
+		add("ladderHorizonExtra", 1, "ladderRungs", 0, 100, 1, 0, false, true);
+
+		add("showFineTicks", 1, "ladderFineTicks", 0, 1, 1, 0, false, false);
+		add("ladderFineLength", 1, "ladderFineTicks", 1, 60, 1, 0, false, true);
+		add("ladderFineStepDegrees", 1, "ladderFineTicks", 1, 10, 1, 0, false, true);
+		add("ladderFineRangeDegrees", 1, "ladderFineTicks", 1, 30, 1, 0, false, true);
+
+		add("showLadderMarkers", 2, "general", 0, 1, 1, 0, false, false);
+		add("ladderMarkersGlidingOnly", 2, "general", 0, 1, 1, 0, false, false);
+
+		// Both shadow switches cut across the markers rather than belonging to one, so they
+		// are a section of their own above the per-marker ones.
+		add("showDynamicMarkerShadows", 2, "markerShadows", 0, 1, 1, 0, false, false);
+		add("showStaticMarkerShadows", 2, "markerShadows", 0, 1, 1, 0, false, false);
+
+		// One section per marker, in the order they are drawn in and of the rows within each.
 		add("showFlightPath", 2, "flightPath", 0, 1, 1, 0, false, false);
 		add("flightPathColor", 2, "flightPath", 0, 1, 1, 0, true, false);
 
@@ -123,40 +137,50 @@ public final class ConfigOptions {
 		add("maxHorizontalSpeedPitchColor", 2, "maxHorizontalSpeed", 0, 1, 1, 0, true, false);
 		addMarkerShape("maxHorizontalSpeedPitch", "maxHorizontalSpeed");
 
-		add("showChart", 3, 0, 1, 1, 0, false, false);
-		add("chartGlidingOnly", 3, 0, 1, 1, 0, false, false);
-		add("chartX", 3, -4096, 4096, 1, 0, false, false);
-		add("chartY", 3, -4096, 4096, 1, 0, false, false);
-		add("chartSize", 3, 2, 512, 1, 0, false, false);
-		add("chartMinVxz", 3, -200, 200, 20, 0, false, false);
-		add("chartMaxVxz", 3, -200, 200, 20, 0, false, false);
-		add("chartMinVy", 3, -200, 200, 20, 0, false, false);
-		add("chartMaxVy", 3, -200, 200, 20, 0, false, false);
-		add("showGrid", 3, 0, 1, 1, 0, false, false);
-		add("showAxisLabels", 3, 0, 1, 1, 0, false, false);
-		add("showTrail", 3, 0, 1, 1, 0, false, false);
-		add("chartTrailTicks", 3, 0.05, 10, 0.05, 0, false, false);
-		add("trailColor", 3, 0, 1, 1, 0, true, false);
-		add("showEnergyField", 3, 0, 1, 1, 0, false, false);
-		add("chartFieldZeroColor", 3, 0, 1, 1, 0, true, false);
-		add("chartFieldGainColor", 3, 0, 1, 1, 0, true, false);
-		add("chartFieldLossColor", 3, 0, 1, 1, 0, true, false);
-		add("showHorizontalCursor", 3, 0, 1, 1, 0, false, false);
-		add("cursorXzColor", 3, 0, 1, 1, 0, true, false);
-		add("showHorizontalAccelerationArrow", 3, 0, 1, 1, 0, false, false);
-		add("horizontalAccelerationArrowColor", 3, 0, 1, 1, 0, true, false);
-		add("showForwardCursor", 3, 0, 1, 1, 0, false, false);
-		add("cursorForwardColor", 3, 0, 1, 1, 0, true, false);
-		add("showForwardAccelerationArrow", 3, 0, 1, 1, 0, false, false);
-		add("forwardAccelerationArrowColor", 3, 0, 1, 1, 0, true, false);
-		add("chartFieldScale", 3, 0.001, 10, 1, 0, false, true);
+		// Position and size are the layout editor's, so they never reach the settings list;
+		// they are declared in the general section because that is where its button is.
+		add("showChart", 3, "general", 0, 1, 1, 0, false, false);
+		add("chartGlidingOnly", 3, "general", 0, 1, 1, 0, false, false);
+		add("chartX", 3, "general", -4096, 4096, 1, 0, false, false);
+		add("chartY", 3, "general", -4096, 4096, 1, 0, false, false);
+		add("chartSize", 3, "general", 2, 512, 1, 0, false, false);
 
-		// The instrument's own switch, its gliding-only companion and the palette are the whole
-		// page's; everything else belongs to one panel and follows the subpage selector.
-		add("showStats", 4, 0, 1, 1, 0, false, false);
-		add("statsGlidingOnly", 4, 0, 1, 1, 0, false, false);
-		add("positiveColor", 4, 0, 1, 1, 0, true, false);
-		add("negativeColor", 4, 0, 1, 1, 0, true, false);
+		add("chartMinVxz", 3, "chartAxes", -200, 200, 20, 0, false, false);
+		add("chartMaxVxz", 3, "chartAxes", -200, 200, 20, 0, false, false);
+		add("chartMinVy", 3, "chartAxes", -200, 200, 20, 0, false, false);
+		add("chartMaxVy", 3, "chartAxes", -200, 200, 20, 0, false, false);
+		add("showGrid", 3, "chartAxes", 0, 1, 1, 0, false, false);
+		add("showAxisLabels", 3, "chartAxes", 0, 1, 1, 0, false, false);
+
+		add("showTrail", 3, "chartTrail", 0, 1, 1, 0, false, false);
+		add("chartTrailTicks", 3, "chartTrail", 0.05, 10, 0.05, 0, false, false);
+		add("trailColor", 3, "chartTrail", 0, 1, 1, 0, true, false);
+
+		add("showEnergyField", 3, "chartEnergyField", 0, 1, 1, 0, false, false);
+		add("chartFieldZeroColor", 3, "chartEnergyField", 0, 1, 1, 0, true, false);
+		add("chartFieldGainColor", 3, "chartEnergyField", 0, 1, 1, 0, true, false);
+		add("chartFieldLossColor", 3, "chartEnergyField", 0, 1, 1, 0, true, false);
+		add("chartFieldScale", 3, "chartEnergyField", 0.001, 10, 1, 0, false, true);
+
+		// A cursor and the arrow projecting it forward are one reading in two parts, so each
+		// cursor takes a section rather than the cursors and the arrows taking one each.
+		add("showHorizontalCursor", 3, "chartHorizontalCursor", 0, 1, 1, 0, false, false);
+		add("cursorXzColor", 3, "chartHorizontalCursor", 0, 1, 1, 0, true, false);
+		add("showHorizontalAccelerationArrow", 3, "chartHorizontalCursor", 0, 1, 1, 0, false, false);
+		add("horizontalAccelerationArrowColor", 3, "chartHorizontalCursor", 0, 1, 1, 0, true, false);
+
+		add("showForwardCursor", 3, "chartForwardCursor", 0, 1, 1, 0, false, false);
+		add("cursorForwardColor", 3, "chartForwardCursor", 0, 1, 1, 0, true, false);
+		add("showForwardAccelerationArrow", 3, "chartForwardCursor", 0, 1, 1, 0, false, false);
+		add("forwardAccelerationArrowColor", 3, "chartForwardCursor", 0, 1, 1, 0, true, false);
+
+		add("showStats", 4, "general", 0, 1, 1, 0, false, false);
+		add("statsGlidingOnly", 4, "general", 0, 1, 1, 0, false, false);
+
+		// The sign colors are a palette for every panel rather than a layout, so they sit
+		// above the panels instead of inside one.
+		add("positiveColor", 4, "statsColors", 0, 1, 1, 0, true, false);
+		add("negativeColor", 4, "statsColors", 0, 1, 1, 0, true, false);
 
 		for (StatsPanel panel : StatsPanel.values()) {
 			String group = panel.group();
@@ -182,35 +206,38 @@ public final class ConfigOptions {
 			}
 		}
 
-		add("showBarSpeedo", 5, 0, 1, 1, 0, false, false);
-		add("barSpeedoGlidingOnly", 5, 0, 1, 1, 0, false, false);
-		add("barSpeedoX", 5, -4096, 4096, 1, 0, false, false);
-		add("barSpeedoY", 5, -4096, 4096, 1, 0, false, false);
-		add("barSpeedoHeight", 5, 12, 200, 1, 0, false, false);
-		add("barSpeedoMaxSpeed", 5, 1, 400, 20, 0, false, false);
+		add("showBarSpeedo", 5, "general", 0, 1, 1, 0, false, false);
+		add("barSpeedoGlidingOnly", 5, "general", 0, 1, 1, 0, false, false);
+		add("barSpeedoX", 5, "general", -4096, 4096, 1, 0, false, false);
+		add("barSpeedoY", 5, "general", -4096, 4096, 1, 0, false, false);
+		add("barSpeedoHeight", 5, "general", 12, 200, 1, 0, false, false);
 
-		// Keep the chart settings on every subpage, then give each bar its own show/color pair.
+		// What is plotted comes before how it is scaled and what is drawn over it: a section
+		// per bar, then the scale the bars are read against, then the marks laid on them.
 		add("showBarSpeedoTotal", 5, "barSpeedoTotal", 0, 1, 1, 0, false, false);
 		add("barSpeedoTotalColor", 5, "barSpeedoTotal", 0, 1, 1, 0, true, false);
 		add("showBarSpeedoHorizontal", 5, "barSpeedoHorizontal", 0, 1, 1, 0, false, false);
 		add("barSpeedoHorizontalColor", 5, "barSpeedoHorizontal", 0, 1, 1, 0, true, false);
 		add("showBarSpeedoVertical", 5, "barSpeedoVertical", 0, 1, 1, 0, false, false);
 		add("barSpeedoVerticalColor", 5, "barSpeedoVertical", 0, 1, 1, 0, true, false);
-		add("showBarSpeedoAcceleration", 5, 0, 1, 1, 0, false, false);
-		add("showBarSpeedoMaxHorizontalSpeedMarkers", 5, 0, 1, 1, 0, false, false);
-		add("showBarSpeedoTerminalVelocityMarkers", 5, 0, 1, 1, 0, false, false);
-		add("showBarSpeedoLabels", 5, 0, 1, 1, 0, false, false);
-		add("showBarSpeedoBorder", 5, 0, 1, 1, 0, false, false);
-		add("barSpeedoOpacity", 5, 0, 100, 100, 0, false, false);
-		add("barSpeedoMajorStep", 5, 1, 400, 20, 0, false, true);
-		add("barSpeedoPeggedColor", 5, 0, 1, 1, 0, true, true);
 
-		add("showDialSpeedo", 6, 0, 1, 1, 0, false, false);
-		add("dialSpeedoGlidingOnly", 6, 0, 1, 1, 0, false, false);
-		add("dialSpeedoX", 6, -4096, 4096, 1, 0, false, false);
-		add("dialSpeedoY", 6, -4096, 4096, 1, 0, false, false);
-		add("dialSpeedoRadius", 6, 12, 200, 1, 0, false, false);
-		add("dialSpeedoMaxSpeed", 6, 1, 400, 20, 0, false, false);
+		add("barSpeedoMaxSpeed", 5, "barSpeedoScale", 1, 400, 20, 0, false, false);
+		add("showBarSpeedoLabels", 5, "barSpeedoScale", 0, 1, 1, 0, false, false);
+		add("barSpeedoMajorStep", 5, "barSpeedoScale", 1, 400, 20, 0, false, true);
+		add("barSpeedoPeggedColor", 5, "barSpeedoScale", 0, 1, 1, 0, true, true);
+
+		add("showBarSpeedoAcceleration", 5, "barSpeedoOverlays", 0, 1, 1, 0, false, false);
+		add("showBarSpeedoMaxHorizontalSpeedMarkers", 5, "barSpeedoOverlays", 0, 1, 1, 0, false, false);
+		add("showBarSpeedoTerminalVelocityMarkers", 5, "barSpeedoOverlays", 0, 1, 1, 0, false, false);
+
+		add("showBarSpeedoBorder", 5, "barSpeedoPanel", 0, 1, 1, 0, false, false);
+		add("barSpeedoOpacity", 5, "barSpeedoPanel", 0, 100, 100, 0, false, false);
+
+		add("showDialSpeedo", 6, "general", 0, 1, 1, 0, false, false);
+		add("dialSpeedoGlidingOnly", 6, "general", 0, 1, 1, 0, false, false);
+		add("dialSpeedoX", 6, "general", -4096, 4096, 1, 0, false, false);
+		add("dialSpeedoY", 6, "general", -4096, 4096, 1, 0, false, false);
+		add("dialSpeedoRadius", 6, "general", 12, 200, 1, 0, false, false);
 
 		add("showDialSpeedoTotal", 6, "dialSpeedoTotal", 0, 1, 1, 0, false, false);
 		add("dialSpeedoTotalColor", 6, "dialSpeedoTotal", 0, 1, 1, 0, true, false);
@@ -218,20 +245,19 @@ public final class ConfigOptions {
 		add("dialSpeedoHorizontalColor", 6, "dialSpeedoHorizontal", 0, 1, 1, 0, true, false);
 		add("showDialSpeedoVertical", 6, "dialSpeedoVertical", 0, 1, 1, 0, false, false);
 		add("dialSpeedoVerticalColor", 6, "dialSpeedoVertical", 0, 1, 1, 0, true, false);
-		add("showDialSpeedoAcceleration", 6, 0, 1, 1, 0, false, false);
-		add("showDialSpeedoMaxHorizontalSpeedMarkers", 6, 0, 1, 1, 0, false, false);
-		add("showDialSpeedoTerminalVelocityMarkers", 6, 0, 1, 1, 0, false, false);
-		add("showDialSpeedoLabels", 6, 0, 1, 1, 0, false, false);
-		add("showDialSpeedoBorder", 6, 0, 1, 1, 0, false, false);
-		add("dialSpeedoBackgroundOpacity", 6, 0, 100, 100, 0, false, false);
-		add("dialSpeedoMajorStep", 6, 1, 400, 20, 0, false, true);
-		add("dialSpeedoMinorStep", 6, 1, 400, 20, 0, false, true);
-		add("dialSpeedoPeggedColor", 6, 0, 1, 1, 0, true, true);
-	}
 
-	private static void add(String key, int page, double min, double max, double factor,
-			int choices, boolean color, boolean advanced) {
-		add(key, page, null, min, max, factor, choices, color, advanced);
+		add("dialSpeedoMaxSpeed", 6, "dialSpeedoScale", 1, 400, 20, 0, false, false);
+		add("showDialSpeedoLabels", 6, "dialSpeedoScale", 0, 1, 1, 0, false, false);
+		add("dialSpeedoMajorStep", 6, "dialSpeedoScale", 1, 400, 20, 0, false, true);
+		add("dialSpeedoMinorStep", 6, "dialSpeedoScale", 1, 400, 20, 0, false, true);
+		add("dialSpeedoPeggedColor", 6, "dialSpeedoScale", 0, 1, 1, 0, true, true);
+
+		add("showDialSpeedoAcceleration", 6, "dialSpeedoOverlays", 0, 1, 1, 0, false, false);
+		add("showDialSpeedoMaxHorizontalSpeedMarkers", 6, "dialSpeedoOverlays", 0, 1, 1, 0, false, false);
+		add("showDialSpeedoTerminalVelocityMarkers", 6, "dialSpeedoOverlays", 0, 1, 1, 0, false, false);
+
+		add("showDialSpeedoBorder", 6, "dialSpeedoPanel", 0, 1, 1, 0, false, false);
+		add("dialSpeedoBackgroundOpacity", 6, "dialSpeedoPanel", 0, 100, 100, 0, false, false);
 	}
 
 	private static void addMarkerShape(String prefix, String group) {
@@ -254,11 +280,17 @@ public final class ConfigOptions {
 	public static List<Option> all() { return List.copyOf(OPTIONS); }
 	public static List<String> markerPrefixes() { return MARKER_PREFIXES; }
 
-	/** The page's subpages, in declaration order; empty when the page is not divided. */
+	/**
+	 * The sections of a page that carry settings, in declaration order, the first always
+	 * {@code general}.
+	 *
+	 * <p>A section the screen fills itself — page 0's keys — is not among them, there being no
+	 * setting of this mod's own that names it.
+	 */
 	public static List<String> groups(int page) {
 		List<String> groups = new ArrayList<>();
 		for (Option option : OPTIONS) {
-			if (option.page() == page && option.group() != null && !groups.contains(option.group())) {
+			if (option.page() == page && !groups.contains(option.group())) {
 				groups.add(option.group());
 			}
 		}

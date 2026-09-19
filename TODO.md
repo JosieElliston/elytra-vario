@@ -15,7 +15,6 @@ josie's todo/notes, don't edit this, tho you should include it in commits
 - vel vs speed on the flight stats is inconsistent
 - prior to release, make the changelog more concise
 - hold vel marker but also for yaw
-- pitch ladder config needs sections
 
 ## myopic metrics
 

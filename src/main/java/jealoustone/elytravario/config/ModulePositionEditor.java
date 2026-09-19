@@ -27,16 +27,17 @@ final class ModulePositionEditor {
 		BAR_SPEEDOMETER(5, "barSpeedoX", "barSpeedoY", "barSpeedoHeight"),
 		DIAL_SPEEDOMETER(6, "dialSpeedoX", "dialSpeedoY", "dialSpeedoRadius");
 
-		/** The Flight Stats page, whose modules are its subpages. */
+		/** The Flight Stats page, whose modules are one settings section each. */
 		private static final int STATS_PAGE = 4;
 
 		final int page;
 		/**
-		 * The subpage this module's settings are on, or null where its page carries only it.
+		 * The settings section this module's settings are in, or null where its page carries
+		 * only it.
 		 *
 		 * <p>It is what lets a page hold more than one module: the screen selects the module
-		 * whose subpage is showing, so arrow-key nudges follow the dropdown, and clicking a
-		 * module in the world moves the dropdown to match.
+		 * whose section is showing, so arrow-key nudges follow the settings screen, and clicking
+		 * a module in the world scrolls the settings to match.
 		 */
 		final String group;
 		final String xKey;
