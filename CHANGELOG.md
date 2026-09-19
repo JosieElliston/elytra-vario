@@ -142,6 +142,30 @@ screen uses.
 
 ### Changed
 
+- Every settings page is now cut into collapsible sections, and every page opens on the same
+  four rows: the HUD layout button, the key that toggles what the page configures, the switch
+  that toggles it, and its only-while-gliding companion. A page's own switch is what most
+  visits are for, so it is always in the same place rather than wherever its page happened to
+  list it.
+
+  Pitch Ladder and Velocity Graph were the pages this is for, each a single undivided list.
+  Pitch Ladder now reads *Band* — the center gap, the upper and lower extents and the edge
+  fade, which are the four the ladder markers are drawn against as well — then *Rungs and
+  labels*, then *Fine ticks*. Velocity Graph reads *Axes*, *Velocity trail*, *Energy heatmap*,
+  and a section per cursor, each cursor kept with the acceleration arrow that projects it, since
+  the two are one reading in two parts.
+
+  The other pages gained the sections that were missing around what they already had. Ladder
+  Markers puts the two shadow switches in a *Shadows* section above its per-marker ones, Flight
+  Stats puts the positive and negative colors in *Value colors* above its panels, and the
+  speedometers follow their bars or needles with *Scale*, *Overlays* and *Panel* — all of which
+  previously sat in a headingless run above the very sections they belong beside, because an
+  unsectioned setting is drawn above every heading on its page whatever order it was written
+  in. Global keeps the settings key and the way through to the vanilla Controls list in *Keys*,
+  and the position editor's margin and snap distance in *Layout editor*.
+
+  Nothing was added, removed or renamed; the settings themselves and their saved names are
+  unchanged.
 - Ladder marker settings are ordered by what their marks mean on the HUD: flight path,
   flight-path hold, one-tick optimal, lookahead optimal, minimum fall speed, zero/best glide, and
   maximum horizontal speed. Their descriptions now say directly what each mark reports — in

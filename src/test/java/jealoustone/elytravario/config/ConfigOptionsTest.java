@@ -50,33 +50,33 @@ class ConfigOptionsTest {
 				"dialSpeedoX", "dialSpeedoY", "dialSpeedoRadius"), geometry);
 	}
 
-	@Test void eachSpeedometerHasOneSubpagePerReading() {
-		assertEquals(List.of("barSpeedoTotal", "barSpeedoHorizontal", "barSpeedoVertical"),
+	@Test void eachSpeedometerHasOneSectionPerReading() {
+		assertEquals(List.of("general", "barSpeedoTotal", "barSpeedoHorizontal",
+				"barSpeedoVertical", "barSpeedoScale", "barSpeedoOverlays", "barSpeedoPanel"),
 				ConfigOptions.groups(5));
-		assertEquals(List.of("dialSpeedoTotal", "dialSpeedoHorizontal", "dialSpeedoVertical"),
+		assertEquals(List.of("general", "dialSpeedoTotal", "dialSpeedoHorizontal",
+				"dialSpeedoVertical", "dialSpeedoScale", "dialSpeedoOverlays", "dialSpeedoPanel"),
 				ConfigOptions.groups(6));
 
-		Map<String, String> groups = ConfigOptions.all().stream()
-				.filter(option -> option.page() == 5 && option.group() != null)
-				.collect(Collectors.toMap(ConfigOptions.Option::key, ConfigOptions.Option::group));
-		assertEquals(Map.of(
-				"showBarSpeedoTotal", "barSpeedoTotal",
-				"barSpeedoTotalColor", "barSpeedoTotal",
-				"showBarSpeedoHorizontal", "barSpeedoHorizontal",
-				"barSpeedoHorizontalColor", "barSpeedoHorizontal",
-				"showBarSpeedoVertical", "barSpeedoVertical",
-				"barSpeedoVerticalColor", "barSpeedoVertical"), groups);
+		assertEquals(List.of("showBarSpeedoTotal", "barSpeedoTotalColor"),
+				keysIn("barSpeedoTotal"));
+		assertEquals(List.of("showBarSpeedoHorizontal", "barSpeedoHorizontalColor"),
+				keysIn("barSpeedoHorizontal"));
+		assertEquals(List.of("showBarSpeedoVertical", "barSpeedoVerticalColor"),
+				keysIn("barSpeedoVertical"));
+		assertEquals(List.of("showDialSpeedoTotal", "dialSpeedoTotalColor"),
+				keysIn("dialSpeedoTotal"));
+		assertEquals(List.of("showDialSpeedoHorizontal", "dialSpeedoHorizontalColor"),
+				keysIn("dialSpeedoHorizontal"));
+		assertEquals(List.of("showDialSpeedoVertical", "dialSpeedoVerticalColor"),
+				keysIn("dialSpeedoVertical"));
+	}
 
-		groups = ConfigOptions.all().stream()
-				.filter(option -> option.page() == 6 && option.group() != null)
-				.collect(Collectors.toMap(ConfigOptions.Option::key, ConfigOptions.Option::group));
-		assertEquals(Map.of(
-				"showDialSpeedoTotal", "dialSpeedoTotal",
-				"dialSpeedoTotalColor", "dialSpeedoTotal",
-				"showDialSpeedoHorizontal", "dialSpeedoHorizontal",
-				"dialSpeedoHorizontalColor", "dialSpeedoHorizontal",
-				"showDialSpeedoVertical", "dialSpeedoVertical",
-				"dialSpeedoVerticalColor", "dialSpeedoVertical"), groups);
+	/** The settings of one section, in the order the screen draws them. */
+	private static List<String> keysIn(String group) {
+		return ConfigOptions.all().stream()
+				.filter(option -> option.group().equals(group))
+				.map(ConfigOptions.Option::key).toList();
 	}
 
 	/** Editing applies as it is typed, so half-typed input must leave the last good values in
@@ -99,8 +99,35 @@ class ConfigOptionsTest {
 		} finally { ConfigOptions.apply(original); }
 	}
 
-	@Test void ladderMarkerSubpagesRunFromMeasuredDirectionThroughReferences() {
-		assertEquals(List.of("flightPath", "hold", "optimal", "lookahead",
-				"minimumFallSpeed", "zero", "maxHorizontalSpeed"), ConfigOptions.groups(2));
+	@Test void ladderMarkerSectionsRunFromMeasuredDirectionThroughReferences() {
+		assertEquals(List.of("general", "markerShadows", "flightPath", "hold", "optimal",
+				"lookahead", "minimumFallSpeed", "zero", "maxHorizontalSpeed"),
+				ConfigOptions.groups(2));
+	}
+
+	/**
+	 * Every page opens on the same four rows, of which the schema names the last two; the
+	 * settings screen puts the layout button and the toggle key above them.
+	 */
+	@Test void everyPageOpensOnItsGeneralSection() {
+		for (int page = 0; page < 7; page++) {
+			assertEquals("general", ConfigOptions.groups(page).get(0), "page " + page);
+		}
+		assertEquals(List.of("enabled", "hudGlidingOnly", "showLadder", "ladderGlidingOnly",
+				"showLadderMarkers", "ladderMarkersGlidingOnly", "showChart", "chartGlidingOnly",
+				"chartX", "chartY", "chartSize", "showStats", "statsGlidingOnly",
+				"showBarSpeedo", "barSpeedoGlidingOnly", "barSpeedoX", "barSpeedoY",
+				"barSpeedoHeight", "showDialSpeedo", "dialSpeedoGlidingOnly", "dialSpeedoX",
+				"dialSpeedoY", "dialSpeedoRadius"),
+				ConfigOptions.all().stream()
+						.filter(option -> option.group().equals("general"))
+						.map(ConfigOptions.Option::key).toList());
+	}
+
+	/** A setting with no section would be drawn above every heading, so none may have one. */
+	@Test void everySettingNamesASection() {
+		assertEquals(List.of(), ConfigOptions.all().stream()
+				.filter(option -> option.group() == null)
+				.map(ConfigOptions.Option::key).toList());
 	}
 }

@@ -34,8 +34,8 @@ public final class HudLayoutScreen extends Screen {
 	// is opened and closed repeatedly while flying, to move one module and watch the HUD. The
 	// selection therefore outlives the screen, and is remembered for the session rather than
 	// written to disk, since it says nothing about how the mod should behave.
-	/** Remembers which group each divided page had selected. */
-	private static final Map<Integer, Integer> subpages = new HashMap<>();
+	/** Remembers which settings section each page had selected, as an index into its own. */
+	private static final Map<Integer, Integer> sections = new HashMap<>();
 	private static int page;
 	/** An edit the next write will persist. */
 	private boolean dirty;
@@ -65,7 +65,7 @@ public final class HudLayoutScreen extends Screen {
 		if (module != null) {
 			page = module.page;
 			if (module.group != null) {
-				subpages.put(module.page, ConfigOptions.groups(module.page).indexOf(module.group));
+				sections.put(module.page, ConfigOptions.groups(module.page).indexOf(module.group));
 			}
 		}
 	}
@@ -305,39 +305,46 @@ public final class HudLayoutScreen extends Screen {
 		return ModulePositionEditor.at(moduleBounds(), x, y, preferred);
 	}
 
-	/** The group this page has selected, or null where the page is not divided into groups. */
+	/** The settings section this page has selected. */
 	private static String selectedGroup(int page) {
 		List<String> groups = ConfigOptions.groups(page);
-		return groups.isEmpty() ? null
-				: groups.get(Math.min(subpages.getOrDefault(page, 0), groups.size() - 1));
+		return groups.get(Math.min(sections.getOrDefault(page, 0), groups.size() - 1));
 	}
 
 	/**
 	 * The module the arrow keys move, which is the one whose settings are on screen.
 	 *
 	 * <p>A page carrying several modules — Flight Stats, one per panel — gives each of them a
-	 * group of its own, so the selection follows the group the settings screen last opened. A
-	 * page carrying one leaves its module's group null, and it stays selected whichever group is
-	 * showing; the speedometers, whose groups are one bar or needle each, are that case.
+	 * section of its own, so the selection follows the section the settings screen last opened.
+	 * A page carrying one leaves its module's group null, and it stays selected whichever
+	 * section is showing; the speedometers, whose extra sections are one bar or needle each,
+	 * are that case.
+	 *
+	 * <p>Most sections are neither: a page opens on its general section, and the layout editor
+	 * is reached from a section without a module as often as from one with it. So a section that
+	 * names no module selects the page's first, rather than leaving the arrow keys with nothing
+	 * to move.
 	 */
 	private ModulePositionEditor.Module selectedModule() {
 		String group = selectedGroup(page);
+		ModulePositionEditor.Module first = null;
 		for (ModulePositionEditor.Module module : ModulePositionEditor.Module.values()) {
 			if (module.page != page) continue;
 			if (module.group == null || module.group.equals(group)) return module;
+			if (first == null) first = module;
 		}
-		return null;
+		return first;
 	}
 
 	/** Selects this module, so that the arrow keys and the settings button both follow it. */
 	private void select(ModulePositionEditor.Module module) {
 		boolean wrongPage = page != module.page;
-		boolean wrongSubpage = module.group != null
+		boolean wrongSection = module.group != null
 				&& !module.group.equals(selectedGroup(module.page));
-		if (!wrongPage && !wrongSubpage) return;
+		if (!wrongPage && !wrongSection) return;
 		page = module.page;
-		if (wrongSubpage) {
-			subpages.put(module.page, ConfigOptions.groups(module.page).indexOf(module.group));
+		if (wrongSection) {
+			sections.put(module.page, ConfigOptions.groups(module.page).indexOf(module.group));
 		}
 		rebuildWidgets();
 	}

@@ -93,60 +93,71 @@ public final class VarioConfigScreen extends YACLScreen {
 	private static ConfigCategory category(int page, Map<String, String> values,
 			Map<String, Option<?>> options) {
 		ConfigCategory.Builder category = ConfigCategory.createBuilder().name(text("page." + page));
-		Map<String, OptionGroup.Builder> groups = new LinkedHashMap<>();
-		category.option(layoutOption(pageModule(page)));
-
+		Map<String, OptionGroup.Builder> sections = new LinkedHashMap<>();
+		// Global's key section holds the two controls no setting of this mod's own names: the
+		// bind that opens this screen, and the way through to the game's Controls list. It is
+		// seeded here so that it follows the general section rather than trailing the page.
 		if (page == 0) {
-			category.option(keyBinding("visibilityKey", ElytraVarioClient.visibilityKey()));
-			for (String key : new String[] {"enabled", "hudGlidingOnly"}) {
-				Option<?> option = option(spec(key), values);
-				options.put(key, option);
-				category.option(option);
-			}
-			category.option(keyBinding("settingsKey", ElytraVarioClient.settingsKey()));
-			category.option(ButtonOption.createBuilder()
-					.name(text("keyBindings"))
-					.text(text("keyBindings.edit"))
-					.description(OptionDescription.of(text("keyBindings.tooltip")))
-					.action((screen, option) -> {
-						Minecraft minecraft = Minecraft.getInstance();
-						minecraft.setScreen(new KeyBindsScreen(screen, minecraft.options));
-					}).build());
-		} else {
-			addInstrumentKeyBinding(category, page);
+			sections.put("general", section(page, "general", true));
+			sections.put("keys", OptionGroup.createBuilder().name(text("group.keys"))
+					.collapsed(false)
+					.option(keyBinding("settingsKey", ElytraVarioClient.settingsKey()))
+					.option(ButtonOption.createBuilder()
+							.name(text("keyBindings"))
+							.text(text("keyBindings.edit"))
+							.description(OptionDescription.of(text("keyBindings.tooltip")))
+							.action((screen, option) -> {
+								Minecraft minecraft = Minecraft.getInstance();
+								minecraft.setScreen(new KeyBindsScreen(screen, minecraft.options));
+							}).build()));
 		}
 		for (ConfigOptions.Option spec : ConfigOptions.all()) {
-			if (spec.page() != page || geometry(spec.key())
-					|| page == 0 && (spec.key().equals("enabled")
-							|| spec.key().equals("hudGlidingOnly"))) continue;
+			if (spec.page() != page || geometry(spec.key())) continue;
+			OptionGroup.Builder section = sections.get(spec.group());
+			if (section == null) {
+				section = section(page, spec.group(), sections.isEmpty());
+				sections.put(spec.group(), section);
+			}
 			Option<?> option = option(spec, values);
 			options.put(spec.key(), option);
-			if (spec.group() == null) {
-				category.option(option);
-			} else {
-				OptionGroup.Builder group = groups.computeIfAbsent(spec.group(), id -> {
-					OptionGroup.Builder builder = OptionGroup.createBuilder()
-							.name(text("group." + id)).collapsed(false);
-					ModulePositionEditor.Module module = module(page, id);
-					if (module != null) builder.option(layoutOption(module));
-					return builder;
-				});
-				group.option(option);
-				String markerPrefix = markerPrefixForStep(spec.key());
-				if (markerPrefix != null) group.option(markerPreview(markerPrefix, values));
-			}
+			section.option(option);
+			String markerPrefix = markerPrefixForStep(spec.key());
+			if (markerPrefix != null) section.option(markerPreview(markerPrefix, values));
 		}
-		for (OptionGroup.Builder group : groups.values()) category.group(group.build());
+		for (OptionGroup.Builder section : sections.values()) category.group(section.build());
 		return category.build();
 	}
 
-	private static void addInstrumentKeyBinding(ConfigCategory.Builder category, int page) {
-		for (VarioInstrument instrument : VarioInstrument.values()) {
-			if (spec(instrument.showKey()).page() == page) {
-				category.option(keyBinding("toggleKey", instrument.key()));
-				return;
-			}
+	/**
+	 * One section of a page, with whatever the schema cannot name in it already.
+	 *
+	 * <p>The section heading a page opens with the layout button and the key that toggles what
+	 * the page configures, above the switch that toggles the same thing and its gliding-only
+	 * companion — the same four rows in the same order on every page, so that the one control
+	 * a player came for is never somewhere else. A later section gets a layout button of its
+	 * own only where it is a module: Flight Stats places its seven panels one section each.
+	 */
+	private static OptionGroup.Builder section(int page, String id, boolean head) {
+		OptionGroup.Builder section = OptionGroup.createBuilder()
+				.name(text("group." + id)).collapsed(false);
+		if (!head) {
+			ModulePositionEditor.Module module = module(page, id);
+			if (module != null) section.option(layoutOption(module));
+			return section;
 		}
+		section.option(layoutOption(pageModule(page)));
+		section.option(page == 0
+				? keyBinding("visibilityKey", ElytraVarioClient.visibilityKey())
+				: keyBinding("toggleKey", instrument(page).key()));
+		return section;
+	}
+
+	/** The instrument a page configures. Every page but Global has exactly one. */
+	private static VarioInstrument instrument(int page) {
+		for (VarioInstrument instrument : VarioInstrument.values()) {
+			if (spec(instrument.showKey()).page() == page) return instrument;
+		}
+		throw new IllegalArgumentException("No instrument for page " + page);
 	}
 
 	private static Option<InputConstants.Key> keyBinding(String label, KeyMapping mapping) {
@@ -402,10 +413,7 @@ public final class VarioConfigScreen extends YACLScreen {
 	}
 
 	private static String instrumentShowKey(int page) {
-		for (VarioInstrument instrument : VarioInstrument.values()) {
-			if (spec(instrument.showKey()).page() == page) return instrument.showKey();
-		}
-		throw new IllegalArgumentException("No instrument for page " + page);
+		return instrument(page).showKey();
 	}
 
 	private static <T> void setAvailablePreservingValue(Option<T> option, boolean available) {
@@ -449,7 +457,7 @@ public final class VarioConfigScreen extends YACLScreen {
 		if (parent != null && !pendingBoolean(options, parent)) return false;
 		// A panel's own group names it, which is cheaper and plainer than searching the schema
 		// for the options that share it.
-		StatsPanel panel = spec.group() == null ? null : StatsPanel.byGroup(spec.group());
+		StatsPanel panel = StatsPanel.byGroup(spec.group());
 		if (panel != null && !key.equals(panel.showKey())) {
 			if (!pendingBoolean(options, panel.showKey())) return false;
 			boolean hasRows = panel.rowKeys().stream()
