@@ -445,9 +445,9 @@ public final class PitchLadderElement implements HudElement {
 				int labelY = y - LABEL_RISE;
 				int labelColor = fade(VarioConfig.ladderLabelColor, edge * VarioConfig.ladderOpacity);
 				graphics.text(font, label, centerX - outer - LABEL_GAP - font.width(label),
-						labelY, labelColor, true);
+						labelY, labelColor, false);
 				graphics.text(font, label, centerX + outer + LABEL_GAP,
-						labelY, labelColor, true);
+						labelY, labelColor, false);
 			}
 
 			pose.popMatrix();
