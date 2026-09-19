@@ -141,7 +141,7 @@ public final class PitchLadderElement implements HudElement {
 	private static final int MARKER_MARGIN = 12;
 	/** A restrained drop shadow separates small marks from both bright sky and dark terrain. */
 	private static final int MARKER_SHADOW_OFFSET = 1;
-	private static final double MARKER_SHADOW_OPACITY = 0.65;
+	private static final double MARKER_SHADOW_OPACITY = 0.35;
 
 	/**
 	 * A rung a quarter turn off the camera axis is edge-on, and beyond that it is behind the
@@ -276,13 +276,12 @@ public final class PitchLadderElement implements HudElement {
 		// Paint every shadow first. A short marker's shadow must not dirty the color of a taller
 		// marker under it when their readings agree.
 		for (PitchMarker marker : markers) {
-			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), shadow(marker.color()),
-					centerX + MARKER_SHADOW_OFFSET, centerY + MARKER_SHADOW_OFFSET,
-					scale, bandUp, bandDown);
+			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), marker.color(),
+					centerX, centerY, scale, bandUp, bandDown, true);
 		}
 		for (PitchMarker marker : markers) {
 			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), marker.color(),
-					centerX, centerY, scale, bandUp, bandDown);
+					centerX, centerY, scale, bandUp, bandDown, false);
 		}
 	}
 
@@ -321,7 +320,7 @@ public final class PitchLadderElement implements HudElement {
 	 */
 	private void drawBug(GuiGraphics graphics, float cameraPitch, float pitch,
 			LadderMarkerShape shape, int bugColor, int centerX, int centerY, double scale,
-			int bandUp, int bandDown) {
+			int bandUp, int bandDown, boolean shadowPass) {
 		if (Float.isNaN(pitch)) {
 			return;
 		}
@@ -350,7 +349,7 @@ public final class PitchLadderElement implements HudElement {
 
 		int outside = VarioConfig.ladderCenterGap - shape.inset();
 		if (outside < shape.length()) return;
-		int color = fade(bugColor, edge);
+		int color = fade(shadowPass ? shadow(bugColor) : bugColor, edge);
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
@@ -360,11 +359,44 @@ public final class PitchLadderElement implements HudElement {
 		for (int row = -radius; row <= radius; row++) {
 			int width = shape.widthAt(row);
 			int inside = outside - width;
-			graphics.fill(centerX - outside, y + row, centerX - inside, y + row + 1, color);
-			graphics.fill(centerX + inside, y + row, centerX + outside, y + row + 1, color);
+			if (!shadowPass) {
+				graphics.fill(centerX - outside, y + row,
+						centerX - inside, y + row + 1, color);
+				graphics.fill(centerX + inside, y + row,
+						centerX + outside, y + row + 1, color);
+				continue;
+			}
+
+			// The translucent marker must not composite over its own shadow. Remove the
+			// unshifted silhouette on this screen row, leaving only the exposed drop shadow.
+			int shadowX = centerX + MARKER_SHADOW_OFFSET;
+			int shadowY = y + row + MARKER_SHADOW_OFFSET;
+			int maskWidth = shape.widthAt(row + MARKER_SHADOW_OFFSET);
+			if (maskWidth == 0) {
+				graphics.fill(shadowX - outside, shadowY,
+						shadowX - inside, shadowY + 1, color);
+				graphics.fill(shadowX + inside, shadowY,
+						shadowX + outside, shadowY + 1, color);
+				continue;
+			}
+
+			int maskInside = outside - maskWidth;
+			fillExcluding(graphics, shadowX - outside, shadowX - inside,
+					centerX - outside, centerX - maskInside, shadowY, color);
+			fillExcluding(graphics, shadowX + inside, shadowX + outside,
+					centerX + maskInside, centerX + outside, shadowY, color);
 		}
 
 		pose.popMatrix();
+	}
+
+	private static void fillExcluding(GuiGraphicsExtractor graphics, int left, int right,
+			int maskLeft, int maskRight, int y, int color) {
+		int beforeRight = Math.min(right, maskLeft);
+		if (left < beforeRight) graphics.fill(left, y, beforeRight, y + 1, color);
+
+		int afterLeft = Math.max(left, maskRight);
+		if (afterLeft < right) graphics.fill(afterLeft, y, right, y + 1, color);
 	}
 
 	/**
