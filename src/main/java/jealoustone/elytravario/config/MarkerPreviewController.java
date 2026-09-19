@@ -36,7 +36,7 @@ final class MarkerPreviewController implements Controller<Integer> {
 		private static final int BACKGROUND = 0xA0101114;
 		private static final int BORDER = 0x607C828A;
 		private static final int LADDER = 0xA0B4BAC0;
-		private static final double SHADOW_OPACITY = 0.65;
+		private static final double SHADOW_OPACITY = 0.35;
 
 		Element(MarkerPreviewController controller, YACLScreen screen,
 				Dimension<Integer> dimension) {
@@ -83,10 +83,38 @@ final class MarkerPreviewController implements Controller<Integer> {
 			int outside = centerGap - shape.inset();
 			int top = y + 17;
 			int bottom = y + height - 3;
-			drawMarker(graphics, shape, outside, centerX + 1, centerY + 1,
+			drawShadow(graphics, shape, outside, centerX, centerY,
 					top, bottom, x + 2, x + width - 2, shadow(color));
 			drawMarker(graphics, shape, outside, centerX, centerY,
 					top, bottom, x + 2, x + width - 2, color);
+		}
+
+		private static void drawShadow(GuiGraphicsExtractor graphics, LadderMarkerShape shape,
+				int outside, int centerX, int centerY, int top, int bottom,
+				int clipLeft, int clipRight, int color) {
+			int radius = shape.height() / 2;
+			for (int row = -radius; row <= radius; row++) {
+				int py = centerY + row + 1;
+				if (py < top || py >= bottom) continue;
+				int markerWidth = shape.widthAt(row);
+				int inside = outside - markerWidth;
+				int maskWidth = shape.widthAt(row + 1);
+				if (maskWidth == 0) {
+					fillClipped(graphics, centerX + 1 - outside, py,
+							centerX + 1 - inside, py + 1, clipLeft, clipRight, color);
+					fillClipped(graphics, centerX + 1 + inside, py,
+							centerX + 1 + outside, py + 1, clipLeft, clipRight, color);
+					continue;
+				}
+
+				int maskInside = outside - maskWidth;
+				fillClippedExcluding(graphics, centerX + 1 - outside,
+						centerX + 1 - inside, centerX - outside, centerX - maskInside,
+						py, clipLeft, clipRight, color);
+				fillClippedExcluding(graphics, centerX + 1 + inside,
+						centerX + 1 + outside, centerX + maskInside, centerX + outside,
+						py, clipLeft, clipRight, color);
+			}
 		}
 
 		private static void drawMarker(GuiGraphicsExtractor graphics, LadderMarkerShape shape,
@@ -115,6 +143,15 @@ final class MarkerPreviewController implements Controller<Integer> {
 			left = Math.max(left, clipLeft);
 			right = Math.min(right, clipRight);
 			if (left < right) graphics.fill(left, top, right, bottom, color);
+		}
+
+		private static void fillClippedExcluding(GuiGraphicsExtractor graphics,
+				int left, int right, int maskLeft, int maskRight, int y,
+				int clipLeft, int clipRight, int color) {
+			fillClipped(graphics, left, y, Math.min(right, maskLeft), y + 1,
+					clipLeft, clipRight, color);
+			fillClipped(graphics, Math.max(left, maskRight), y, right, y + 1,
+					clipLeft, clipRight, color);
 		}
 
 		@Override protected int getHoveredControlWidth() { return 0; }
