@@ -119,8 +119,43 @@ screen uses.
   measured 115 because the superscript on `b/s²` is a pixel narrower than the digit a speed has
   in its place.
 
+- Every paired pitch-ladder marker now has its own pixel-exact shape. **Inset** leaves clearance
+  from the ladder, **length** carries the marker inwards to its point, and **horizontal pixels per
+  step** sets the staircase cut from that point: one pixel makes the square 90-degree point, a
+  larger step makes a sharper one, and zero makes a one-row reference line. The last partial
+  step is kept at the marker's outside edge, so changing a length does not blunt its point.
+
+  These settings belong to each marker rather than to the ladder as a whole. Two markers may
+  therefore use different insets as well as different shapes and colors, while the defaults
+  align all seven at one outside edge. Taller shapes are drawn first and shorter ones over them,
+  making a customized overlap nest without relying on the order the markers happen to be
+  computed in.
+
+  Each marker page has a compact pixel preview beside the controls. A preview square is one GUI
+  pixel at the current GUI scale, so the editor shows the exact staircase the HUD will draw rather
+  than a smoothed approximation.
+
+- Ladder markers have two independent shadow switches: one for the four dynamic markers — flight
+  path, flight-path hold, one-tick optimal and lookahead optimal — and one for the three static
+  pitch references. Both default to on. The shadow is a restrained one-pixel down-right offset
+  composited behind the ladder, while the marker itself remains in front of it.
+
 ### Changed
 
+- Ladder marker settings are ordered by what their marks mean on the HUD: flight path,
+  flight-path hold, one-tick optimal, lookahead optimal, minimum fall speed, zero/best glide, and
+  maximum horizontal speed. Their descriptions now say directly what each mark reports — in
+  particular, the flight-path marker is the direction of the current velocity relative to the
+  camera — without repeating assumptions common to every calculation in the project.
+- The three advisory wedges now default to one compact 2:1 staircase. One-tick optimal is hot red,
+  lookahead optimal remains amber, and flight-path hold is blue-violet; the two energy choices
+  therefore stay in one warm family while the kinematic hold remains distinct from the
+  flight-path marker's sky blue. The fixed references retain their line shapes but now differ in
+  opacity as well as pitch. A config saved before marker-shape settings existed deliberately
+  adopts this complete new appearance, including colors, instead of carrying the retired look
+  into the new shape system; subsequent edits persist normally.
+- The default Flight Stats stack and both speedometers now begin below the in-world layout
+  editor's header instead of letting their top row sit behind it.
 - The default Flight Stats layout is one vertical stack of all seven panels down the left edge,
   in the order the single panel read in with the three matrices under it, every one of them 150
   wide so the stack has one right edge as well as one left. The matrices previously sat in a
@@ -267,6 +302,14 @@ screen uses.
 
 ### Fixed
 
+- Overlapping ladder-marker shadows now form one union at the strongest contributing opacity
+  instead of darkening where two copies stack. That union excludes every marker's foreground,
+  so a shadow cannot show through a translucent fill, and it keeps the same fractional screen
+  position as the marker instead of snapping independently to Minecraft GUI pixels.
+- Marker shadows are now submitted before the ladder's rungs and pitch labels, preventing a
+  shadow from being painted over text or a rung that should cover it. Pitch labels keep their
+  own useful text shadow, but first write the foreground glyph to depth; the shifted shadow is
+  therefore blocked only where it would otherwise show through the label itself.
 - A Flight Stats panel's corner resize is now a function of where the pointer is rather than of
   how it got there. Both bounds on its two size settings were read off the panel as it stood:
   the width could not be dragged below the rows' width at the panel's *current* text size, and
