@@ -1,0 +1,99 @@
+package jealoustone.elytravario.config;
+
+import java.util.Map;
+
+import dev.isxander.yacl3.api.Controller;
+import dev.isxander.yacl3.api.Option;
+import dev.isxander.yacl3.api.utils.Dimension;
+import dev.isxander.yacl3.gui.AbstractWidget;
+import dev.isxander.yacl3.gui.YACLScreen;
+import dev.isxander.yacl3.gui.controllers.ControllerWidget;
+import jealoustone.elytravario.hud.LadderMarkerShape;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
+
+/** A live, one-GUI-pixel-per-marker-pixel preview inside a marker's settings group. */
+final class MarkerPreviewController implements Controller<Integer> {
+	private final Option<Integer> option;
+	private final String prefix;
+	private final Map<String, String> values;
+
+	MarkerPreviewController(Option<Integer> option, String prefix, Map<String, String> values) {
+		this.option = option;
+		this.prefix = prefix;
+		this.values = values;
+	}
+
+	@Override public Option<Integer> option() { return option; }
+	@Override public Component formatValue() { return option.name(); }
+
+	@Override
+	public AbstractWidget provideWidget(YACLScreen screen, Dimension<Integer> dimension) {
+		return new Element(this, screen, dimension.withHeight(48));
+	}
+
+	private static final class Element extends ControllerWidget<MarkerPreviewController> {
+		private static final int BACKGROUND = 0xA0101114;
+		private static final int BORDER = 0x607C828A;
+		private static final int LADDER = 0xA0B4BAC0;
+
+		Element(MarkerPreviewController controller, YACLScreen screen,
+				Dimension<Integer> dimension) {
+			super(controller, screen, dimension);
+		}
+
+		@Override
+		public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
+				float delta) {
+			Dimension<Integer> bounds = getDimension();
+			int x = bounds.x();
+			int y = bounds.y();
+			int width = bounds.width();
+			int height = bounds.height();
+			graphics.fill(x, y, x + width, y + height, BACKGROUND);
+			graphics.outline(x, y, width, height, BORDER);
+			graphics.text(textRenderer, control.option().name(), x + 6, y + 5, 0xFFD7DADE);
+
+			Map<String, String> values = control.values;
+			String prefix = control.prefix;
+			LadderMarkerShape shape = new LadderMarkerShape(
+					Integer.parseInt(values.get(prefix + "Inset")),
+					Integer.parseInt(values.get(prefix + "Length")),
+					Integer.parseInt(values.get(prefix + "Step")));
+			int centerGap = Integer.parseInt(values.get("ladderCenterGap"));
+			int color = (int) Long.parseLong(values.get(prefix + "Color"), 16);
+			int centerX = x + width / 2;
+			int centerY = y + 31;
+			int insideLeft = Math.max(x + 2, centerX - centerGap - 16);
+			int insideRight = Math.min(x + width - 2, centerX + centerGap + 16);
+			fillClipped(graphics, insideLeft, centerY, centerX - centerGap, centerY + 1,
+					x + 2, x + width - 2, LADDER);
+			fillClipped(graphics, centerX + centerGap, centerY, insideRight, centerY + 1,
+					x + 2, x + width - 2, LADDER);
+
+			int outside = centerGap - shape.inset();
+			int radius = shape.height() / 2;
+			int top = y + 17;
+			int bottom = y + height - 3;
+			for (int row = -radius; row <= radius; row++) {
+				int py = centerY + row;
+				if (py < top || py >= bottom) continue;
+				int markerWidth = shape.widthAt(row);
+				int inside = outside - markerWidth;
+				fillClipped(graphics, centerX - outside, py, centerX - inside, py + 1,
+						x + 2, x + width - 2, color);
+				fillClipped(graphics, centerX + inside, py, centerX + outside, py + 1,
+						x + 2, x + width - 2, color);
+			}
+		}
+
+		private static void fillClipped(GuiGraphicsExtractor graphics, int left, int top,
+				int right, int bottom, int clipLeft, int clipRight, int color) {
+			left = Math.max(left, clipLeft);
+			right = Math.min(right, clipRight);
+			if (left < right) graphics.fill(left, top, right, bottom, color);
+		}
+
+		@Override protected int getHoveredControlWidth() { return 0; }
+	}
+}

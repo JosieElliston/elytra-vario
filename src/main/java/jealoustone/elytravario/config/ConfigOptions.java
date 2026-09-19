@@ -250,6 +250,7 @@ public final class ConfigOptions {
 	}
 
 	public static List<Option> all() { return List.copyOf(OPTIONS); }
+	public static List<String> markerPrefixes() { return MARKER_PREFIXES; }
 
 	/** The page's subpages, in declaration order; empty when the page is not divided. */
 	public static List<String> groups(int page) {
