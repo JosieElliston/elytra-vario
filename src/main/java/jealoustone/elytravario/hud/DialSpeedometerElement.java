@@ -71,8 +71,8 @@ public final class DialSpeedometerElement implements HudElement {
 	private static void drawFace(GuiGraphicsExtractor graphics, DialSpeedometer dial,
 			int hubX, int hubY) {
 		int rim = dial.rim();
-		if (VarioConfig.dialSpeedoOpacity > 0) {
-			int background = ((int) Math.round(VarioConfig.dialSpeedoOpacity * 255) << 24)
+		if (VarioConfig.dialSpeedoBackgroundOpacity > 0) {
+			int background = ((int) Math.round(VarioConfig.dialSpeedoBackgroundOpacity * 255) << 24)
 					| (PANEL_BG & 0xFFFFFF);
 			halfDisc(graphics, hubX, hubY, rim, background);
 		}

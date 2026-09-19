@@ -31,7 +31,23 @@ public final class ConfigStore {
 			"markerVisibility", new Split("showLadderMarkers", "ladderMarkersGlidingOnly"),
 			"chartVisibility", new Split("showChart", "chartGlidingOnly"),
 			"statsVisibility", new Split("showStats", "statsGlidingOnly"));
-	/** Retired settings whose value belongs to one direct replacement. */
+	/**
+	 * Retired settings whose value belongs to one direct replacement.
+	 *
+	 * <p>Two background opacities are deliberately absent: the stats panels' {@code panelOpacity}
+	 * and the dial's {@code dialSpeedoOpacity}, which defaulted to 0.69 and 0.45 against the bar
+	 * speedometer's 0.25. Every config file states a value for every setting, so both appear in
+	 * every file written before the backgrounds were made a uniform quarter, and both read as
+	 * their old default unless someone chose otherwise — the file records the value, never who
+	 * set it. Mapping either one forward would confine the new default to fresh installs, which
+	 * is the one place the three grays were never seen. Do not add them to this table.
+	 *
+	 * <p>The dial's was renamed rather than dropped in place, because the name is what carries
+	 * the value: a key read under its old name cannot be told from one saved under it, so only a
+	 * new name resets an existing file once and then leaves the setting alone afterwards. The bar
+	 * speedometer and the stats panels kept their names — the bar was already at the quarter, and
+	 * the panels reset through the split into four.
+	 */
 	private static final Map<String, String> RETIRED_KEYS = Map.of(
 			"showMarkers", "showLadderMarkers",
 			"markersGlidingOnly", "ladderMarkersGlidingOnly",
@@ -277,6 +293,15 @@ public final class ConfigStore {
 		return null;
 	}
 
+	/**
+	 * The dial's pre-split settings, under the names one speedometer used to save them by.
+	 *
+	 * <p>Its background opacity is not among them and is meant not to be: the setting is now
+	 * {@code dialSpeedoBackgroundOpacity}, which no such file names, so the prefix rule below
+	 * asks for a {@code speedoBackgroundOpacity} that never existed and the dial takes the
+	 * uniform quarter. That era's own default was already a quarter, so this costs only a value
+	 * someone set by hand before the dial and the bar became two modules.
+	 */
 	private static String legacyDialKey(String key) {
 		if (key.startsWith("showDialSpeedo")) return "showSpeedo" + key.substring(14);
 		if (key.startsWith("dialSpeedo")) return "speedo" + key.substring(10);

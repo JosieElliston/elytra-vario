@@ -213,7 +213,7 @@ public final class ConfigOptions {
 		add("showDialSpeedoTerminalVelocityMarkers", 6, 0, 1, 1, 0, false, false);
 		add("showDialSpeedoLabels", 6, 0, 1, 1, 0, false, false);
 		add("showDialSpeedoBorder", 6, 0, 1, 1, 0, false, false);
-		add("dialSpeedoOpacity", 6, 0, 100, 100, 0, false, false);
+		add("dialSpeedoBackgroundOpacity", 6, 0, 100, 100, 0, false, false);
 		add("dialSpeedoMajorStep", 6, 1, 400, 20, 0, false, true);
 		add("dialSpeedoMinorStep", 6, 1, 400, 20, 0, false, true);
 		add("dialSpeedoPeggedColor", 6, 0, 1, 1, 0, true, true);

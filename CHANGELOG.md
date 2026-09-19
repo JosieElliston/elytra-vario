@@ -129,11 +129,18 @@ build identifier and released feature for feature; see its own changelog.
   the one kept because it is the most transparent of the three, and these panels are worth seeing
   through. Each module's opacity remains its own setting.
 
-  An existing config's flight stats opacity is reset to the quarter rather than carried across
-  the split into four panels. Every config file states a value for every setting, so a file
-  written before this records 0.69 whether or not anyone chose that number, and carrying it would
-  have confined the new default to fresh installs — the one place the three grays were never
-  seen. Set it again on the four panels if you had picked 0.69 deliberately.
+  An existing config is reset to the quarter as well, for the flight stats panels and the dial
+  speedometer both, rather than left at what it said. Every config file states a value for every
+  setting, so a file written before this records 0.69 and 0.45 whether or not anyone chose those
+  numbers, and respecting them would have confined the new default to fresh installs — the one
+  place the three grays were never seen. Set the opacity again if you had picked one on purpose.
+  The bar speedometer is untouched, being already at the quarter.
+
+  The dial's setting is renamed from `dialSpeedoOpacity` to `dialSpeedoBackgroundOpacity`, which
+  is what carries that reset: a value saved under the old name cannot be told from one a player
+  chose under it, so only a new name resets an existing file once and then leaves the setting
+  alone. A hand-edited config should use the new name; the old one is ignored and is gone after
+  the next save.
 - Drag snapping no longer uses module or screen center lines. Moves and corner resizes now snap
   only to edges, removing the competing middle guide when boxes are already edge-aligned.
 - Each Flight Stats panel is sized by a width in pixels and a text size that move independently,
