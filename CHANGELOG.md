@@ -132,7 +132,13 @@ screen uses.
   at 0.69 and the dial speedometer at 0.45, against the bar speedometer's 0.25; a HUD out of the
   box therefore showed three different grays over the same world. The bar speedometer's value is
   the one kept because it is the most transparent of the three, and these panels are worth seeing
-  through. Each module's opacity remains its own setting, and a configured value is untouched.
+  through. Each module's opacity remains its own setting.
+
+  An existing config's flight stats opacity is reset to the quarter rather than carried across
+  the split into four panels. Every config file states a value for every setting, so a file
+  written before this records 0.69 whether or not anyone chose that number, and carrying it would
+  have confined the new default to fresh installs — the one place the three grays were never
+  seen. Set it again on the four panels if you had picked 0.69 deliberately.
 - Drag snapping no longer uses module or screen center lines. Moves and corner resizes now snap
   only to edges, removing the competing middle guide when boxes are already edge-aligned.
 - Each Flight Stats panel is sized by a width in pixels and a text size that move independently,

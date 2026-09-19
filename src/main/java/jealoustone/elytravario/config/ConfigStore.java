@@ -184,9 +184,14 @@ public final class ConfigStore {
 			values.put(panel.yKey(), Long.toString(Math.clamp(top, -4096, 4096)));
 			values.put(panel.widthKey(), Long.toString(Math.clamp(width, 32, 1200)));
 			values.put(panel.textSizeKey(), format(panel.textSizeKey(), textSize));
-			if (root.has("panelOpacity")) {
-				values.put(panel.opacityKey(), root.get("panelOpacity").getAsString());
-			}
+			// The retired panel's opacity is deliberately not carried. It defaulted to 0.69,
+			// against 0.45 for the dial speedometer and 0.25 for the bar, so every HUD written
+			// before the backgrounds were made a uniform quarter states an opacity, and every
+			// one of them states it because that was the default rather than because anyone
+			// chose it — the file records the value, never who set it. Carrying it would hand
+			// the new default to new installs alone and leave the old three-gray HUD in place
+			// wherever the change was actually meant to be seen. A player who did want 0.69
+			// sets it again on four panels; one who never thought about it gets the quarter.
 			if (root.has("showPanelBorder")) {
 				values.put(panel.borderKey(), root.get("showPanelBorder").getAsString());
 			}

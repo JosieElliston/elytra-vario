@@ -245,16 +245,40 @@ class ConfigStoreTest {
 		}
 	}
 
-	@Test void theRetiredPanelChromeReachesAllFourPanels() {
-		var values = ConfigStore.decode("{\"panelOpacity\":\"30\","
-				+ "\"showPanelBorder\":\"false\"}");
+	@Test void theRetiredPanelBorderReachesAllFourPanels() {
+		var values = ConfigStore.decode("{\"showPanelBorder\":\"false\"}");
 		for (var panel : LEGACY_PANELS) {
-			assertEquals("30", values.get(panel.opacityKey()), panel.name());
 			assertEquals("false", values.get(panel.borderKey()), panel.name());
 		}
-		String encoded = ConfigStore.encode(values);
-		assertFalse(encoded.contains("\"panelOpacity\""));
-		assertFalse(encoded.contains("\"showPanelBorder\""));
+		assertFalse(ConfigStore.encode(values).contains("\"showPanelBorder\""));
+	}
+
+	/**
+	 * The retired opacity is dropped rather than carried, so that the uniform quarter background
+	 * reaches a HUD that already exists. Every file written before it states an opacity, whether
+	 * or not anyone chose that number, so carrying the value would confine the new default to
+	 * fresh installs — the one place the old three grays were never a problem.
+	 */
+	@Test void theRetiredPanelOpacityIsNotCarriedToTheFourPanels() {
+		var values = ConfigStore.decode("{\"panelOpacity\":\"30\","
+				+ "\"showPanelBorder\":\"false\"}");
+		var defaults = ConfigOptions.defaults();
+		for (var panel : LEGACY_PANELS) {
+			assertEquals(defaults.get(panel.opacityKey()),
+					values.get(panel.opacityKey()), panel.name());
+			// The rest of the retired chrome still crosses, so this is the opacity being
+			// dropped and not the migration failing to run.
+			assertEquals("false", values.get(panel.borderKey()), panel.name());
+		}
+		assertFalse(ConfigStore.encode(values).contains("\"panelOpacity\""));
+	}
+
+	/** The panel the retired opacity defaulted to 0.69 on comes out at the uniform quarter. */
+	@Test void aRetiredDefaultOpacityBecomesTheUniformQuarter() {
+		var values = ConfigStore.decode("{\"panelOpacity\":\"69\",\"statsX\":\"12\"}");
+		for (var panel : LEGACY_PANELS) {
+			assertEquals("25", values.get(panel.opacityKey()), panel.name());
+		}
 	}
 
 	/**

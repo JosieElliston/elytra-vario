@@ -8,33 +8,14 @@ josie's todo/notes, don't edit this, tho you should include it in commits
 - new module: the dxz, dy, dpe, dke, dte against pitch plots
 - maybe remove true pos dnd outline? also nudge with wasd (or maybe player controls? but what if you have walk bound to left click? stuff like that is scary)
 - energy grid contours for 0 and ridges
-- better ladder marker aesthetics
-    - configurable n:1 pixel step down
-        - 1:1 pixel step down is a 90 deg point
-        - 2:1 pixel step down is a 45 deg point
-    - configurable length ("height")
-        - aligned to outside?
-        - absorb < step n at the base, not the tip
-        - actually idk where you should absorb it, maybe this is configurable???
-        - actually instead of height, it's the inset. so we have [start, end] rather than [start, length]? actually i don't like this.
-    - configurable inset
-    - configurable base radius (must have odd base size) actually no we don't have base radius, this is implied by length
-        - lines are expressible as 0 rad and (special case i think) 0 step down
-    - build a gui editor for this?
-    - in a new worktree, we're going to work on the ladder marker aesthetics. please look at the current state. i have a vague vision, but i'd like to hear your thoughts (before making large changes)
 - make modules more unobtrusive
     - translucent
 - not fixed module render order?
-- the selected module (in the config) should always take priority for dragging
-- that we don't have comboboxes for submodules/markers/... is kinda a problem.
-    - generally the ui elements are bad
-        - on/off is just text
-        - there aren't sliders
-    - advanced on/off is bad, it should just show all, and communicate importance differently
-    - steal sodiums?
-    - better color picker
 - vel graph: draw marker and trail in a different color for on-ground, off-ground, flying
-- hold shift to disable snapping
+- vel vs speed on the flight stats is inconsistent
+- prior to release, make the changelog more concise
+- hold vel marker but also for yaw
+- pitch ladder config needs sections
 
 ## myopic metrics
 
