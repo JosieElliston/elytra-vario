@@ -1171,7 +1171,8 @@ place on it any of them can go. The three advisory bugs overlap whenever two rul
 has its own inset, horizontal length and integer pixel step. The factory defaults give all three
 the same compact 2:1 wedge and distinguish them by color; customized heights sort tallest first,
 so shorter markers and one-row references remain visible on top. Shape differences are tuned by
-eye and mean nothing in themselves.
+eye and mean nothing in themselves. All seven markers carry a one-pixel down-right black shadow,
+scaled from their own opacity, to remain legible against both bright sky and dark terrain.
 
 **When an answer is further out than the band reaches, the bug leaves the ladder.** All three
 do this, and the flight path marker with them. It matters most for the two rules: each governs

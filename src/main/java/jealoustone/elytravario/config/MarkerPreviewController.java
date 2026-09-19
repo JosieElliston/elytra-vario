@@ -36,6 +36,7 @@ final class MarkerPreviewController implements Controller<Integer> {
 		private static final int BACKGROUND = 0xA0101114;
 		private static final int BORDER = 0x607C828A;
 		private static final int LADDER = 0xA0B4BAC0;
+		private static final double SHADOW_OPACITY = 0.65;
 
 		Element(MarkerPreviewController controller, YACLScreen screen,
 				Dimension<Integer> dimension) {
@@ -80,19 +81,33 @@ final class MarkerPreviewController implements Controller<Integer> {
 					x + 2, x + width - 2, LADDER);
 
 			int outside = centerGap - shape.inset();
-			int radius = shape.height() / 2;
 			int top = y + 17;
 			int bottom = y + height - 3;
+			drawMarker(graphics, shape, outside, centerX + 1, centerY + 1,
+					top, bottom, x + 2, x + width - 2, shadow(color));
+			drawMarker(graphics, shape, outside, centerX, centerY,
+					top, bottom, x + 2, x + width - 2, color);
+		}
+
+		private static void drawMarker(GuiGraphicsExtractor graphics, LadderMarkerShape shape,
+				int outside, int centerX, int centerY, int top, int bottom,
+				int clipLeft, int clipRight, int color) {
+			int radius = shape.height() / 2;
 			for (int row = -radius; row <= radius; row++) {
 				int py = centerY + row;
 				if (py < top || py >= bottom) continue;
 				int markerWidth = shape.widthAt(row);
 				int inside = outside - markerWidth;
 				fillClipped(graphics, centerX - outside, py, centerX - inside, py + 1,
-						x + 2, x + width - 2, color);
+						clipLeft, clipRight, color);
 				fillClipped(graphics, centerX + inside, py, centerX + outside, py + 1,
-						x + 2, x + width - 2, color);
+						clipLeft, clipRight, color);
 			}
+		}
+
+		private static int shadow(int color) {
+			int alpha = (int) Math.round(((color >>> 24) & 0xFF) * SHADOW_OPACITY);
+			return alpha << 24;
 		}
 
 		private static void fillClipped(GuiGraphicsExtractor graphics, int left, int top,
