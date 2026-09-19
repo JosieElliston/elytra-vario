@@ -1173,9 +1173,10 @@ the same compact 2:1 wedge and distinguish them by color; customized heights sor
 so shorter markers and one-row references remain visible on top. Shape differences are tuned by
 eye and mean nothing in themselves. All seven markers can carry a faint one-pixel down-right black
 shadow, scaled from their own opacity, to remain legible against both bright sky and dark terrain.
-Dynamic and static marker shadows have separate global switches. Paired-marker shadows form one
-layer: overlapping shadows use the strongest contributor once, and pixels covered by any paired
-marker are omitted rather than blended through its translucent fill.
+Dynamic and static marker shadows have separate global switches. All marker shadows form one layer
+behind the ladder: overlapping shadows use the strongest contributor once, and pixels covered by
+any marker are omitted rather than blended through its translucent fill. Rungs and labels paint
+over that layer; marker colors paint over the ladder.
 
 **When an answer is further out than the band reaches, the bug leaves the ladder.** All three
 do this, and the flight path marker with them. It matters most for the two rules: each governs

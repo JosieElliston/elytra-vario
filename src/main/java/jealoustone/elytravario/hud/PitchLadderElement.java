@@ -121,9 +121,10 @@ import org.joml.Vector3fc;
 public final class PitchLadderElement implements HudElement {
 	private record PitchMarker(float pitch, LadderMarkerShape shape, int color,
 			boolean dynamic) { }
+	private record FlightPathMarker(double x, double y, int color) { }
 	private record ShadowSpan(int left, int right, int alpha) { }
 
-	/** Combines all paired-marker shadows without darkening where their silhouettes overlap. */
+	/** Combines all marker shadows without darkening where their silhouettes overlap. */
 	private static final class MarkerShadowLayer {
 		private final Map<Integer, List<ShadowSpan>> shadows = new HashMap<>();
 		private final Map<Integer, List<ShadowSpan>> masks = new HashMap<>();
@@ -267,22 +268,33 @@ public final class PitchLadderElement implements HudElement {
 		int bandUp = (int) Math.round(halfHeight * VarioConfig.ladderBandFractionUp);
 		int bandDown = (int) Math.round(halfHeight * VarioConfig.ladderBandFractionDown);
 		float cameraPitch = camera.xRot();
+		boolean markersVisible = VarioInstrument.LADDER_MARKERS.visible(sample.gliding());
+		List<PitchMarker> markers = markersVisible ? pitchMarkers() : List.of();
+		FlightPathMarker flightPath = markersVisible && VarioConfig.showFlightPath
+				? flightPath(camera, centerX, centerY, scale, bandUp, bandDown) : null;
+
+		// Shadows belong behind the ladder as well as behind their markers. Combining them in
+		// one layer also prevents coincident dynamic and static markers from darkening twice.
+		if (markersVisible) {
+			MarkerShadowLayer shadows = new MarkerShadowLayer();
+			for (PitchMarker marker : markers) {
+				addBugShadow(shadows, cameraPitch, marker, centerX, centerY,
+						scale, bandUp, bandDown);
+			}
+			if (flightPath != null) addFlightPathShadow(shadows, flightPath);
+			shadows.render(graphics);
+		}
 
 		// Fine ticks first, so a coarse rung always paints over one where the two land
-		// together at the very edge of the fine range.
+		// together at the very edge of the fine range. Both paint over marker shadows.
 		if (VarioInstrument.LADDER.visible(sample.gliding())) {
 			if (VarioConfig.showFineTicks) drawFineTicks(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 			drawRungs(graphics, minecraft.font, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
 		}
-		if (!VarioInstrument.LADDER_MARKERS.visible(sample.gliding())) return;
+		if (!markersVisible) return;
 
-		if (VarioConfig.showFlightPath && VarioConfig.showDynamicMarkerShadows) {
-			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown, true);
-		}
-		drawBugs(graphics, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
-		if (VarioConfig.showFlightPath) {
-			drawFlightPath(graphics, camera, centerX, centerY, scale, bandUp, bandDown, false);
-		}
+		drawBugs(graphics, markers, cameraPitch, centerX, centerY, scale, bandUp, bandDown);
+		if (flightPath != null) drawFlightPath(graphics, flightPath);
 	}
 
 	/**
@@ -298,8 +310,7 @@ public final class PitchLadderElement implements HudElement {
 	 * the states where no pitch holds the flight path angle at all — so the bugs appear with
 	 * the wing and leave with it, and the dive's bug also leaves when the dive is past saving.
 	 */
-	private void drawBugs(GuiGraphics graphics, float cameraPitch,
-			int centerX, int centerY, double scale, int bandUp, int bandDown) {
+	private List<PitchMarker> pitchMarkers() {
 		List<PitchMarker> markers = new ArrayList<>();
 
 		if (VarioConfig.showLookaheadPitch) {
@@ -351,12 +362,12 @@ public final class PitchLadderElement implements HudElement {
 		}
 
 		markers.sort((left, right) -> Integer.compare(right.shape().height(), left.shape().height()));
-		MarkerShadowLayer shadows = new MarkerShadowLayer();
-		for (PitchMarker marker : markers) {
-			addBugShadow(shadows, cameraPitch, marker, centerX, centerY,
-					scale, bandUp, bandDown);
-		}
-		shadows.render(graphics);
+		return markers;
+	}
+
+	private void drawBugs(GuiGraphicsExtractor graphics, List<PitchMarker> markers,
+			float cameraPitch, int centerX, int centerY, double scale,
+			int bandUp, int bandDown) {
 		for (PitchMarker marker : markers) {
 			drawBug(graphics, cameraPitch, marker.pitch(), marker.shape(), marker.color(),
 					centerX, centerY, scale, bandUp, bandDown);
@@ -651,14 +662,13 @@ public final class PitchLadderElement implements HudElement {
 	 * <p>Projected against the camera's own basis rather than from pitch and yaw, which
 	 * makes it exact on both axes and correct in every camera mode.
 	 */
-	private void drawFlightPath(GuiGraphics graphics, Camera camera,
-			int centerX, int centerY, double scale, int bandUp, int bandDown,
-			boolean shadowPass) {
+	private FlightPathMarker flightPath(Camera camera, int centerX, int centerY,
+			double scale, int bandUp, int bandDown) {
 		Vec3 velocity = recorder.velocity();
 		double speed = velocity.length();
 
 		if (speed < MIN_SPEED) {
-			return;
+			return null;
 		}
 
 		Vec3 direction = velocity.scale(1.0 / speed);
@@ -671,7 +681,7 @@ public final class PitchLadderElement implements HudElement {
 		// Travelling behind the camera: there is no forward projection of the marker, and
 		// pinning it to an edge would only say something false about which edge.
 		if (depth < MIN_DEPTH) {
-			return;
+			return null;
 		}
 
 		double offsetY = dot(direction, up) / depth * scale;
@@ -684,21 +694,42 @@ public final class PitchLadderElement implements HudElement {
 		// Out of reach on either axis it is simply not drawn, like the bugs: held at an edge
 		// it would claim a place it is not, and where you are going is not a thing to aim at.
 		if (Math.abs(offsetX) > reach || offsetY > bandUp || offsetY < -bandDown) {
-			return;
+			return null;
 		}
 
-		int color = shadowPass ? shadow(VarioConfig.flightPathColor) : VarioConfig.flightPathColor;
-		int shadowOffset = shadowPass ? MARKER_SHADOW_OFFSET : 0;
+		return new FlightPathMarker(centerX + offsetX, centerY - offsetY,
+				VarioConfig.flightPathColor);
+	}
+
+	private static void addFlightPathShadow(MarkerShadowLayer shadows,
+			FlightPathMarker marker) {
+		int x = (int) Math.floor(marker.x());
+		int y = (int) Math.floor(marker.y());
+		boolean enabled = VarioConfig.showDynamicMarkerShadows;
+		shadows.add(x - 3, x + 4, y - 3, marker.color(), enabled);
+		shadows.add(x - 3, x + 4, y + 3, marker.color(), enabled);
+		for (int row = y - 2; row <= y + 2; row++) {
+			shadows.add(x - 3, x - 2, row, marker.color(), enabled);
+			shadows.add(x + 3, x + 4, row, marker.color(), enabled);
+		}
+		shadows.add(x - 10, x - 4, y, marker.color(), enabled);
+		shadows.add(x + 5, x + 11, y, marker.color(), enabled);
+		for (int row = y - 8; row < y - 3; row++) {
+			shadows.add(x, x + 1, row, marker.color(), enabled);
+		}
+	}
+
+	private static void drawFlightPath(GuiGraphicsExtractor graphics,
+			FlightPathMarker marker) {
 
 		Matrix3x2fStack pose = graphics.pose();
 		pose.pushMatrix();
 
-		int y = subpixel(pose, centerY - offsetY);
-		double exactX = centerX + offsetX;
-		int x = (int) Math.floor(exactX);
-		pose.translate((float) (exactX - x), 0.0f);
+		int y = subpixel(pose, marker.y());
+		int x = (int) Math.floor(marker.x());
+		pose.translate((float) (marker.x() - x), 0.0f);
 
-		drawFlightPathSymbol(graphics, x + shadowOffset, y + shadowOffset, color);
+		drawFlightPathSymbol(graphics, x, y, marker.color());
 
 		pose.popMatrix();
 	}
