@@ -56,10 +56,18 @@ final class MarkerPreviewController implements Controller<Integer> {
 
 			Map<String, String> values = control.values;
 			String prefix = control.prefix;
-			LadderMarkerShape shape = new LadderMarkerShape(
-					Integer.parseInt(values.get(prefix + "Inset")),
-					Integer.parseInt(values.get(prefix + "Length")),
-					Integer.parseInt(values.get(prefix + "Step")));
+			LadderMarkerShape shape;
+			try {
+				shape = new LadderMarkerShape(
+						Integer.parseInt(values.get(prefix + "Inset")),
+						Integer.parseInt(values.get(prefix + "Length")),
+						Integer.parseInt(values.get(prefix + "Step")));
+			} catch (IllegalArgumentException e) {
+				graphics.centeredText(textRenderer,
+						Component.translatable("config.elytra-vario.markerPreview.invalid"),
+						x + width / 2, y + 27, 0xFFFF6969);
+				return;
+			}
 			int centerGap = Integer.parseInt(values.get("ladderCenterGap"));
 			int color = (int) Long.parseLong(values.get(prefix + "Color"), 16);
 			int centerX = x + width / 2;

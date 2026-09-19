@@ -381,7 +381,7 @@ showing the evidence.
 ladder that nothing else ever draws in, so all three have to live there, and they land on the
 same rows whenever two rules agree — which is common. Colour alone would turn that into one
 mark of indeterminate hue. Each shape is an exact pixel staircase configured by its inset from
-the ladder, its horizontal length and the vertical rows per one-pixel step. Drawing them in
+the ladder, its horizontal length and the horizontal pixels removed per row. Drawing them in
 descending computed height makes an overlap *nest*: shorter marks remain visible on top, and
 one-row references are necessarily last. Which bug gets which shape is a display choice tuned
 in flight and carries no claim.

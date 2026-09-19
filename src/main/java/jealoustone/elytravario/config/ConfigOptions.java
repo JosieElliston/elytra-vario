@@ -235,7 +235,7 @@ public final class ConfigOptions {
 	private static void addMarkerShape(String prefix, String group) {
 		add(prefix + "Inset", 2, group, 0, 100, 1, 0, false, false);
 		add(prefix + "Length", 2, group, 1, 100, 1, 0, false, false);
-		add(prefix + "Step", 2, group, 0, 8, 1, 0, false, false);
+		add(prefix + "Step", 2, group, 0, 100, 1, 0, false, false);
 	}
 
 	private static void add(String key, int page, String group, double min, double max, double factor,
@@ -291,6 +291,8 @@ public final class ConfigOptions {
 			int inset = (Integer) parsed.get(prefix + "Inset");
 			int length = (Integer) parsed.get(prefix + "Length");
 			if (inset + length > centerGap) return "markerSize";
+			int step = (Integer) parsed.get(prefix + "Step");
+			if (step >= length && step != 0) return "markerStep";
 		}
 		return null;
 	}
