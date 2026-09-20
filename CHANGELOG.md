@@ -14,6 +14,8 @@ screen uses.
 
 ## [Unreleased]
 
+## [1.7.0+mc1.21.11] - 2026-09-19
+
 ### Added
 
 - Corner resizing in the HUD layout editor, with snapping, alignment guides, size limits, and
@@ -176,7 +178,8 @@ First release for Minecraft 1.21.11 on Fabric. Client-side only.
 - Per-instrument and global visibility controls.
 - Screen anchoring and graph-to-stats attachment.
 
-[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.6.0+mc1.21.11...mc/1.21.11
+[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.7.0+mc1.21.11...mc/1.21.11
+[1.7.0+mc1.21.11]: https://github.com/JosieElliston/elytra-vario/compare/v1.6.0+mc1.21.11...v1.7.0+mc1.21.11
 [1.6.0+mc1.21.11]: https://github.com/JosieElliston/elytra-vario/compare/v1.5.0+mc1.21.11...v1.6.0+mc1.21.11
 [1.5.0+mc1.21.11]: https://github.com/JosieElliston/elytra-vario/compare/v1.4.0+mc1.21.11...v1.5.0+mc1.21.11
 [1.4.0+mc1.21.11]: https://github.com/JosieElliston/elytra-vario/compare/v1.3.0+mc1.21.11...v1.4.0+mc1.21.11
