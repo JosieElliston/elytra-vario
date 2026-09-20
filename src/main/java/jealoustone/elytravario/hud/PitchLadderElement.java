@@ -298,15 +298,23 @@ public final class PitchLadderElement implements HudElement {
 	private static final double LABEL_SHADOW_OPACITY = 0.35;
 	private static final float LABEL_FOREGROUND_DEPTH = 0.03f;
 	private static final RenderPipeline LABEL_MASK_PIPELINE = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.GUI_TEXT_SNIPPET)
+			RenderPipeline.builder(RenderPipelines.GUI_TEXT_SNIPPET, RenderPipelines.FOG_SNIPPET)
 					.withLocation(ElytraVario.id("pipeline/ladder_label_mask"))
+					.withVertexShader("core/rendertype_text")
+					.withFragmentShader("core/rendertype_text")
+					.withSampler("Sampler0")
+					.withSampler("Sampler2")
 					.withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
 					.withDepthWrite(true)
 					.withColorWrite(false, false)
 					.build());
 	private static final RenderPipeline LABEL_TEXT_PIPELINE = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.GUI_TEXT_SNIPPET)
+			RenderPipeline.builder(RenderPipelines.GUI_TEXT_SNIPPET, RenderPipelines.FOG_SNIPPET)
 					.withLocation(ElytraVario.id("pipeline/ladder_label_text"))
+					.withVertexShader("core/rendertype_text")
+					.withFragmentShader("core/rendertype_text")
+					.withSampler("Sampler0")
+					.withSampler("Sampler2")
 					.withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
 					.withDepthWrite(true)
 					.build());
