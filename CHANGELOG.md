@@ -8,6 +8,8 @@ The Minecraft 1.21.11 backport uses a `+mc1.21.11` build identifier and has its 
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-09-19
+
 ### Added
 
 - Corner resizing in the HUD layout editor, with snapping, alignment guides, size limits, and
@@ -170,7 +172,8 @@ First release for Minecraft 26.2 on Fabric. Client-side only.
 - Per-instrument and global visibility controls.
 - Screen anchoring and graph-to-stats attachment.
 
-[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/JosieElliston/elytra-vario/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/JosieElliston/elytra-vario/compare/v1.3.0...v1.4.0
